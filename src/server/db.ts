@@ -4,9 +4,11 @@ import { env } from "@/env";
 
 const dockerLocalDatabaseUrl = `postgresql://devuser:devpassword@localhost:${env.POSTGRES_PORT}/devdb`;
 const localDatabaseUrl = env.LOCAL_DATABASE_URL ?? dockerLocalDatabaseUrl;
-const resolvedDatabaseUrl = env.PRODUCTION ? env.DATABASE_URL! : localDatabaseUrl;
+const resolvedDatabaseUrl = env.PRODUCTION
+  ? env.DATABASE_URL!
+  : localDatabaseUrl;
 const resolvedDirectUrl = env.PRODUCTION
-  ? env.DATABASE_URL_UNPOOLED ?? env.DATABASE_URL!
+  ? (env.DATABASE_URL_UNPOOLED ?? env.DATABASE_URL!)
   : localDatabaseUrl;
 
 process.env.DATABASE_URL = resolvedDatabaseUrl;
@@ -33,3 +35,13 @@ const globalForPrisma = globalThis as unknown as {
 export const db = globalForPrisma.prisma ?? createPrismaClient();
 
 if (env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+
+export const databaseConnectionConfig: {
+  mode: "production" | "development";
+  resolvedDatabaseUrl: string;
+  resolvedDirectUrl?: string;
+} = {
+  mode: env.PRODUCTION ? "production" : "development",
+  resolvedDatabaseUrl,
+  resolvedDirectUrl,
+};
