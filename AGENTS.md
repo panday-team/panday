@@ -1,0 +1,24 @@
+# Repository Guidelines
+
+## Project Structure & Module Organization
+This Next.js 15 App Router project keeps page segments in `src/app`; place client UI and route handlers here. Shared backend helpers and the Prisma client wrapper live in `src/server`. Global styles are collected in `src/styles/globals.css`, while static assets belong in `public`. Database schema and migrations stay in `prisma`, with generated client code ignored from version control. Run `start-database.sh` to boot the local database service before Prisma workflows.
+
+## Build, Test, and Development Commands
+- `bun install` — install dependencies as tracked in `bun.lock`.
+- `bun run dev` — start the HMR dev server on the default port.
+- `bun run build` — create the production bundle and run type checks.
+- `bun run preview` — serve the built app for smoke testing.
+- `bun run check` — run ESLint and TypeScript without touching output.
+- `bun run db:generate` / `bun run db:migrate` — regenerate the Prisma client and apply schema migrations.
+
+## Coding Style & Naming Conventions
+Prettier (`prettier.config.js`) handles formatting; run `bun run format:write` or rely on editor integration. ESLint (`eslint.config.js`) plus TypeScript enforce modern React rules. Stick to 2-space indentation, PascalCase for React components, camelCase for variables/functions, and kebab-case for segment folders inside `src/app`. Keep server-only utilities in `src/server` or `prisma` to prevent accidental client bundling.
+
+## Testing Guidelines
+Automated tests are not wired up yet. When introducing coverage, mirror the source structure (`src/<feature>/__tests__`) and add a `test` script to `package.json` so CI can run it consistently. Prefer component testing with React Testing Library and integration checks against a seeded local database. Document any manual QA in the PR until automated coverage exists.
+
+## Commit & Pull Request Guidelines
+Write imperative, present-tense commit subjects under 72 characters (e.g., `Add profile form validation`). Squash noisy formatting updates into the related commit. Every PR should link issues, summarize the change, list verification commands, and attach UI captures for user-facing work. Request review for updates touching Prisma schema or server logic.
+
+## Database & Configuration Tips
+Environment variables are validated in `src/env.js` via `@t3-oss/env-nextjs`; extend that module whenever adding new `.env` keys. After editing `prisma/schema.prisma`, rerun `bun run db:generate` and restart the dev server. Do not commit secrets or local database artifacts; store credentials in the shared secret manager.
