@@ -6,11 +6,24 @@
 - Global styles live in `src/styles/globals.css`; static assets in `public`
 - Generated Prisma client is ignored from version control; start the containers in `docker-compose.yml` before Prisma workflows
 
+## Runtime Status Page
+
+- `src/app/page.tsx` now renders deployment diagnostics instead of the starter marketing content
+- Connection checks live in `src/server/status/systemStatus.ts`; reuse this module if other routes need health data
+- Clerk controls are centralized in `src/components/AuthControls.tsx` to keep auth UI client-side
+- Root layout wraps the tree in `ClerkProvider` (`src/app/layout.tsx`) so `SignedIn`/`SignedOut` helpers work
+
+## UI Toolkit
+
+- shadcn/ui initialized via `shadcn init`; global config lives in `components.json`
+- Generated components land under `src/components/ui`; add new primitives with `npx shadcn@latest add <component>`
+
 ## Getting Started
 
 - `bun install` to install dependencies tracked in `bun.lock`
 - `docker compose up -d postgres` to launch the local database container before running Prisma commands or local dev
 - Copy required env vars into `.env`; validation happens in `src/env.js`
+- `./scripts/dev-services.sh start|stop|status` wraps `docker compose` to manage local Postgres/Redis without recreating containers
 
 ## Build & Verification Commands
 
