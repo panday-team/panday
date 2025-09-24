@@ -10,7 +10,7 @@ export const env = createEnv({
     DATABASE_URL: z.string().url().optional(),
     DATABASE_URL_UNPOOLED: z.string().url().optional(),
     LOCAL_DATABASE_URL: z.string().url().optional(),
-    POSTGRES_PORT: z.coerce.number().int().min(1).max(65535).default(5435),
+    POSTGRES_PORT: z.coerce.number().int().min(1).max(65535).default(5432),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),

@@ -24,6 +24,7 @@
 - `docker compose up -d postgres` to launch the local database container before running Prisma commands or local dev
 - Copy required env vars into `.env`; validation happens in `src/env.js`
 - `./scripts/dev-services.sh start|stop|status` wraps `docker compose` to manage local Postgres/Redis without recreating containers
+- `.env.example` documents required variables; replace placeholder strings with environment-specific values in your local `.env`
 
 ## Build & Verification Commands
 
@@ -50,7 +51,7 @@
 ## Database & Configuration
 
 - Use Prisma schema at `prisma/schema.prisma`; rerun `bun run db:generate` after edits
-- Local Postgres defaults come from `POSTGRES_PORT` (default 5435) and Prisma auto-builds the DSN; override with `LOCAL_DATABASE_URL` only if you need custom creds
+- Local Postgres defaults come from `POSTGRES_PORT` (default host port 5432) and Prisma auto-builds the DSN; override with `LOCAL_DATABASE_URL` only if you need custom creds
 - `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, and Upstash secrets are only required when `PRODUCTION=true`
 - Restart dev server after schema or environment changes
 - Do not commit generated Prisma client or local database artifacts
