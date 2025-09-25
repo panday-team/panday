@@ -12,11 +12,14 @@
 - Connection checks live in `src/server/status/systemStatus.ts`; reuse this module if other routes need health data
 - Clerk controls are centralized in `src/components/AuthControls.tsx` to keep auth UI client-side
 - Root layout wraps the tree in `ClerkProvider` (`src/app/layout.tsx`) so `SignedIn`/`SignedOut` helpers work
+- Health dashboard presentation uses shadcn cards/badges (`src/app/page.tsx` + `src/components/ui`) for consistent theming
+- Root layout forces `dark` mode and applies base background/foreground classes globally
 
 ## UI Toolkit
 
 - shadcn/ui initialized via `shadcn init`; global config lives in `components.json`
 - Generated components land under `src/components/ui`; add new primitives with `npx shadcn@latest add <component>`
+- Custom card/badge primitives live in `src/components/ui` and back the status page layout
 
 ## Getting Started
 

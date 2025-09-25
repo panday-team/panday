@@ -20,8 +20,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className={`${geist.variable}`}>
-        <body>{children}</body>
+      <html lang="en" className={`${geist.variable} dark`}>
+        <body className="min-h-dvh bg-background text-foreground antialiased">
+          {children}
+        </body>
       </html>
     </ClerkProvider>
   );
