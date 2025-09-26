@@ -71,6 +71,7 @@
 - Squash formatting-only changes into the related feature commit
 - PRs should link issues, summarize changes, list verification commands, and include UI captures for user-facing work
 - Request review for updates to Prisma schema or server logic
+- `docs/SETUP.md` tracks the git branching rules (protected `origin/main`, no deletion/force push, 1 required review, rebase after `git stash push -u`) and the Docker helpers exposed as `bun run services:start|stop|status` (wrapping `./scripts/dev-services.sh`).
 
 ## Need-to-Know Extras
 
