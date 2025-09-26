@@ -19,7 +19,11 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      signInUrl="/auth/signin"
+      signInFallbackRedirectUrl="/"
+      signUpFallbackRedirectUrl="/"
+    >
       <html lang="en" className={`${geist.variable} dark`}>
         <body className="min-h-dvh bg-background text-foreground antialiased">
           {children}

@@ -78,3 +78,7 @@
 - Lint rules disallow anonymous default exports in config files and favor `import` statements over triple-slash references
 - `next.config.js` and TypeScript (`tsconfig.json`) already tuned for Next 15 / React 19 features
 - Large monorepo guidance: add nested `AGENTS.md` files within packages if this project grows into multiple workspaces
+
+## Auth Notes
+
+- Clerk sign-in and fallback redirect URLs are now configured directly in `src/app/layout.tsx`; remove `NEXT_PUBLIC_CLERK_SIGN_*` entries from env files when syncing configs.
