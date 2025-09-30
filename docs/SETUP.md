@@ -4,10 +4,12 @@ This guide walks through the everyday git and Docker steps for Panday. It assume
 
 ## Quickstart
 
+> quick note that I might mix up npm & bun in the commands, this is because they are interchangeable
+
 1. **Install dependencies**
 
    ```bash
-   bun install      # use `npm install` if you do not have Bun yet
+   npm install
    ```
 
 2. **Copy environment variables**
@@ -21,12 +23,12 @@ This guide walks through the everyday git and Docker steps for Panday. It assume
 3. **Launch the app (auto-starts Docker)**
 
    ```bash
-   npm run dev      # or `bun run dev`
+   npm run dev      # or `bun dev`
    ```
 
-   The dev script first runs `./scripts/dev-services.sh start`, ensuring Postgres and Redis are up, then starts `next dev --turbo`.
+I've set up this script to automatically run the local database, for those of you who don't know what that means, don't worry about it
 
-4. **Database helpers when schema changes**
+4. **Database helpers when schema changes** (only necessary for people who are making changes to the database)
 
    ```bash
    npm run db:generate   # regenerate Prisma client after schema edits
@@ -36,6 +38,8 @@ This guide walks through the everyday git and Docker steps for Panday. It assume
    You only need these when you or a teammate edit the files under `prisma/`.
 
 5. **Stop services when finished (optional)**
+   this is optional but I would recommend doing it since the docker container will keep running in the background forever if you don't
+   not a huge impact on your computer but good practice to stop it.
 
    ```bash
    npm run services:stop
@@ -87,29 +91,29 @@ If you are newer to Git, think of `main` as the shared source of truth. You do y
    Work only on this branch. Keeping `main` clean makes future updates easier.
    Example: For a login bug fix you might use `git checkout -b feature/fix-login-redirect`.
 
-3. **Stay in sync before you open or update a PR**
+3. **Keep your branch current before you open or refresh a PR**
    - GitHub requires your branch to match the latest `main`.
-   - Rebasing is Git’s way of replaying your commits on top of the newest work from teammates so you catch conflicts early.
+   - Use the helper first:
+
+   ```bash
+   npm run git:sync
+   ```
+
+   The script quietly stashes any uncommitted files, rebases your branch onto `origin/main`, then restores your work. If you need a different comparison branch, add it at the end: `npm run git:sync -- origin/release`. Set `SYNC_MODE=merge` when a teammate prefers a merge instead of a rebase.
+
+   > If the script stops because of conflicts or you prefer to see every step, fall back to the manual commands below. They follow the same “save, update, restore” pattern.
 
    ```bash
    git checkout feature/<brief-topic>
    git fetch origin
-
-   # Save any local work, even new files that are not tracked yet
    git stash push -u -m "sync-main"
-
-   # Replay your commits on top of the newest main
    git rebase origin/main
-
-   # Bring your saved files back
-   git stash pop    # fix conflicts if Git asks
-
-   # Update the remote copy of your branch
+   git stash pop
    git push --force-with-lease
    ```
 
-   `git stash push -u` keeps untracked files safe while you rebase. `--force-with-lease` pushes your rebased branch without overwriting someone else’s work. The general idea is “save your current edits, update from teammates, then put your edits back on top.”
-   Example: If GitHub shows “This branch is out-of-date with the base branch”, run the steps above before requesting review again.
+   `git stash push -u` keeps untracked files safe while you rebase. `--force-with-lease` pushes your rebased branch without overwriting someone else’s work.
+   If Git pauses for conflicts during the rebase or stash pop, follow the prompts, fix the files it lists, then run `git rebase --continue` (or repeat `git stash pop`) until it finishes.
 
 ### Use the helper script
 
@@ -134,16 +138,14 @@ npm run git:sync -- origin/release   # sync against a different branch
 
 ### Handy commands
 
-| Task                               | Command                                              | When to run it                                                      |
-| ---------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------- |
-| Update `main`                      | `git fetch origin && git pull --ff-only origin main` | Starting your day or before creating a new branch                   |
-| New branch                         | `git checkout -b feature/<brief-topic>`              | Beginning work on a feature or bug fix                              |
-| Rebase on latest `main`            | `git fetch origin && git rebase origin/main`         | GitHub says the branch is behind `main`                             |
-| Push after rebase                  | `git push --force-with-lease`                        | After a successful rebase when you need to update the remote branch |
-| Stash work (keeps untracked files) | `git stash push -u -m "sync-main"`                   | Before rebasing if you have uncommitted changes                     |
-| Restore stashed work               | `git stash pop`                                      | Right after the rebase to bring back your saved files               |
-| Need a quick sync                  | `npm run git:sync`                                   | Same situations as the rebase steps above                           |
-| Check how far behind you are       | `npm run git:behind`                                 | Before pushing or opening a PR                                      |
+| Action | Command | Why it helps |
+| --- | --- | --- |
+| Quick branch sync | `npm run git:sync` | Safest way to pull in the latest `origin/main`; handles stashing and rebasing for you |
+| Quick status check | `npm run git:behind` | Tells you how many commits you are behind `origin/main`; `-- origin/release` compares elsewhere |
+| Update local `main` | `git fetch origin && git pull --ff-only origin main` | Run at the start of the day so `main` matches GitHub |
+| Create a feature branch | `git checkout -b feature/<brief-topic>` | Keeps work isolated from `main` |
+| Manual rebase (fallback) | `git fetch origin && git rebase origin/main` | Use if the helper script cannot finish because of conflicts |
+| Manual push after rebase | `git push --force-with-lease` | Updates the remote copy of your branch without clobbering teammates |
 
 `npm run git:behind` calls `scripts/git-behind.sh` and prints the number of commits your branch is behind the default `origin/main`. Pass a different comparison target if needed: `npm run git:behind -- origin/release`.
 
