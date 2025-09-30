@@ -1,5 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname "$0")/_/husky.sh"
 
 BEHIND="$(bash scripts/git-behind.sh origin/main)"
 if [ "$BEHIND" -gt 0 ]; then
