@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+BEHIND="$(bash scripts/git-behind.sh origin/main)"
+if [ "$BEHIND" -gt 0 ]; then
+  echo "❌ Your branch is $BEHIND commits behind origin/main."
+  echo "Run: npm run git:sync"
+  exit 1
+fi
+
