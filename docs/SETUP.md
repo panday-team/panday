@@ -169,7 +169,7 @@ Postgres (our database) and Redis (our cache/queue) run inside Docker containers
    npm run services:status   # or `bun run services:status`
    ```
 
-   If you see both services listed with their ports, you are good to go. Missing entries usually mean Docker needs more time; re-run the command after a few seconds.
+   You should see `postgres`, `redis`, and `redis-rest`. The last container runs the upstream [serverless-redis-http](https://github.com/hiett/serverless-redis-http) proxy so local requests mirror Upstash’s REST API. Missing entries usually mean Docker needs more time; re-run the command after a few seconds.
 
 3. **Stop the databases when you are done**
 

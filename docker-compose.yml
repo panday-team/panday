@@ -22,13 +22,13 @@ services:
     restart: unless-stopped
 
   redis-rest:
-    build:
-      context: ./docker/redis-rest
+    image: ghcr.io/hiett/serverless-redis-http:1.8.0
     container_name: my_redis_rest
     environment:
-      REDIS_URL: redis://redis:6379
-      UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN:-dev-token}
-      UPSTASH_REDIS_REST_PORT: ${UPSTASH_REDIS_REST_PORT:-8079}
+      SRH_MODE: env
+      SRH_TOKEN: ${UPSTASH_REDIS_REST_TOKEN:-dev-token}
+      SRH_CONNECTION_STRING: redis://redis:6379
+      SRH_PORT: ${UPSTASH_REDIS_REST_PORT:-8079}
     ports:
       - "${UPSTASH_REDIS_REST_PORT:-8079}:${UPSTASH_REDIS_REST_PORT:-8079}"
     depends_on:
