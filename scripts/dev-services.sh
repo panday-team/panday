@@ -14,13 +14,13 @@ compose() {
 
 case "$COMMAND" in
   start)
-    compose up -d postgres redis
+    compose up -d postgres redis redis-rest
     ;;
   stop)
-    compose stop postgres redis
+    compose stop postgres redis redis-rest
     ;;
   status)
-    compose ps postgres redis
+    compose ps postgres redis redis-rest
     ;;
   *)
     echo "Unknown command: $COMMAND" >&2

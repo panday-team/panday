@@ -21,6 +21,22 @@ services:
       - redis_data:/data
     restart: unless-stopped
 
+  redis-rest:
+    image: darthbenro008/upstash-redis-local:latest
+    container_name: my_redis_rest
+    command:
+      - "--addr"
+      - ":${UPSTASH_REDIS_REST_PORT:-8079}"
+      - "--redis"
+      - "redis:6379"
+      - "--token"
+      - "${UPSTASH_REDIS_REST_TOKEN:-dev-token}"
+    ports:
+      - "${UPSTASH_REDIS_REST_PORT:-8079}:${UPSTASH_REDIS_REST_PORT:-8079}"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:
