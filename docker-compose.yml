@@ -22,15 +22,13 @@ services:
     restart: unless-stopped
 
   redis-rest:
-    image: darthbenro008/upstash-redis-local:latest
+    build:
+      context: ./docker/redis-rest
     container_name: my_redis_rest
-    command:
-      - "--addr"
-      - ":${UPSTASH_REDIS_REST_PORT:-8079}"
-      - "--redis"
-      - "redis:6379"
-      - "--token"
-      - "${UPSTASH_REDIS_REST_TOKEN:-dev-token}"
+    environment:
+      REDIS_URL: redis://redis:6379
+      UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN:-dev-token}
+      UPSTASH_REDIS_REST_PORT: ${UPSTASH_REDIS_REST_PORT:-8079}
     ports:
       - "${UPSTASH_REDIS_REST_PORT:-8079}:${UPSTASH_REDIS_REST_PORT:-8079}"
     depends_on:

@@ -18,7 +18,11 @@ const createLocalRedisClient = () => {
   return client;
 };
 
-const redis = env.PRODUCTION
+const shouldUseRestClient = Boolean(
+  env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN,
+);
+
+const redis = shouldUseRestClient
   ? new UpstashRedis({
       url: env.UPSTASH_REDIS_REST_URL!,
       token: env.UPSTASH_REDIS_REST_TOKEN!,

@@ -1,0 +1,9 @@
+{
+  "name": "redis-rest-proxy",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "redis": "^4.6.15"
+  }
+}
