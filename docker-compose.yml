@@ -22,7 +22,7 @@ services:
     restart: unless-stopped
 
   redis-rest:
-    image: ghcr.io/hiett/serverless-redis-http:1.8.0
+    image: hiett/serverless-redis-http:latest
     container_name: my_redis_rest
     environment:
       SRH_MODE: env
