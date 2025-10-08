@@ -1,15 +1,13 @@
 services:
   postgres:
-    image: postgres:17.6
-    container_name: my_postgres
+    image: neondatabase/neon_local:latest
+    container_name: neon_local
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     environment:
-      POSTGRES_USER: devuser
-      POSTGRES_PASSWORD: devpassword
-      POSTGRES_DB: devdb
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      NEON_API_KEY: ${NEON_API_KEY}
+      NEON_PROJECT_ID: ${NEON_PROJECT_ID}
+      DRIVER: serverless
     restart: unless-stopped
 
   redis:

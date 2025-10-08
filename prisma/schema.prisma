@@ -2,8 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-1.1.x", "darwin", "darwin-arm64", "windows"]
+  provider = "prisma-client-js"
+  // binaryTargets = ["native", "debian-openssl-1.1.x", "darwin", "darwin-arm64", "windows"]
 }
 
 datasource db {

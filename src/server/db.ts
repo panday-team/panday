@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 
 import { env } from "@/env";
 
-const dockerLocalDatabaseUrl = `postgresql://devuser:devpassword@localhost:${env.POSTGRES_PORT}/devdb`;
+const dockerLocalDatabaseUrl = `postgresql://neon:npg@localhost:5432/neondb`;
 const localDatabaseUrl = env.LOCAL_DATABASE_URL ?? dockerLocalDatabaseUrl;
 const resolvedDatabaseUrl = env.PRODUCTION
   ? env.DATABASE_URL!

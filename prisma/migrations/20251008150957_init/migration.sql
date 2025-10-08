@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "public"."Post" (
+CREATE TABLE "Post" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -9,4 +9,4 @@ CREATE TABLE "public"."Post" (
 );
 
 -- CreateIndex
-CREATE INDEX "Post_name_idx" ON "public"."Post"("name");
+CREATE INDEX "Post_name_idx" ON "Post"("name");
