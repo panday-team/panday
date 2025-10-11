@@ -8,10 +8,14 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-secondary/10 text-secondary-foreground ring-1 ring-secondary/30",
-        success: "bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-500/20 dark:text-emerald-200",
-        warning: "bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/20 dark:text-amber-200",
-        destructive: "bg-destructive/15 text-destructive ring-1 ring-destructive/30",
+        default:
+          "bg-secondary/10 text-secondary-foreground ring-1 ring-secondary/30",
+        success:
+          "bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-500/20 dark:text-emerald-200",
+        warning:
+          "bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/20 dark:text-amber-200",
+        destructive:
+          "bg-destructive/15 text-destructive ring-1 ring-destructive/30",
         outline: "border-border/60 bg-background",
       },
     },

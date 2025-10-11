@@ -25,7 +25,7 @@ export default function RootLayout({
       signUpFallbackRedirectUrl="/"
     >
       <html lang="en" className={`${geist.variable} dark`}>
-        <body className="min-h-dvh bg-background text-foreground antialiased">
+        <body className="bg-background text-foreground min-h-dvh antialiased">
           {children}
         </body>
       </html>

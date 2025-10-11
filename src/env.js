@@ -19,8 +19,8 @@ export const env = createEnv({
     REDIS_URL: z.string().url().default("redis://127.0.0.1:6379"),
     UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
     UPSTASH_REDIS_REST_URL: z.string().url().optional(),
-    UPSTASH_REDIS_REST_PORT: z
-      .coerce.number()
+    UPSTASH_REDIS_REST_PORT: z.coerce
+      .number()
       .int()
       .min(1)
       .max(65535)
