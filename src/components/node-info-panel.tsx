@@ -6,8 +6,7 @@ type ResourceLink = {
   href: string;
 };
 
-export interface NodeInfoPanelProps
-  extends ComponentPropsWithoutRef<"aside"> {
+export interface NodeInfoPanelProps extends ComponentPropsWithoutRef<"aside"> {
   badge?: string;
   title: string;
   subtitle?: string;
@@ -33,13 +32,13 @@ export function NodeInfoPanel({
   return (
     <aside
       className={cn(
-        "w-full max-w-xl rounded-3xl border border-white/10 bg-[#2D354B]/95 px-8 pt-8 pb-10 text-[#FFEDDA] shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur",
+        "w-1/2 max-w-md rounded-3xl border border-white/10 bg-[#2D354B]/95 px-8 pt-8 pb-10 text-[#FFEDDA] shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur",
         className,
       )}
       {...props}
     >
       <div className="flex items-center justify-between gap-4">
-        <span className="inline-flex items-center gap-2 rounded-full bg-[#76E54A] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#1D2740]">
+        <span className="inline-flex items-center gap-2 rounded-full bg-[#76E54A] px-3 py-1 text-xs font-semibold tracking-wide text-[#1D2740] uppercase">
           {badge}
         </span>
         {subtitle ? (

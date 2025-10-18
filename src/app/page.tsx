@@ -326,7 +326,7 @@ export default function App() {
         panOnDrag
         zoomOnScroll
         zoomOnPinch
-        className="[&_.react-flow__edge-path]:drop-shadow-[0_0_6px_rgba(53,193,185,0.25)] [&_.react-flow__attribution]:hidden"
+        className="[&_.react-flow__attribution]:hidden [&_.react-flow__edge-path]:drop-shadow-[0_0_6px_rgba(53,193,185,0.25)]"
         proOptions={{ hideAttribution: true }}
       >
         <Background
@@ -336,7 +336,7 @@ export default function App() {
         />
       </ReactFlow>
 
-      <div className="pointer-events-none absolute top-0 left-0 flex w-full justify-start pl-10 pt-10">
+      <div className="pointer-events-none absolute top-0 left-0 flex w-full justify-start pt-10 pl-10">
         <NodeInfoPanel
           badge="Start"
           subtitle="Level 2 Work Based Training • Chat"
