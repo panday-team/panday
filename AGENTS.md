@@ -21,6 +21,14 @@
 - Generated components land under `src/components/ui`; add new primitives with `npx shadcn@latest add <component>`
 - Custom card/badge primitives live in `src/components/ui` and back the status page layout
 
+## React Flow Integration
+
+- `@xyflow/react` (import its global stylesheet from `@xyflow/react/dist/style.css`) powers the interactive canvas in `src/app/page.tsx`; keep nodes and edges typed via the generics that `Node`, `Edge`, `OnNodesChange`, and helpers like `applyNodeChanges` expose so state setters accept the correct data shapes. citeturn3search4turn2search3
+- React Flow UI’s `BaseNode`, `BaseNodeHeader`, `BaseNodeContent`, and `BaseNodeFooter` give us shadcn-aligned node shells—wrap interactive children with the `nodrag` utility class to prevent accidental drags and keep styling tweaks in Tailwind classes. citeturn1search0
+- Use the `NodeAppendix` wrapper when you need badges or controls anchored to a node edge; combine it with the BaseNode structure so appendix content stays positioned and accessible. citeturn1search1
+- For large diagrams, memoize custom node/edge components and callback props with `React.memo`, `useCallback`, and `useMemo`; avoid reading the full nodes/edges arrays inside components and collapse deep node trees to reduce re-renders. citeturn1search5
+- Custom node primitives for the Panday flow live under `src/components/nodes` (`HubNode`, `RequirementNode`, `PortalNode`, `CheckpointNode`, `TerminalNode`); each wraps `BaseNode` + `NodeAppendix`, applies the brand palette (teal `#35C1B9` connectors, lime requirements, light-blue portals, purple checkpoints, yellow hubs/terminal), and pre-registers handle IDs so edges land tangent to the circle rim without arrowheads.
+
 ## Getting Started
 
 - `bun install` to install dependencies tracked in `bun.lock`

@@ -8,15 +8,17 @@ export const BaseNode = forwardRef<
   <div
     ref={ref}
     className={cn(
-      "relative rounded-md border bg-card text-card-foreground",
-      "hover:ring-1",
+      "relative rounded-md border-none bg-transparent text-[#FFEDDA]",
+      "focus-visible:outline-none focus-visible:ring-0",
       // React Flow displays node elements inside of a `NodeWrapper` component,
       // which compiles down to a div with the class `react-flow__node`.
       // When a node is selected, the class `selected` is added to the
       // `react-flow__node` element. This allows us to style the node when it
       // is selected, using Tailwind's `&` selector.
-      "[.react-flow\\_\\_node.selected_&]:border-muted-foreground",
-      "[.react-flow\\_\\_node.selected_&]:shadow-lg",
+      "[.react-flow\\_\\_node.selected_&]:outline",
+      "[.react-flow\\_\\_node.selected_&]:outline-2",
+      "[.react-flow\\_\\_node.selected_&]:outline-offset-4",
+      "[.react-flow\\_\\_node.selected_&]:outline-[#FFEDDA]/70",
       className,
     )}
     tabIndex={0}
