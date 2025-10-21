@@ -29,6 +29,25 @@
 - For large diagrams, memoize custom node/edge components and callback props with `React.memo`, `useCallback`, and `useMemo`; avoid reading the full nodes/edges arrays inside components and collapse deep node trees to reduce re-renders. citeturn1search5
 - Custom node primitives for the Panday flow live under `src/components/nodes` (`HubNode`, `RequirementNode`, `PortalNode`, `CheckpointNode`, `TerminalNode`); each wraps `BaseNode` + `NodeAppendix`, applies the brand palette (teal `#35C1B9` connectors, lime requirements, light-blue portals, purple checkpoints, yellow hubs/terminal), and pre-registers handle IDs so edges land tangent to the circle rim without arrowheads.
 
+## Dynamic Roadmap System
+
+- **Architecture**: Content-driven system with separation of concerns (content/layout/metadata)
+- **Data Structure**: Roadmap data lives in `src/data/roadmaps/{roadmap-id}/` with three files:
+  - `metadata.json`: Career-level info (title, province, industry)
+  - `graph.json`: React Flow layout (node positions, edges, connections)
+  - `content/*.md`: Markdown files with YAML frontmatter for each node
+- **Data Loading**: Server-side loading via `src/lib/roadmap-loader.ts` with functions:
+  - `buildRoadmap(id)`: Loads complete roadmap (metadata + graph + content)
+  - `loadNodeContent(roadmapId, nodeId)`: Parses markdown frontmatter + content sections
+  - Uses `gray-matter` for frontmatter parsing
+- **Rendering Flow**: `app/page.tsx` (server) → `buildRoadmap()` → `RoadmapFlow` (client) → React Flow visualization
+- **Node Types**: `hub` (yellow), `terminal` (purple), `requirement` (lime), `portal` (blue), `checkpoint` (purple)
+- **Content Sections**: Each markdown file can have: Eligibility, Benefits, Final Outcome, Resources
+- **Testing**: Comprehensive test suite in `src/lib/__tests__/roadmap-loader.test.ts` (15 tests covering all core functions)
+- **Adding Content**: Create markdown file in `content/`, add node to `graph.json` - no code changes needed
+- **Future-Ready**: Structure supports RAG integration with embeddings stored in `src/data/embeddings/`
+- **Documentation**: See `docs/ROADMAP_SYSTEM.md` for complete guide on architecture, data format, and adding new roadmaps
+
 ## Getting Started
 
 - `bun install` to install dependencies tracked in `bun.lock`
@@ -43,6 +62,9 @@
 - `bun run build` — create the production bundle and run type checks
 - `bun run preview` — serve the built app for smoke testing
 - `bun run check` — run ESLint and TypeScript without emitting output, after finishing editing of files run this command to check for eslint or typescript errors
+- `bun run test` — run tests in watch mode with Vitest
+- `bun run test:run` — run all tests once
+- `bun run test:ui` — run tests with interactive UI
 - `bun run db:generate` / `bun run db:migrate` — regenerate Prisma client & apply migrations
 - `bun run db:studio` — open Prisma Studio for local data inspection
 
