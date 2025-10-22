@@ -78,7 +78,9 @@ function parseMarkdownSections(content: string): {
   if (eligibilityMatch?.[1]) {
     sections.eligibility = eligibilityMatch[1]
       .split("\n")
-      .filter((line) => line.trim().startsWith("-") || line.trim().startsWith("*"))
+      .filter(
+        (line) => line.trim().startsWith("-") || line.trim().startsWith("*"),
+      )
       .map((line) => line.replace(/^[-*]\s+/, "").trim())
       .filter((line) => line && !line.includes("TODO"));
   }
@@ -89,7 +91,9 @@ function parseMarkdownSections(content: string): {
   if (benefitsMatch?.[1]) {
     sections.benefits = benefitsMatch[1]
       .split("\n")
-      .filter((line) => line.trim().startsWith("-") || line.trim().startsWith("*"))
+      .filter(
+        (line) => line.trim().startsWith("-") || line.trim().startsWith("*"),
+      )
       .map((line) => line.replace(/^[-*]\s+/, "").trim())
       .filter((line) => line && !line.includes("TODO"));
   }
@@ -100,7 +104,9 @@ function parseMarkdownSections(content: string): {
   if (outcomesMatch?.[1]) {
     sections.outcomes = outcomesMatch[1]
       .split("\n")
-      .filter((line) => line.trim().startsWith("-") || line.trim().startsWith("*"))
+      .filter(
+        (line) => line.trim().startsWith("-") || line.trim().startsWith("*"),
+      )
       .map((line) => line.replace(/^[-*]\s+/, "").trim())
       .filter((line) => line && !line.includes("TODO"));
   }
@@ -213,7 +219,9 @@ export async function getAvailableRoadmaps(): Promise<string[]> {
     const entries = await fs.readdir(ROADMAPS_BASE_PATH, {
       withFileTypes: true,
     });
-    return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+    return entries
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name);
   } catch (error) {
     throw new Error(
       `Failed to load available roadmaps: ${error instanceof Error ? error.message : String(error)}`,

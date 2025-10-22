@@ -49,3 +49,6 @@ yarn-error.log*
 CLAUDE.md
 /github
 
+
+# my burger
+/src/data/roadmaps/burgermap*

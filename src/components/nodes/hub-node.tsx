@@ -22,6 +22,12 @@ function HubNodeComponent({ id, data }: NodeProps<HubNodeType>) {
       aria-label={label}
       className="nodrag relative flex h-11 w-11 items-center justify-center rounded-full border-none bg-transparent shadow-none outline-none hover:ring-0 focus-visible:ring-0"
     >
+      <NodeAppendix
+        position="left"
+        className="pointer-events-none border-none bg-transparent text-sm leading-tight font-medium text-[#D9DEE7]"
+      >
+        {label}
+      </NodeAppendix>
       <span
         aria-hidden
         className="pointer-events-none absolute h-[60px] w-[60px] rounded-full bg-[#FFD84D]/[0.18]"
@@ -92,12 +98,6 @@ function HubNodeComponent({ id, data }: NodeProps<HubNodeType>) {
         position={Position.Bottom}
         type="target"
       />
-      <NodeAppendix
-        position="bottom"
-        className="pointer-events-none border-none bg-transparent p-0 text-sm font-medium leading-tight text-[#D9DEE7]"
-      >
-        {label}
-      </NodeAppendix>
     </BaseNode>
   );
 }

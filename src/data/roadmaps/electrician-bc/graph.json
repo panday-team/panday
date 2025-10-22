@@ -101,7 +101,7 @@
       "source": "waiting-period",
       "target": "foundation-complete",
       "sourceHandle": "right-source",
-      "targetHandle": "right-target",
+      "targetHandle": "left-target",
       "type": "bezier"
     },
     {
@@ -109,7 +109,7 @@
       "source": "foundation-program",
       "target": "foundation-requirements",
       "sourceHandle": "right-source",
-      "targetHandle": "right-target",
+      "targetHandle": "left-target",
       "type": "bezier"
     },
     {
@@ -125,7 +125,7 @@
       "source": "level-2-technical-training",
       "target": "employer-options",
       "sourceHandle": "right-source",
-      "targetHandle": "right-target",
+      "targetHandle": "left-target",
       "type": "bezier"
     },
     {
@@ -145,11 +145,11 @@
       "type": "bezier"
     },
     {
-      "id": "edge-portal-to-level3tech",
-      "source": "skilledtradesbc-portal",
-      "target": "level-3-technical-training",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
+      "id": "level3tech-to-edgeportal",
+      "source": "level-3-technical-training",
+      "target": "skilledtradesbc-portal",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
       "type": "bezier"
     },
     {

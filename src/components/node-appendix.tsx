@@ -4,14 +4,14 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const appendixVariants = cva(
-  "node-appendix absolute inline-flex flex-col items-center rounded-md border-none bg-transparent p-1 text-[#FFEDDA] nodrag",
+  "node-appendix absolute inline-flex flex-col items-center rounded-md border-none bg-transparent text-[#FFEDDA] nodrag",
   {
     variants: {
       position: {
         top: "-translate-y-[100%] -mt-3 left-1/2 -translate-x-1/2",
         bottom: "top-[100%] mt-3 left-1/2 -translate-x-1/2",
-        left: "right-[100%] -mr-3",
-        right: "left-[100%] ml-3",
+        left: "right-[100%] mr-7",
+        right: "left-[100%] ml-7",
       },
     },
     defaultVariants: {
