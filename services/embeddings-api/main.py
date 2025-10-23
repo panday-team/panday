@@ -98,7 +98,6 @@ def load_index(roadmap_id: str):
         raise FileNotFoundError(
             f"Index not found at {index_path}. Run embedding generation first."
         )
-
     print(f"Loading index from {index_path}...")
 
     # Configure embedding model (must match the model used for generation)
@@ -184,7 +183,11 @@ async def query(request: QueryRequest):
         for node in nodes:
             # Extract metadata
             metadata = node.node.metadata
-            text_snippet = node.node.text[:200] + "..." if len(node.node.text) > 200 else node.node.text
+            text_snippet = (
+                node.node.text[:200] + "..."
+                if len(node.node.text) > 200
+                else node.node.text
+            )
 
             source = SourceDocument(
                 node_id=metadata.get("node_id", "unknown"),

@@ -8,6 +8,11 @@ llama-index-core==0.11.0
 # HuggingFace embeddings for LlamaIndex
 llama-index-embeddings-huggingface==0.3.0
 
+# CPU-only PyTorch (Railway runs on CPU servers, not GPU)
+# This must be installed BEFORE sentence-transformers to avoid pulling CUDA packages
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.0.1+cpu
+
 # Sentence transformers (used by HF embeddings)
 sentence-transformers==3.0.1
 
