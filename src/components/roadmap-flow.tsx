@@ -311,6 +311,7 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
         onNodeDrag={onNodeDrag}
         onNodeDragStop={onNodeDragStop}
         onNodesChange={onNodesChange}
+        disableKeyboardA11y={true}
         className="[&_.react-flow__attribution]:hidden [&_.react-flow__edge-path]:drop-shadow-[0_0_6px_rgba(53,193,185,0.25)]"
         proOptions={{ hideAttribution: true }}
       >
