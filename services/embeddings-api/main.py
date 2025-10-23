@@ -90,9 +90,15 @@ def load_index(roadmap_id: str):
     if roadmap_id in _index_cache:
         return _index_cache[roadmap_id]
 
-    # Find project root
-    project_root = find_project_root()
-    index_path = project_root / "src/data/embeddings" / roadmap_id / "index"
+    # Use EMBEDDINGS_PATH environment variable (supports both local dev and containerized deployment)
+    # In Docker: EMBEDDINGS_PATH=/app/embeddings
+    # In local dev: defaults to ../../src/data/embeddings (relative to this file)
+    embeddings_root = Path(EMBEDDINGS_PATH)
+    if not embeddings_root.is_absolute():
+        # If relative path, resolve from this file's location
+        embeddings_root = (Path(__file__).parent / embeddings_root).resolve()
+
+    index_path = embeddings_root / roadmap_id / "index"
 
     if not index_path.exists():
         raise FileNotFoundError(
@@ -101,7 +107,11 @@ def load_index(roadmap_id: str):
     print(f"Loading index from {index_path}...")
 
     # Configure embedding model (must match the model used for generation)
-    embed_model = HuggingFaceEmbedding(model_name=EMBEDDING_MODEL)
+    # Explicitly set device="cpu" since we're running on Railway (CPU servers)
+    embed_model = HuggingFaceEmbedding(
+        model_name=EMBEDDING_MODEL,
+        device="cpu",
+    )
 
     # Load index from storage
     from llama_index.core import Settings
