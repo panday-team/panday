@@ -63,6 +63,9 @@ venv/
 env/
 ENV/
 .venv
+**/venv/
+**/.venv
+services/embeddings-api/venv/
 *.egg-info/
 dist/
 build/
