@@ -7,9 +7,9 @@
  * 3. Streams the response back to the client
  */
 
-import { createAnthropic } from "@ai-sdk/anthropic";
+// import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { createOpenAI } from "@ai-sdk/openai";
+// import { createOpenAI } from "@ai-sdk/openai";
 import { streamText, type LanguageModel } from "ai";
 import { type NextRequest } from "next/server";
 
@@ -19,18 +19,18 @@ import { env } from "@/env";
 // Configure AI provider based on environment
 function getAIModel(): LanguageModel {
   switch (env.AI_PROVIDER) {
-    case "anthropic": {
-      const anthropic = createAnthropic({
-        apiKey: env.ANTHROPIC_API_KEY,
-      });
-      return anthropic(env.AI_MODEL);
-    }
-    case "openai": {
-      const openai = createOpenAI({
-        apiKey: env.OPENAI_API_KEY,
-      });
-      return openai(env.AI_MODEL);
-    }
+    // case "anthropic": {
+    //   const anthropic = createAnthropic({
+    //     apiKey: env.ANTHROPIC_API_KEY,
+    //   });
+    //   return anthropic(env.AI_MODEL);
+    // }
+    // case "openai": {
+    //   const openai = createOpenAI({
+    //     apiKey: env.OPENAI_API_KEY,
+    //   });
+    //   return openai(env.AI_MODEL);
+    // }
     case "google": {
       const google = createGoogleGenerativeAI({
         apiKey: env.GOOGLE_API_KEY,
@@ -93,7 +93,9 @@ Always cite which specific sections or documents your answer comes from when pos
       maxTokens: 1024,
       onFinish: async () => {
         // Log completion or store in database if needed
-        console.log(`Chat completion finished (${env.AI_PROVIDER}/${env.AI_MODEL})`);
+        console.log(
+          `Chat completion finished (${env.AI_PROVIDER}/${env.AI_MODEL})`,
+        );
       },
     });
 

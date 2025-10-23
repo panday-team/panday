@@ -11,18 +11,16 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first (for better caching)
-COPY requirements.txt .
+COPY services/embeddings-api/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY main.py .
+COPY services/embeddings-api/main.py .
 
 # Copy embeddings from project root
-# Note: During build, this assumes embeddings are available
-# In production, you might want to mount this as a volume or download from S3
-COPY ../../src/data/embeddings /app/embeddings
+COPY src/data/embeddings /app/embeddings
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1

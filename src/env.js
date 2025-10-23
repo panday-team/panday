@@ -25,13 +25,8 @@ export const env = createEnv({
       .min(1)
       .max(65535)
       .default(8079),
-    EMBEDDINGS_API_URL: z
-      .string()
-      .url()
-      .default("http://localhost:8000"),
-    AI_PROVIDER: z
-      .enum(["anthropic", "openai", "google"])
-      .default("anthropic"),
+    EMBEDDINGS_API_URL: z.string().url().default("http://localhost:8000"),
+    AI_PROVIDER: z.enum(["anthropic", "openai", "google"]).default("anthropic"),
     AI_MODEL: z.string().default("claude-3-5-sonnet-20241022"),
     ANTHROPIC_API_KEY: z.string().optional(),
     OPENAI_API_KEY: z.string().optional(),
@@ -102,14 +97,14 @@ if (env.PRODUCTION && !env.DATABASE_URL_UNPOOLED) {
   throw new Error("DATABASE_URL_UNPOOLED must be set when PRODUCTION is true");
 }
 
-if (env.AI_PROVIDER === "anthropic" && !env.ANTHROPIC_API_KEY) {
-  throw new Error("ANTHROPIC_API_KEY must be set when AI_PROVIDER is 'anthropic'");
-}
-
-if (env.AI_PROVIDER === "openai" && !env.OPENAI_API_KEY) {
-  throw new Error("OPENAI_API_KEY must be set when AI_PROVIDER is 'openai'");
-}
-
+// if (env.AI_PROVIDER === "anthropic" && !env.ANTHROPIC_API_KEY) {
+//   throw new Error("ANTHROPIC_API_KEY must be set when AI_PROVIDER is 'anthropic'");
+// }
+//
+// if (env.AI_PROVIDER === "openai" && !env.OPENAI_API_KEY) {
+//   throw new Error("OPENAI_API_KEY must be set when AI_PROVIDER is 'openai'");
+// }
+//
 if (env.AI_PROVIDER === "google" && !env.GOOGLE_API_KEY) {
   throw new Error("GOOGLE_API_KEY must be set when AI_PROVIDER is 'google'");
 }
