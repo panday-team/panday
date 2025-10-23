@@ -40,16 +40,18 @@ async def lifespan(app: FastAPI):
     print(f"Starting Panday Embeddings API...", flush=True)
     print(f"Roadmap: {ROADMAP_ID}", flush=True)
     print(f"Embedding Model: {EMBEDDING_MODEL}", flush=True)
+    print(f"Note: First startup downloads embedding model (~500MB), may take 2-3 minutes", flush=True)
 
     try:
         print(f"Loading default index for {ROADMAP_ID}...", flush=True)
         load_index(ROADMAP_ID)
         print("✓ Default index loaded successfully", flush=True)
     except Exception as e:
-        print(f"⚠ Warning: Could not load default index: {e}", flush=True)
-        print("Index will be loaded on first query", flush=True)
-        import traceback
-        traceback.print_exc()
+        print(f"⚠ Warning: Could not load default index on startup: {e}", flush=True)
+        print("This is normal on first deployment (model download in progress)", flush=True)
+        print("Index will be loaded on first query request", flush=True)
+        # Don't print full traceback on startup to keep logs clean
+        # The error will be visible when the first query is made
 
     yield
 
