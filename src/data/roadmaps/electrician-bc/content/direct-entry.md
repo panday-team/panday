@@ -1,10 +1,10 @@
 ---
 id: "direct-entry"
-type: "terminal"
+type: "hub"
 title: "Direct Entry"
-subtitle: "Start here if you have employer sponsorship"
-nodeType: "terminal"
-badge: "Start"
+subtitle: "Employer Sponsored"
+nodeType: "hub"
+glow: true
 checklists:
   - title: "Requirements"
     items:

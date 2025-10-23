@@ -68,4 +68,10 @@ The Foundation Program provides essential knowledge and practical skills to prep
 
 ## Outcome
 
-Upon completion, you'll receive a Foundation Program certificate and be ready to pursue a formal electrical construction apprenticeship, with improved employability and a clearer understanding of your career pathway.
+Upon completion, you'll receive:
+
+- **Foundation Program certificate**
+- **Level 1 technical training credit** - Progress directly to Level 2
+- **375 work-based training hours** - Applied toward Level 2 requirements
+
+This means you enter the apprenticeship system at Level 2, bypassing Level 1 entirely and advancing faster toward certification.

@@ -148,7 +148,6 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
     setSelectedNodeId(null);
   }, []);
 
-  // Get the selected node content for the info panel
   const selectedContent = selectedNodeId
     ? roadmap.content.get(selectedNodeId)
     : null;
@@ -161,7 +160,7 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
         nodeTypes={nodeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
         defaultViewport={{ x: 850, y: 400, zoom: 0.8 }}
-        minZoom={0.4}
+        minZoom={0.2}
         maxZoom={3.0}
         panOnScroll
         panOnDrag
