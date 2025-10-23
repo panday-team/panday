@@ -6,7 +6,6 @@ import {
   forceLink,
   forceManyBody,
   forceCollide,
-  forceCenter,
 } from "d3-force";
 import type { SimulationNodeDatum, SimulationLinkDatum } from "d3-force";
 
@@ -43,6 +42,7 @@ interface GraphNode {
   position: Position;
   sourcePosition?: "top" | "bottom" | "left" | "right";
   targetPosition?: "top" | "bottom" | "left" | "right";
+  parentId?: string;
 }
 
 interface GraphEdge {
@@ -327,6 +327,7 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
     },
     sourcePosition: "bottom" as const,
     targetPosition: "top" as const,
+    parentId: simNode.parentId,
   }));
 
   // Create edges with proper handles

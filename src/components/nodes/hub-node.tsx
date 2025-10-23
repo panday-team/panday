@@ -21,7 +21,7 @@ function HubNodeComponent({ id, data }: NodeProps<HubNodeType>) {
     <BaseNode
       id={id}
       aria-label={label}
-      className="nodrag relative flex h-32 w-32 cursor-pointer items-center justify-center rounded-full border-none bg-transparent shadow-none outline-none hover:ring-0 focus-visible:ring-0"
+      className="relative flex h-32 w-32 cursor-pointer items-center justify-center rounded-full border-none bg-transparent shadow-none outline-none hover:ring-0 focus-visible:ring-0"
     >
       {glow ? (
         <motion.span

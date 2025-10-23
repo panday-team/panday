@@ -89,6 +89,7 @@ export interface GraphNode {
   position: { x: number; y: number };
   sourcePosition?: Position;
   targetPosition?: Position;
+  parentId?: string | null;
 }
 
 /**

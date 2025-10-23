@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import type { CSSProperties } from "react";
 import {
   Background,
@@ -12,8 +12,11 @@ import {
   Position,
   MiniMap,
   type Node as FlowNodeType,
+  useNodesState,
+  useEdgesState,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { animate } from "motion";
 
 import {
   CheckpointNode,
@@ -61,9 +64,6 @@ interface RoadmapFlowProps {
   roadmap: Roadmap;
 }
 
-/**
- * Convert Position string to Position enum
- */
 function stringToPosition(pos?: string): Position | undefined {
   if (!pos) return undefined;
   const posMap: Record<string, Position> = {
@@ -77,8 +77,10 @@ function stringToPosition(pos?: string): Position | undefined {
 
 export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const animationsRef = useRef<Map<string, () => void>>(new Map());
+  const isDraggingRef = useRef<string | null>(null);
 
-  const nodes = useMemo<FlowNode[]>(() => {
+  const initialNodes = useMemo<FlowNode[]>(() => {
     return roadmap.graph.nodes.map((graphNode) => {
       const content = roadmap.content.get(graphNode.id);
       if (!content) {
@@ -86,6 +88,7 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
       }
 
       const { frontmatter } = content;
+      const isMainNode = !graphNode.parentId;
 
       return {
         id: graphNode.id,
@@ -96,14 +99,16 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
           glow: frontmatter.glow,
           labelPosition: frontmatter.labelPosition,
           showLabelDot: frontmatter.showLabelDot,
+          parentId: graphNode.parentId,
         },
         sourcePosition: stringToPosition(graphNode.sourcePosition),
         targetPosition: stringToPosition(graphNode.targetPosition),
+        draggable: isMainNode,
       } as FlowNode;
     });
   }, [roadmap]);
 
-  const edges = useMemo<FlowEdge[]>(() => {
+  const initialEdges = useMemo<FlowEdge[]>(() => {
     return roadmap.graph.edges.map((graphEdge) => ({
       id: graphEdge.id,
       source: graphEdge.source,
@@ -115,6 +120,141 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
       markerEnd: arrowMarker,
     }));
   }, [roadmap]);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges] = useEdgesState(initialEdges);
+
+  const childOffsets = useMemo(() => {
+    const offsets = new Map<
+      string,
+      { parentId: string; offsetX: number; offsetY: number }
+    >();
+
+    initialNodes.forEach((node) => {
+      const nodeData = node.data as { parentId?: string | null };
+      if (nodeData.parentId) {
+        const parent = initialNodes.find((n) => n.id === nodeData.parentId);
+        if (parent) {
+          offsets.set(node.id, {
+            parentId: nodeData.parentId,
+            offsetX: node.position.x - parent.position.x,
+            offsetY: node.position.y - parent.position.y,
+          });
+        }
+      }
+    });
+
+    return offsets;
+  }, [initialNodes]);
+
+  const updateChildrenPositions = useCallback(
+    (parentId: string, parentX: number, parentY: number, smooth = false) => {
+      setNodes((currentNodes) =>
+        currentNodes.map((node) => {
+          const offset = childOffsets.get(node.id);
+          if (offset && offset.parentId === parentId) {
+            const targetX = parentX + offset.offsetX;
+            const targetY = parentY + offset.offsetY;
+
+            if (smooth) {
+              const currentX = node.position.x;
+              const currentY = node.position.y;
+              const lagFactor = 0.3;
+              return {
+                ...node,
+                position: {
+                  x: currentX + (targetX - currentX) * lagFactor,
+                  y: currentY + (targetY - currentY) * lagFactor,
+                },
+              };
+            } else {
+              return { ...node, position: { x: targetX, y: targetY } };
+            }
+          }
+          return node;
+        }),
+      );
+    },
+    [childOffsets, setNodes],
+  );
+
+  const animateChildToTarget = useCallback(
+    (childId: string, targetX: number, targetY: number) => {
+      const childNode = nodes.find((n) => n.id === childId);
+      if (!childNode) return;
+
+      if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) {
+        return;
+      }
+
+      const existingAnimation = animationsRef.current.get(childId);
+      if (existingAnimation) {
+        existingAnimation();
+      }
+
+      const pos = {
+        x: Number.isFinite(childNode.position.x) ? childNode.position.x : 0,
+        y: Number.isFinite(childNode.position.y) ? childNode.position.y : 0,
+      };
+
+      const controls = animate(
+        pos,
+        { x: targetX, y: targetY },
+        {
+          type: "spring",
+          stiffness: 300,
+          damping: 30,
+          mass: 0.5,
+          onUpdate: () => {
+            if (Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
+              setNodes((currentNodes) =>
+                currentNodes.map((n) =>
+                  n.id === childId
+                    ? { ...n, position: { x: pos.x, y: pos.y } }
+                    : n,
+                ),
+              );
+            }
+          },
+        },
+      );
+
+      animationsRef.current.set(childId, () => controls.stop());
+    },
+    [nodes, setNodes],
+  );
+
+  const onNodeDrag = useCallback(
+    (_event: React.MouseEvent, node: FlowNodeType) => {
+      isDraggingRef.current = node.id;
+      updateChildrenPositions(node.id, node.position.x, node.position.y, true);
+    },
+    [updateChildrenPositions],
+  );
+
+  const onNodeDragStop = useCallback(
+    (_event: React.MouseEvent, node: FlowNodeType) => {
+      isDraggingRef.current = null;
+
+      nodes.forEach((childNode) => {
+        const offset = childOffsets.get(childNode.id);
+        if (offset && offset.parentId === node.id) {
+          const targetX = node.position.x + offset.offsetX;
+          const targetY = node.position.y + offset.offsetY;
+          animateChildToTarget(childNode.id, targetX, targetY);
+        }
+      });
+    },
+    [nodes, childOffsets, animateChildToTarget],
+  );
+
+  useEffect(() => {
+    const animations = animationsRef.current;
+    return () => {
+      animations.forEach((stop) => stop());
+      animations.clear();
+    };
+  }, []);
 
   const nodeTypes = useMemo<NodeTypes>(
     () => ({
@@ -168,6 +308,9 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
         zoomOnPinch
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
+        onNodeDrag={onNodeDrag}
+        onNodeDragStop={onNodeDragStop}
+        onNodesChange={onNodesChange}
         className="[&_.react-flow__attribution]:hidden [&_.react-flow__edge-path]:drop-shadow-[0_0_6px_rgba(53,193,185,0.25)]"
         proOptions={{ hideAttribution: true }}
       >

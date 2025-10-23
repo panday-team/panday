@@ -19,7 +19,7 @@ function TerminalNodeComponent({ data, id }: NodeProps<TerminalNodeType>) {
     <BaseNode
       id={id}
       aria-label={label ?? "Terminal"}
-      className="nodrag relative flex h-[60px] w-[60px] items-center justify-center rounded-full border-none bg-transparent shadow-none outline-none hover:ring-0 focus-visible:ring-0"
+      className="relative flex h-[60px] w-[60px] items-center justify-center rounded-full border-none bg-transparent shadow-none outline-none hover:ring-0 focus-visible:ring-0"
     >
       <span
         aria-hidden
