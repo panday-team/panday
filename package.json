@@ -27,11 +27,15 @@
     "typecheck": "tsc --noEmit",
     "git:sync": "bash scripts/git-sync.sh",
     "git:behind": "bash scripts/git-behind.sh",
+    "embeddings:generate": "cd scripts/embeddings && ./venv/bin/python generate.py",
+    "embeddings:setup": "cd scripts/embeddings && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt",
     "prepare": "husky"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.32.2",
     "@prisma/client": "^6.16.3",
+    "@radix-ui/react-checkbox": "^1.3.3",
+    "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",
     "@t3-oss/env-nextjs": "^0.12.0",
     "@upstash/redis": "^1.35.4",
@@ -40,6 +44,7 @@
     "clsx": "^2.1.1",
     "gray-matter": "^4.0.3",
     "lucide-react": "^0.544.0",
+    "motion": "^12.23.24",
     "next": "^15.2.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

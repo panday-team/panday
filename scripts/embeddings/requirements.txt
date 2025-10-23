@@ -1,0 +1,14 @@
+# LlamaIndex core
+llama-index-core==0.11.0
+
+# HuggingFace embeddings for LlamaIndex
+llama-index-embeddings-huggingface==0.3.0
+
+# Sentence transformers (used by HF embeddings)
+sentence-transformers==3.0.1
+
+# Markdown and YAML parsing
+PyYAML==6.0.1
+
+# For FastAPI service (separate requirements)
+# See scripts/embeddings/service/requirements.txt

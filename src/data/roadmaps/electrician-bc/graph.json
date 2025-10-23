@@ -2,179 +2,249 @@
   "nodes": [
     {
       "id": "red-seal-certification",
-      "position": { "x": 500, "y": 0 },
+      "position": { "x": 0, "y": -6000 },
       "sourcePosition": "bottom",
       "targetPosition": "top"
     },
     {
-      "id": "level-4-technical-training",
-      "position": { "x": 500, "y": 150 },
+      "id": "level-4-construction",
+      "position": { "x": -200, "y": -4000 },
       "sourcePosition": "bottom",
       "targetPosition": "top"
     },
     {
-      "id": "level-3-work-based-training",
-      "position": { "x": 500, "y": 300 },
+      "id": "level-4-industrial",
+      "position": { "x": 200, "y": -4000 },
       "sourcePosition": "bottom",
       "targetPosition": "top"
     },
     {
-      "id": "level-3-technical-training",
-      "position": { "x": 500, "y": 450 },
+      "id": "level-3",
+      "position": { "x": 0, "y": -2000 },
       "sourcePosition": "bottom",
       "targetPosition": "top"
     },
     {
-      "id": "level-2-work-based-training",
-      "position": { "x": 500, "y": 600 },
+      "id": "level-2",
+      "position": { "x": 0, "y": 0 },
       "sourcePosition": "bottom",
       "targetPosition": "top"
     },
     {
-      "id": "skilledtradesbc-portal",
-      "position": { "x": 250, "y": 450 },
-      "sourcePosition": "right",
-      "targetPosition": "left"
+      "id": "level-2-req-level1",
+      "position": { "x": -450, "y": -200 }
     },
     {
-      "id": "level-2-technical-training",
-      "position": { "x": 500, "y": 750 },
+      "id": "level-2-req-hours",
+      "position": { "x": -550, "y": -80 }
+    },
+    {
+      "id": "level-2-req-exam",
+      "position": { "x": -550, "y": 80 }
+    },
+    {
+      "id": "level-2-req-sponsor",
+      "position": { "x": -450, "y": 200 }
+    },
+    {
+      "id": "level-2-training-theory",
+      "position": { "x": 450, "y": -200 }
+    },
+    {
+      "id": "level-2-training-3phase",
+      "position": { "x": 550, "y": -80 }
+    },
+    {
+      "id": "level-2-training-motors",
+      "position": { "x": 550, "y": 80 }
+    },
+    {
+      "id": "level-2-training-distribution",
+      "position": { "x": 450, "y": 200 }
+    },
+    {
+      "id": "level-2-resource-outline",
+      "position": { "x": -200, "y": 350 }
+    },
+    {
+      "id": "level-2-resource-exam",
+      "position": { "x": 150, "y": 400 }
+    },
+    {
+      "id": "level-2-resource-code",
+      "position": { "x": 300, "y": 350 }
+    },
+    {
+      "id": "level-1",
+      "position": { "x": 0, "y": 2000 },
       "sourcePosition": "bottom",
       "targetPosition": "top"
-    },
-    {
-      "id": "employer-options",
-      "position": { "x": 750, "y": 750 },
-      "sourcePosition": "left",
-      "targetPosition": "right"
     },
     {
       "id": "foundation-program",
-      "position": { "x": 500, "y": 900 },
-      "sourcePosition": "bottom",
-      "targetPosition": "top"
+      "position": { "x": -200, "y": 4000 },
+      "sourcePosition": "top",
+      "targetPosition": "bottom"
     },
     {
-      "id": "foundation-requirements",
-      "position": { "x": 750, "y": 900 },
-      "sourcePosition": "left",
-      "targetPosition": "right"
-    },
-    {
-      "id": "waiting-period",
-      "position": { "x": 500, "y": 1050 },
-      "sourcePosition": "bottom",
-      "targetPosition": "top"
-    },
-    {
-      "id": "foundation-complete",
-      "position": { "x": 750, "y": 1050 },
-      "sourcePosition": "left",
-      "targetPosition": "right"
-    },
-    {
-      "id": "journey-start",
-      "position": { "x": 500, "y": 1200 },
+      "id": "direct-entry",
+      "position": { "x": 200, "y": 4000 },
       "sourcePosition": "top",
       "targetPosition": "bottom"
     }
   ],
   "edges": [
     {
-      "id": "edge-journey-to-waiting",
-      "source": "journey-start",
-      "target": "waiting-period",
-      "sourceHandle": "top-source",
-      "targetHandle": "bottom-target",
-      "type": "bezier"
-    },
-    {
-      "id": "edge-waiting-to-foundation",
-      "source": "waiting-period",
-      "target": "foundation-program",
-      "sourceHandle": "top-source",
-      "targetHandle": "bottom-target",
-      "type": "bezier"
-    },
-    {
-      "id": "edge-waiting-to-complete",
-      "source": "waiting-period",
-      "target": "foundation-complete",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "bezier"
-    },
-    {
-      "id": "edge-foundation-to-requirements",
+      "id": "edge-foundation-to-level1",
       "source": "foundation-program",
-      "target": "foundation-requirements",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "bezier"
-    },
-    {
-      "id": "edge-foundation-to-level2tech",
-      "source": "foundation-program",
-      "target": "level-2-technical-training",
+      "target": "level-1",
       "sourceHandle": "top-source",
       "targetHandle": "bottom-target",
-      "type": "bezier"
+      "type": "default"
     },
     {
-      "id": "edge-level2tech-to-employer",
-      "source": "level-2-technical-training",
-      "target": "employer-options",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "bezier"
-    },
-    {
-      "id": "edge-level2tech-to-level2work",
-      "source": "level-2-technical-training",
-      "target": "level-2-work-based-training",
+      "id": "edge-directentry-to-level1",
+      "source": "direct-entry",
+      "target": "level-1",
       "sourceHandle": "top-source",
       "targetHandle": "bottom-target",
-      "type": "bezier"
+      "type": "default"
     },
     {
-      "id": "edge-level2work-to-level3tech",
-      "source": "level-2-work-based-training",
-      "target": "level-3-technical-training",
+      "id": "edge-level1-to-level2",
+      "source": "level-1",
+      "target": "level-2",
       "sourceHandle": "top-source",
       "targetHandle": "bottom-target",
-      "type": "bezier"
+      "type": "default"
     },
     {
-      "id": "level3tech-to-edgeportal",
-      "source": "level-3-technical-training",
-      "target": "skilledtradesbc-portal",
-      "sourceHandle": "left-source",
-      "targetHandle": "right-target",
-      "type": "bezier"
-    },
-    {
-      "id": "edge-level3tech-to-level3work",
-      "source": "level-3-technical-training",
-      "target": "level-3-work-based-training",
+      "id": "edge-level2-to-level3",
+      "source": "level-2",
+      "target": "level-3",
       "sourceHandle": "top-source",
       "targetHandle": "bottom-target",
-      "type": "bezier"
+      "type": "default"
     },
     {
-      "id": "edge-level3work-to-level4",
-      "source": "level-3-work-based-training",
-      "target": "level-4-technical-training",
+      "id": "edge-level3-to-level4construction",
+      "source": "level-3",
+      "target": "level-4-construction",
       "sourceHandle": "top-source",
       "targetHandle": "bottom-target",
-      "type": "bezier"
+      "type": "default"
     },
     {
-      "id": "edge-level4-to-redseal",
-      "source": "level-4-technical-training",
+      "id": "edge-level3-to-level4industrial",
+      "source": "level-3",
+      "target": "level-4-industrial",
+      "sourceHandle": "top-source",
+      "targetHandle": "bottom-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4construction-to-redseal",
+      "source": "level-4-construction",
       "target": "red-seal-certification",
       "sourceHandle": "top-source",
       "targetHandle": "bottom-target",
-      "type": "bezier"
+      "type": "default"
+    },
+    {
+      "id": "edge-level4industrial-to-redseal",
+      "source": "level-4-industrial",
+      "target": "red-seal-certification",
+      "sourceHandle": "top-source",
+      "targetHandle": "bottom-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level2-req-level1",
+      "source": "level-2",
+      "target": "level-2-req-level1",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level2-req-hours",
+      "source": "level-2",
+      "target": "level-2-req-hours",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level2-req-exam",
+      "source": "level-2",
+      "target": "level-2-req-exam",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level2-req-sponsor",
+      "source": "level-2",
+      "target": "level-2-req-sponsor",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level2-training-theory",
+      "source": "level-2",
+      "target": "level-2-training-theory",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level2-training-3phase",
+      "source": "level-2",
+      "target": "level-2-training-3phase",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level2-training-motors",
+      "source": "level-2",
+      "target": "level-2-training-motors",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level2-training-distribution",
+      "source": "level-2",
+      "target": "level-2-training-distribution",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level2-resource-outline",
+      "source": "level-2",
+      "target": "level-2-resource-outline",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level2-resource-exam",
+      "source": "level-2",
+      "target": "level-2-resource-exam",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level2-resource-code",
+      "source": "level-2",
+      "target": "level-2-resource-code",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
     }
   ]
 }

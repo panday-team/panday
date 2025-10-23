@@ -74,33 +74,41 @@ describe("roadmap-loader", () => {
       expect(content.content.length).toBeGreaterThan(0);
     });
 
-    it("should parse eligibility, benefits, and outcomes", async () => {
+    it("should parse checklists from frontmatter", async () => {
       const content = await loadNodeContent(
         "electrician-bc",
         "red-seal-certification",
       );
 
-      expect(content.eligibility).toBeDefined();
-      expect(content.eligibility?.length).toBeGreaterThan(0);
-      expect(content.benefits).toBeDefined();
-      expect(content.benefits?.length).toBeGreaterThan(0);
-      expect(content.outcomes).toBeDefined();
-      expect(content.outcomes?.length).toBeGreaterThan(0);
+      expect(content.frontmatter.checklists).toBeDefined();
+      expect(content.frontmatter.checklists?.length).toBeGreaterThan(0);
+
+      const firstChecklist = content.frontmatter.checklists?.[0];
+      expect(firstChecklist).toHaveProperty("title");
+      expect(firstChecklist).toHaveProperty("items");
+      expect(firstChecklist?.items.length).toBeGreaterThan(0);
+
+      const firstItem = firstChecklist?.items[0];
+      expect(firstItem).toHaveProperty("id");
+      expect(firstItem).toHaveProperty("label");
+      expect(firstItem).toHaveProperty("type");
     });
 
-    it("should parse resources with links", async () => {
+    it("should parse checklist items with links", async () => {
       const content = await loadNodeContent(
         "electrician-bc",
         "red-seal-certification",
       );
 
-      expect(content.resources).toBeDefined();
-      expect(content.resources?.length).toBeGreaterThan(0);
+      const checklists = content.frontmatter.checklists ?? [];
+      const itemsWithLinks = checklists
+        .flatMap((checklist) => checklist.items)
+        .filter((item) => item.link);
 
-      const firstResource = content.resources?.[0];
-      expect(firstResource).toHaveProperty("label");
-      expect(firstResource).toHaveProperty("href");
-      expect(firstResource?.href).toMatch(/^https?:\/\//);
+      expect(itemsWithLinks.length).toBeGreaterThan(0);
+
+      const firstLinkItem = itemsWithLinks[0];
+      expect(firstLinkItem?.link).toMatch(/^https?:\/\//);
     });
 
     it("should throw error for non-existent node", async () => {

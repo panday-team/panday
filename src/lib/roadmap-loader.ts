@@ -168,6 +168,63 @@ export async function loadNodeContent(
 }
 
 /**
+ * Load checklist nodes from a multi-node checklist file
+ */
+async function loadChecklistNodes(
+  roadmapId: string,
+  fileName: string,
+): Promise<Map<string, NodeContent>> {
+  const contentPath = path.join(
+    ROADMAPS_BASE_PATH,
+    roadmapId,
+    "content",
+    fileName,
+  );
+  const contentMap = new Map<string, NodeContent>();
+
+  try {
+    const fileContents = await fs.readFile(contentPath, "utf-8");
+    const parsed = matter(fileContents);
+    const nodes = (parsed.data.nodes ?? []) as Array<{
+      id: string;
+      type: string;
+      title: string;
+      nodeType: string;
+      labelPosition?: string;
+    }>;
+
+    // Split content by markdown separators (---)
+    const contentSections = parsed.content
+      .split(/\n---\n/)
+      .map((section) => section.trim())
+      .filter((section) => section.length > 0);
+
+    // Match each node with its content section
+    nodes.forEach((node, index) => {
+      const nodeContent = contentSections[index] ?? "";
+      contentMap.set(node.id, {
+        frontmatter: {
+          id: node.id,
+          type: node.type as NodeContentFrontmatter["type"],
+          title: node.title,
+          nodeType: node.nodeType as NodeContentFrontmatter["nodeType"],
+          ...(node.labelPosition && {
+            labelPosition: node.labelPosition as NodeContentFrontmatter["labelPosition"],
+          }),
+        },
+        content: nodeContent,
+      });
+    });
+
+    return contentMap;
+  } catch (error) {
+    throw new Error(
+      `Failed to load checklist nodes from "${fileName}" in roadmap "${roadmapId}": ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
+/**
  * Load all node content from the content directory
  */
 export async function loadAllNodeContent(
@@ -181,9 +238,19 @@ export async function loadAllNodeContent(
     const markdownFiles = files.filter((file) => file.endsWith(".md"));
 
     for (const file of markdownFiles) {
-      const nodeId = file.replace(".md", "");
-      const content = await loadNodeContent(roadmapId, nodeId);
-      contentMap.set(nodeId, content);
+      // Check if this is a checklist file
+      if (file.endsWith("-checklists.md")) {
+        // Load multiple nodes from checklist file
+        const checklistNodes = await loadChecklistNodes(roadmapId, file);
+        checklistNodes.forEach((content, nodeId) => {
+          contentMap.set(nodeId, content);
+        });
+      } else {
+        // Load single node from regular file
+        const nodeId = file.replace(".md", "");
+        const content = await loadNodeContent(roadmapId, nodeId);
+        contentMap.set(nodeId, content);
+      }
     }
 
     return contentMap;

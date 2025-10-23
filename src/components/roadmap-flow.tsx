@@ -21,11 +21,13 @@ import {
   PortalNode,
   RequirementNode,
   TerminalNode,
+  ChecklistNode,
   type CheckpointNodeType,
   type HubNodeType,
   type PortalNodeType,
   type RequirementNodeType,
   type TerminalNodeType,
+  type ChecklistNodeType,
 } from "@/components/nodes";
 import { NodeInfoPanel } from "@/components/node-info-panel";
 import type { Roadmap } from "@/data/types/roadmap";
@@ -35,7 +37,8 @@ type FlowNode =
   | RequirementNodeType
   | PortalNodeType
   | CheckpointNodeType
-  | TerminalNodeType;
+  | TerminalNodeType
+  | ChecklistNodeType;
 type FlowEdge = Edge;
 
 const flowColor = "#35C1B9";
@@ -120,6 +123,7 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
       portal: PortalNode,
       checkpoint: CheckpointNode,
       terminal: TerminalNode,
+      checklist: ChecklistNode,
     }),
     [],
   );
@@ -133,9 +137,12 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
     [],
   );
 
-  const onNodeClick = useCallback((_event: React.MouseEvent, node: FlowNodeType) => {
-    setSelectedNodeId(node.id);
-  }, []);
+  const onNodeClick = useCallback(
+    (_event: React.MouseEvent, node: FlowNodeType) => {
+      setSelectedNodeId(node.id);
+    },
+    [],
+  );
 
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null);
@@ -153,16 +160,15 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
         edges={edges}
         nodeTypes={nodeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
-        defaultViewport={{ x: 200, y: 100, zoom: 0.7 }}
-        minZoom={0.3}
-        maxZoom={1.5}
+        defaultViewport={{ x: 850, y: 400, zoom: 0.8 }}
+        minZoom={0.4}
+        maxZoom={3.0}
         panOnScroll
         panOnDrag
         zoomOnScroll
         zoomOnPinch
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
-        fitView
         className="[&_.react-flow__attribution]:hidden [&_.react-flow__edge-path]:drop-shadow-[0_0_6px_rgba(53,193,185,0.25)]"
         proOptions={{ hideAttribution: true }}
       >
@@ -185,7 +191,10 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
           <div className="pointer-events-auto">
             <NodeInfoPanel
               badge={selectedContent.frontmatter.badge ?? "Node"}
-              subtitle={selectedContent.frontmatter.subtitle}
+              subtitle={
+                selectedContent.frontmatter.subtitle ??
+                selectedContent.frontmatter.duration
+              }
               title={selectedContent.frontmatter.title}
               description={selectedContent.content
                 .split("\n")
@@ -195,6 +204,7 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
               benefits={selectedContent.benefits}
               outcomes={selectedContent.outcomes}
               resources={selectedContent.resources}
+              checklists={selectedContent.frontmatter.checklists}
             />
           </div>
         </div>

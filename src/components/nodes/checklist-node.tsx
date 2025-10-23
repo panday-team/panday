@@ -1,19 +1,21 @@
 import { memo } from "react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
-import { motion } from "motion/react";
-
 import { BaseNode } from "@/components/base-node";
 import { NodeAppendix } from "@/components/node-appendix";
 
-export type HubNodeData = {
+export type ChecklistNodeData = {
   label: string;
-  glow?: boolean;
+  labelPosition?: "top" | "bottom" | "left" | "right";
 };
 
-export type HubNodeType = Node<HubNodeData, "hub">;
+export type ChecklistNodeType = Node<ChecklistNodeData, "checklist">;
 
-function HubNodeComponent({ id, data }: NodeProps<HubNodeType>) {
-  const { label, glow } = data;
+/**
+ * Smaller circular checklist node that branches off main milestone nodes
+ * Purple circle (40x40px) with external label
+ */
+function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
+  const { label, labelPosition = "bottom" } = data;
   const hiddenHandleClass =
     "pointer-events-none opacity-0 h-3 w-3 bg-transparent border-transparent";
 
@@ -21,45 +23,31 @@ function HubNodeComponent({ id, data }: NodeProps<HubNodeType>) {
     <BaseNode
       id={id}
       aria-label={label}
-      className="nodrag relative flex h-32 w-32 cursor-pointer items-center justify-center rounded-full border-none bg-transparent shadow-none outline-none hover:ring-0 focus-visible:ring-0"
+      className="nodrag relative flex h-16 w-16 cursor-pointer items-center justify-center rounded-full border-none bg-transparent shadow-none outline-none hover:ring-0 focus-visible:ring-0"
     >
-      {glow ? (
-        <motion.span
-          aria-hidden
-          className="pointer-events-none absolute z-0 h-[250px] w-[250px] rounded-full border-[12px] border-[#FFD84D]/30"
-          animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      ) : null}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute z-10 h-[180px] w-[180px] rounded-full bg-[#FFD84D]/[0.18]"
-      />
-      <span
-        aria-hidden
-        className="pointer-events-none absolute z-10 h-32 w-32 rounded-full bg-[#FFD84D]"
-      />
-      <span
-        aria-hidden
-        className="pointer-events-none absolute z-10 h-32 w-32 rounded-full border-2 border-white"
-      />
-      <span
-        aria-hidden
-        className="pointer-events-none absolute z-10 h-4 w-4 rounded-full bg-white"
-      />
       <NodeAppendix
-        position="left"
-        className="pointer-events-none z-20 rounded-lg border-none bg-[#0B1021]/90 px-3 py-1.5 text-lg leading-tight font-bold text-[#D9DEE7] backdrop-blur-sm"
+        position={labelPosition}
+        className="pointer-events-none border-none bg-transparent text-sm leading-tight font-medium text-[#D9DEE7]"
       >
         {label}
       </NodeAppendix>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute h-[90px] w-[90px] rounded-full bg-[#9F7AEA]/[0.18]"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute h-16 w-16 rounded-full bg-[#9F7AEA]"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute h-16 w-16 rounded-full border-2 border-white"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute h-2 w-2 rounded-full bg-white"
+      />
+
       <Handle
         id="left-source"
         className={hiddenHandleClass}
@@ -112,5 +100,5 @@ function HubNodeComponent({ id, data }: NodeProps<HubNodeType>) {
   );
 }
 
-export const HubNode = memo(HubNodeComponent);
-HubNode.displayName = "HubNode";
+export const ChecklistNode = memo(ChecklistNodeComponent);
+ChecklistNode.displayName = "ChecklistNode";
