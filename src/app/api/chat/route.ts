@@ -45,8 +45,13 @@ function getAIModel(): LanguageModel {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
 interface ChatRequest {
-  message: string;
+  messages: ChatMessage[];
   roadmap_id?: string;
   top_k?: number;
 }
@@ -55,16 +60,29 @@ export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as ChatRequest;
 
-    if (!body.message || typeof body.message !== "string") {
+    if (
+      !body.messages ||
+      !Array.isArray(body.messages) ||
+      body.messages.length === 0
+    ) {
       return Response.json(
-        { error: "Message is required and must be a string" },
+        { error: "Messages array is required" },
         { status: 400 },
       );
     }
 
+    // Get the last user message
+    const lastUserMessage = body.messages
+      .filter((msg) => msg.role === "user")
+      .slice(-1)[0];
+
+    if (!lastUserMessage) {
+      return Response.json({ error: "No user message found" }, { status: 400 });
+    }
+
     // 1. Query embeddings API for relevant context
     const embeddingsResponse = await embeddingsClient.query({
-      query: body.message,
+      query: lastUserMessage.content,
       roadmap_id: body.roadmap_id,
       top_k: body.top_k ?? 5,
     });
@@ -84,12 +102,10 @@ Always cite which specific sections or documents your answer comes from when pos
     const result = streamText({
       model: getAIModel(),
       system: systemPrompt,
-      messages: [
-        {
-          role: "user",
-          content: body.message,
-        },
-      ],
+      messages: body.messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      })),
       maxTokens: 1024,
       onFinish: async () => {
         // Log completion or store in database if needed
