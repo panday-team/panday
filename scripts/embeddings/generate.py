@@ -167,7 +167,7 @@ def load_roadmap_documents(roadmap_id: str, base_path: Path) -> list[Document]:
 
 
 def create_index(
-    documents: list[Document], model_name: str = "BAAI/bge-small-en-v1.5"
+    documents: list[Document], model_name: str = "BAAI/bge-base-en-v1.5"
 ) -> VectorStoreIndex:
     """Create a LlamaIndex VectorStoreIndex with HuggingFace embeddings."""
     print(f"\nLoading embedding model: {model_name}...")
@@ -233,8 +233,8 @@ def main():
     )
     parser.add_argument(
         "--model",
-        default="BAAI/bge-small-en-v1.5",
-        help="HuggingFace embedding model (default: BAAI/bge-small-en-v1.5)",
+        default="BAAI/bge-base-en-v1.5",
+        help="HuggingFace embedding model (default: BAAI/bge-base-en-v1.5)",
     )
     parser.add_argument(
         "--base-path",

@@ -7,12 +7,18 @@ a query endpoint for semantic search.
 """
 
 import os
+import sys
+import warnings
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
+# Suppress Pydantic warnings from LlamaIndex internals
+warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from llama_index.core import StorageContext, load_index_from_storage
+from llama_index.core import Settings, StorageContext, load_index_from_storage
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from pydantic import BaseModel, Field
 
@@ -23,10 +29,39 @@ ROADMAP_ID = os.getenv("ROADMAP_ID", "electrician-bc")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5")
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
+# Global index storage
+_index_cache: dict[str, Any] = {}
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI lifespan event handler (replaces deprecated on_event)."""
+    # Startup
+    print(f"Starting Panday Embeddings API...", flush=True)
+    print(f"Roadmap: {ROADMAP_ID}", flush=True)
+    print(f"Embedding Model: {EMBEDDING_MODEL}", flush=True)
+
+    try:
+        print(f"Loading default index for {ROADMAP_ID}...", flush=True)
+        load_index(ROADMAP_ID)
+        print("✓ Default index loaded successfully", flush=True)
+    except Exception as e:
+        print(f"⚠ Warning: Could not load default index: {e}", flush=True)
+        print("Index will be loaded on first query", flush=True)
+        import traceback
+        traceback.print_exc()
+
+    yield
+
+    # Shutdown
+    print("Shutting down Panday Embeddings API...", flush=True)
+
+
 app = FastAPI(
     title="Panday Embeddings API",
     description="RAG query service using LlamaIndex embeddings",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # CORS middleware
@@ -70,21 +105,6 @@ class QueryResponse(BaseModel):
     context: str
 
 
-# Global index storage
-_index_cache: dict[str, Any] = {}
-
-
-def find_project_root() -> Path:
-    """Find the project root by looking for package.json."""
-    current = Path(__file__).parent
-    while current != current.parent:
-        if (current / "package.json").exists():
-            return current
-        current = current.parent
-    # Fallback to assuming we're in services/embeddings-api/
-    return Path(__file__).parent.parent.parent
-
-
 def load_index(roadmap_id: str):
     """Load the LlamaIndex index from disk (cached)."""
     if roadmap_id in _index_cache:
@@ -104,42 +124,36 @@ def load_index(roadmap_id: str):
         raise FileNotFoundError(
             f"Index not found at {index_path}. Run embedding generation first."
         )
-    print(f"Loading index from {index_path}...")
-
-    # Configure embedding model (must match the model used for generation)
-    # Explicitly set device="cpu" since we're running on Railway (CPU servers)
-    embed_model = HuggingFaceEmbedding(
-        model_name=EMBEDDING_MODEL,
-        device="cpu",
-    )
-
-    # Load index from storage
-    from llama_index.core import Settings
-
-    Settings.embed_model = embed_model
-
-    storage_context = StorageContext.from_defaults(persist_dir=str(index_path))
-    index = load_index_from_storage(storage_context)
-
-    _index_cache[roadmap_id] = index
-    print(f"✓ Index loaded for {roadmap_id}")
-
-    return index
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Load the default index on startup."""
-    print(f"Starting Panday Embeddings API...")
-    print(f"Roadmap: {ROADMAP_ID}")
-    print(f"Embedding Model: {EMBEDDING_MODEL}")
+    print(f"Loading index from {index_path}...", flush=True)
 
     try:
-        load_index(ROADMAP_ID)
-        print("✓ Default index loaded successfully")
+        # Configure embedding model (must match the model used for generation)
+        # Explicitly set device="cpu" since we're running on Railway (CPU servers)
+        print(f"Initializing embedding model: {EMBEDDING_MODEL}", flush=True)
+        embed_model = HuggingFaceEmbedding(
+            model_name=EMBEDDING_MODEL,
+            device="cpu",
+        )
+
+        # Set global embedding model
+        Settings.embed_model = embed_model
+        print("✓ Embedding model initialized", flush=True)
+
+        # Load index from storage
+        print("Loading vector index from storage...", flush=True)
+        storage_context = StorageContext.from_defaults(persist_dir=str(index_path))
+        index = load_index_from_storage(storage_context)
+        print("✓ Vector index loaded from storage", flush=True)
+
+        _index_cache[roadmap_id] = index
+        print(f"✓ Index loaded for {roadmap_id}", flush=True)
+
+        return index
     except Exception as e:
-        print(f"⚠ Warning: Could not load default index: {e}")
-        print("Index will be loaded on first query")
+        print(f"ERROR loading index: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 @app.get("/")

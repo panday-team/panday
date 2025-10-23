@@ -9,6 +9,39 @@ This service:
 2. Provides a REST API for querying the embeddings
 3. Returns relevant context for RAG (Retrieval Augmented Generation)
 
+## Compatibility with Generation Script
+
+✅ **This service is fully compatible with `scripts/embeddings/generate.py`**
+
+Both use the same packages and versions:
+- `llama-index-core==0.11.0`
+- `llama-index-embeddings-huggingface==0.3.0`
+- `sentence-transformers==3.0.1`
+- **Default model**: `BAAI/bge-base-en-v1.5` (768 dimensions)
+
+⚠️ **CRITICAL**: Generation and serving must use the **exact same embedding model**!
+- Check your embeddings: `cat src/data/embeddings/{roadmap-id}/index/metadata.json`
+- The `model` field must match the `EMBEDDING_MODEL` env var in this service
+- Different models (e.g., `bge-small` vs `bge-base`) are NOT compatible!
+
+## Local Testing with Docker
+
+Test the exact production environment before deploying to Railway:
+
+```bash
+cd services/embeddings-api
+
+# Automated test (builds, runs, tests all endpoints)
+bash test-local.sh
+
+# Or manual testing:
+docker compose up --build
+# In another terminal:
+curl http://localhost:8000/health
+docker compose logs -f
+docker compose down
+```
+
 ## Local Development
 
 ### 1. Install Dependencies

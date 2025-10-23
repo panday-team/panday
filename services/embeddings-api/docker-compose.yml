@@ -1,0 +1,19 @@
+services:
+  embeddings-api:
+    build:
+      context: ../..  # Build from project root
+      dockerfile: services/embeddings-api/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - EMBEDDINGS_PATH=/app/embeddings
+      - ROADMAP_ID=electrician-bc
+      - EMBEDDING_MODEL=BAAI/bge-base-en-v1.5
+      - ALLOWED_ORIGINS=*
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
