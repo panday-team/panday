@@ -32,7 +32,7 @@ export class EmbeddingsClient {
   private baseUrl: string;
 
   constructor(baseUrl?: string) {
-    this.baseUrl = baseUrl || env.EMBEDDINGS_API_URL;
+    this.baseUrl = baseUrl ?? env.EMBEDDINGS_API_URL;
   }
 
   /**
@@ -77,7 +77,7 @@ export class EmbeddingsClient {
       throw new Error(`Health check failed (${response.status})`);
     }
 
-    return response.json();
+    return response.json() as Promise<{ status: string; loaded_indexes: string[] }>;
   }
 }
 

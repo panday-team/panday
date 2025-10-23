@@ -7,7 +7,12 @@ const compat = new FlatCompat({
 
 export default tseslint.config(
   {
-    ignores: [".next", "next-env.d.ts", "scripts/embeddings/venv/**"],
+    ignores: [
+      ".next",
+      "next-env.d.ts",
+      "scripts/embeddings/venv/**",
+      "services/embeddings-api/venv/**",
+    ],
   },
   ...compat.extends("next/core-web-vitals"),
   {

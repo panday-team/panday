@@ -38,7 +38,7 @@ function getAIModel(): LanguageModel {
       return google(env.AI_MODEL);
     }
     default:
-      throw new Error(`Unsupported AI provider: ${env.AI_PROVIDER}`);
+      throw new Error(`Unsupported AI provider: ${env.AI_PROVIDER as string}`);
   }
 }
 
