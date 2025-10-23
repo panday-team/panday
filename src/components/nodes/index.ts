@@ -1,5 +1,8 @@
 export type { HubNodeData, HubNodeType } from "./hub-node";
-export type { RequirementNodeData, RequirementNodeType } from "./requirement-node";
+export type {
+  RequirementNodeData,
+  RequirementNodeType,
+} from "./requirement-node";
 export type { PortalNodeData, PortalNodeType } from "./portal-node";
 export type { CheckpointNodeData, CheckpointNodeType } from "./checkpoint-node";
 export type { TerminalNodeData, TerminalNodeType } from "./terminal-node";

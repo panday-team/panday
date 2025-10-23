@@ -9,14 +9,15 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
-import type {
-  ChecklistSection,
-  ChecklistItem,
-} from "@/data/types/roadmap";
+import type { ChecklistSection, ChecklistItem } from "@/data/types/roadmap";
 
 interface RoadmapChecklistProps {
   sections: ChecklistSection[];
-  onItemToggle?: (sectionIndex: number, itemId: string, checked: boolean) => void;
+  onItemToggle?: (
+    sectionIndex: number,
+    itemId: string,
+    checked: boolean,
+  ) => void;
 }
 
 export function RoadmapChecklist({
@@ -40,7 +41,11 @@ export function RoadmapChecklist({
 interface ChecklistSectionComponentProps {
   section: ChecklistSection;
   sectionIndex: number;
-  onItemToggle?: (sectionIndex: number, itemId: string, checked: boolean) => void;
+  onItemToggle?: (
+    sectionIndex: number,
+    itemId: string,
+    checked: boolean,
+  ) => void;
 }
 
 function ChecklistSectionComponent({
@@ -53,14 +58,14 @@ function ChecklistSectionComponent({
   if (section.collapsible) {
     return (
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-border bg-card p-3 text-left hover:bg-accent">
-          <h3 className="text-sm font-semibold text-foreground">
+        <CollapsibleTrigger className="border-border bg-card hover:bg-accent flex w-full items-center justify-between rounded-lg border p-3 text-left">
+          <h3 className="text-foreground text-sm font-semibold">
             {section.title}
           </h3>
           {isOpen ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <ChevronDown className="text-muted-foreground h-4 w-4" />
           ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronRight className="text-muted-foreground h-4 w-4" />
           )}
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-2 space-y-2 pl-2">
@@ -79,7 +84,7 @@ function ChecklistSectionComponent({
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-foreground">{section.title}</h3>
+      <h3 className="text-foreground text-sm font-semibold">{section.title}</h3>
       <div className="space-y-2 pl-2">
         {section.items.map((item) => (
           <ChecklistItemComponent
@@ -97,7 +102,11 @@ function ChecklistSectionComponent({
 interface ChecklistItemComponentProps {
   item: ChecklistItem;
   sectionIndex: number;
-  onItemToggle?: (sectionIndex: number, itemId: string, checked: boolean) => void;
+  onItemToggle?: (
+    sectionIndex: number,
+    itemId: string,
+    checked: boolean,
+  ) => void;
 }
 
 function ChecklistItemComponent({
@@ -128,7 +137,7 @@ function ChecklistItemComponent({
   };
 
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-accent/50">
+    <div className="border-border bg-card hover:bg-accent/50 flex items-start gap-3 rounded-lg border p-3 transition-colors">
       <Checkbox
         id={item.id}
         checked={checked}
@@ -139,14 +148,12 @@ function ChecklistItemComponent({
         <div className="flex items-start gap-2">
           <label
             htmlFor={item.id}
-            className={`flex-1 cursor-pointer text-sm font-medium leading-tight ${
+            className={`flex-1 cursor-pointer text-sm leading-tight font-medium ${
               checked ? "text-muted-foreground line-through" : "text-foreground"
             }`}
           >
             {item.label}
-            {item.required && (
-              <span className="ml-1 text-destructive">*</span>
-            )}
+            {item.required && <span className="text-destructive ml-1">*</span>}
           </label>
           {item.type && (
             <Badge
@@ -158,14 +165,14 @@ function ChecklistItemComponent({
           )}
         </div>
         {item.description && (
-          <p className="text-xs text-muted-foreground">{item.description}</p>
+          <p className="text-muted-foreground text-xs">{item.description}</p>
         )}
         {item.link && (
           <a
             href={item.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            className="text-primary inline-flex items-center gap-1 text-xs hover:underline"
           >
             <ExternalLink className="h-3 w-3" />
             Visit resource

@@ -48,7 +48,9 @@ export function NodeInfoPanel({
             {badge}
           </span>
           {subtitle ? (
-            <span className="text-xs font-medium text-white/60">{subtitle}</span>
+            <span className="text-xs font-medium text-white/60">
+              {subtitle}
+            </span>
           ) : null}
         </div>
 

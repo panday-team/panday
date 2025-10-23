@@ -209,7 +209,8 @@ async function loadChecklistNodes(
           title: node.title,
           nodeType: node.nodeType as NodeContentFrontmatter["nodeType"],
           ...(node.labelPosition && {
-            labelPosition: node.labelPosition as NodeContentFrontmatter["labelPosition"],
+            labelPosition:
+              node.labelPosition as NodeContentFrontmatter["labelPosition"],
           }),
         },
         content: nodeContent,

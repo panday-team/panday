@@ -79,7 +79,7 @@ function CheckpointNodeComponent({ data, id }: NodeProps<CheckpointNodeType>) {
       />
       <NodeAppendix
         position="right"
-        className="border-none bg-transparent p-0 text-xs font-medium leading-tight text-[#D9DEE7]"
+        className="border-none bg-transparent p-0 text-xs leading-tight font-medium text-[#D9DEE7]"
       >
         {label}
       </NodeAppendix>

@@ -86,7 +86,7 @@ function PortalNodeComponent({ data, id }: NodeProps<PortalNodeType>) {
           labelPosition === "left"
             ? "items-end text-right"
             : "items-center text-center",
-          "border-none bg-transparent p-0 text-xs font-medium leading-tight text-[#D9DEE7]",
+          "border-none bg-transparent p-0 text-xs leading-tight font-medium text-[#D9DEE7]",
         )}
       >
         {label}
