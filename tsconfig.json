@@ -39,5 +39,5 @@
     "**/*.js",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "scripts/embeddings/venv"]
+  "exclude": ["node_modules", "scripts/embeddings/venv", "services/**"]
 }

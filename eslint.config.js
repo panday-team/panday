@@ -11,7 +11,7 @@ export default tseslint.config(
       ".next",
       "next-env.d.ts",
       "scripts/embeddings/venv/**",
-      "services/embeddings-api/venv/**",
+      "services/**",
     ],
   },
   ...compat.extends("next/core-web-vitals"),
