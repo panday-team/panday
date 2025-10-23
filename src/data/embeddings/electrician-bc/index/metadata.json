@@ -1,6 +1,6 @@
 {
-  "model": "BAAI/bge-small-en-v1.5",
+  "model": "BAAI/bge-base-en-v1.5",
   "roadmapId": "electrician-bc",
-  "generatedAt": "2025-10-23T00:05:43.706089Z",
+  "generatedAt": "2025-10-23T06:24:29.863678Z",
   "documentCount": 1
 }

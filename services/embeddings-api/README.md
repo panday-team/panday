@@ -27,7 +27,7 @@ pip install -r requirements.txt
 python main.py
 
 # Or with custom settings
-ROADMAP_ID=electrician-bc EMBEDDING_MODEL=BAAI/bge-small-en-v1.5 python main.py
+ROADMAP_ID=electrician-bc EMBEDDING_MODEL=BAAI/bge-base-en-v1.5 python main.py
 ```
 
 The API will be available at `http://localhost:8000`
@@ -60,7 +60,7 @@ Health check endpoint.
   "service": "Panday Embeddings API",
   "status": "healthy",
   "roadmap": "electrician-bc",
-  "model": "BAAI/bge-small-en-v1.5"
+  "model": "BAAI/bge-base-en-v1.5"
 }
 ```
 
@@ -110,27 +110,32 @@ Query the embeddings for relevant context.
 |----------|---------|-------------|
 | `EMBEDDINGS_PATH` | `../../src/data/embeddings` | Path to embeddings directory |
 | `ROADMAP_ID` | `electrician-bc` | Default roadmap to load |
-| `EMBEDDING_MODEL` | `BAAI/bge-small-en-v1.5` | HuggingFace embedding model (must match generation) |
+| `EMBEDDING_MODEL` | `BAAI/bge-base-en-v1.5` | HuggingFace embedding model (must match generation) |
 | `ALLOWED_ORIGINS` | `*` | CORS allowed origins (comma-separated) |
 | `PORT` | `8000` | Server port |
 
 ## Deployment
 
-### Option 1: Railway with Terraform (Recommended for Production)
+### Option 1: Railway Dashboard (Recommended)
 
-Infrastructure as code approach for reproducible deployments.
+Easiest deployment method - no CLI needed:
 
-**See [`terraform/README.md`](terraform/README.md) for complete Terraform deployment guide.**
+1. Go to https://railway.app/new
+2. Click "Deploy from GitHub repo"
+3. Select your repository
+4. Configure:
+   - **Root Directory:** `services/embeddings-api`
+   - Railway auto-detects Dockerfile
+5. Add environment variables in Settings → Variables:
+   - `ROADMAP_ID=electrician-bc`
+   - `EMBEDDING_MODEL=BAAI/bge-base-en-v1.5`
+   - `ALLOWED_ORIGINS=https://your-nextjs-app.vercel.app`
+   - `PORT=8000`
+6. Deploy! Railway will auto-deploy on every push to main.
 
-Quick start:
-```bash
-cd services/embeddings-api/terraform
-export RAILWAY_TOKEN="your-token"
-terraform init
-terraform apply
-```
+**See [`RAILWAY_DEPLOY.md`](RAILWAY_DEPLOY.md) for detailed instructions.**
 
-### Option 2: Railway CLI (Quick & Simple)
+### Option 2: Railway CLI
 
 1. **Create Railway project:**
    ```bash
@@ -140,7 +145,7 @@ terraform apply
 2. **Set environment variables in Railway dashboard:**
    ```
    ROADMAP_ID=electrician-bc
-   EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
+   EMBEDDING_MODEL=BAAI/bge-base-en-v1.5
    ALLOWED_ORIGINS=https://yourapp.vercel.app
    ```
 
@@ -173,7 +178,7 @@ terraform apply
          - key: ROADMAP_ID
            value: electrician-bc
          - key: EMBEDDING_MODEL
-           value: BAAI/bge-small-en-v1.5
+           value: BAAI/bge-base-en-v1.5
          - key: ALLOWED_ORIGINS
            value: https://yourapp.vercel.app
    ```
@@ -196,7 +201,7 @@ docker build -t panday-embeddings-api -f services/embeddings-api/Dockerfile .
 # Run
 docker run -p 8000:8000 \
   -e ROADMAP_ID=electrician-bc \
-  -e EMBEDDING_MODEL=BAAI/bge-small-en-v1.5 \
+  -e EMBEDDING_MODEL=BAAI/bge-base-en-v1.5 \
   panday-embeddings-api
 ```
 
@@ -227,7 +232,7 @@ ls src/data/embeddings/electrician-bc/index/
 Should show: `docstore.json`, `index_store.json`, `vector_store.json`, etc.
 
 ### Error: "Model download failed"
-The embedding model downloads on first run. Ensure internet connectivity and sufficient disk space (~100MB for bge-small).
+The embedding model downloads on first run. Ensure internet connectivity and sufficient disk space (~400MB for bge-base).
 
 ### CORS errors
 Set `ALLOWED_ORIGINS` to include your Next.js domain:
