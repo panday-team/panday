@@ -40,18 +40,11 @@ async def lifespan(app: FastAPI):
     print(f"Starting Panday Embeddings API...", flush=True)
     print(f"Roadmap: {ROADMAP_ID}", flush=True)
     print(f"Embedding Model: {EMBEDDING_MODEL}", flush=True)
-    print(f"Note: First startup downloads embedding model (~500MB), may take 2-3 minutes", flush=True)
+    print(f"Note: Embedding model will be downloaded on first request (~500MB)", flush=True)
+    print(f"Server is ready to accept requests", flush=True)
 
-    try:
-        print(f"Loading default index for {ROADMAP_ID}...", flush=True)
-        load_index(ROADMAP_ID)
-        print("✓ Default index loaded successfully", flush=True)
-    except Exception as e:
-        print(f"⚠ Warning: Could not load default index on startup: {e}", flush=True)
-        print("This is normal on first deployment (model download in progress)", flush=True)
-        print("Index will be loaded on first query request", flush=True)
-        # Don't print full traceback on startup to keep logs clean
-        # The error will be visible when the first query is made
+    # Don't block startup by loading the index here
+    # Index will be loaded lazily on first request to keep startup fast
 
     yield
 
@@ -176,6 +169,31 @@ async def health():
         "status": "healthy",
         "loaded_indexes": list(_index_cache.keys()),
     }
+
+
+@app.get("/ready")
+async def ready():
+    """
+    Check if the service is ready to serve queries (model loaded).
+
+    Returns 200 if index is loaded, 503 if not yet loaded.
+    Useful for warming up the service after deployment.
+    """
+    if ROADMAP_ID in _index_cache:
+        return {
+            "status": "ready",
+            "loaded_indexes": list(_index_cache.keys()),
+            "message": "Service is ready to serve queries",
+        }
+    else:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "not_ready",
+                "loaded_indexes": list(_index_cache.keys()),
+                "message": f"Index not loaded yet. Make a query to trigger model download.",
+            },
+        )
 
 
 @app.post("/query", response_model=QueryResponse)
