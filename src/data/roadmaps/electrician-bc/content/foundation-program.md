@@ -6,6 +6,9 @@ subtitle: "24 weeks"
 nodeType: "hub"
 glow: true
 duration: "24 weeks"
+layout:
+  position: { x: -1200, y: 0 }
+  connectsTo: ["level-2"]
 checklists:
   - title: "Requirements"
     items:

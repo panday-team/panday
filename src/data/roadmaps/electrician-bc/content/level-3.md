@@ -6,6 +6,9 @@ subtitle: "10 weeks"
 nodeType: "hub"
 glow: true
 duration: "10 weeks"
+layout:
+  position: { x: 0, y: -4000 }
+  connectsTo: ["level-4-construction", "level-4-industrial"]
 checklists:
   - title: "Requirements"
     items:

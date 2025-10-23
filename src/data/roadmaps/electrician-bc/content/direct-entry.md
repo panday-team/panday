@@ -5,6 +5,9 @@ title: "Direct Entry"
 subtitle: "Employer Sponsored"
 nodeType: "hub"
 glow: true
+layout:
+  position: { x: 1200, y: 0 }
+  connectsTo: ["level-1"]
 checklists:
   - title: "Requirements"
     items:

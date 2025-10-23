@@ -27,8 +27,9 @@
     "typecheck": "tsc --noEmit",
     "git:sync": "bash scripts/git-sync.sh",
     "git:behind": "bash scripts/git-behind.sh",
-    "embeddings:generate": "cd scripts/embeddings && ./venv/bin/python generate.py",
+    "embeddings:generate": "cd scripts/embeddings && ./venv/bin/activate && python generate.py",
     "embeddings:setup": "cd scripts/embeddings && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt",
+    "roadmap:build": "bun run scripts/build-graph.ts",
     "prepare": "husky"
   },
   "dependencies": {
@@ -42,6 +43,7 @@
     "@xyflow/react": "^12.8.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "d3-force": "^3.0.0",
     "gray-matter": "^4.0.3",
     "lucide-react": "^0.544.0",
     "motion": "^12.23.24",
@@ -55,6 +57,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@tailwindcss/postcss": "^4.0.15",
+    "@types/d3-force": "^3.0.10",
     "@types/node": "^20.14.10",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

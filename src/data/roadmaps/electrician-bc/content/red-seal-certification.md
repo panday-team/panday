@@ -5,6 +5,8 @@ title: "Red Seal Certification"
 subtitle: "National Journeyperson Certification"
 nodeType: "terminal"
 badge: "Goal"
+layout:
+  position: { x: 0, y: -8000 }
 checklists:
   - title: "Requirements"
     items:

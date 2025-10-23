@@ -1,15 +1,27 @@
 import { cn } from "@/lib/utils";
+import { motion, type HTMLMotionProps } from "motion/react";
 import { forwardRef, type HTMLAttributes } from "react";
 
 export const BaseNode = forwardRef<
   HTMLDivElement,
-  HTMLAttributes<HTMLDivElement>
+  Omit<
+    HTMLMotionProps<"div">,
+    "initial" | "animate" | "whileHover" | "transition"
+  >
 >(({ className, ...props }, ref) => (
-  <div
+  <motion.div
     ref={ref}
+    initial={{ scale: 0.8, opacity: 0 }}
+    animate={{ scale: 1, opacity: 1 }}
+    whileHover={{ scale: 1.05 }}
+    transition={{
+      type: "spring",
+      stiffness: 260,
+      damping: 20,
+    }}
     className={cn(
       "relative rounded-md border-none bg-transparent text-[#FFEDDA]",
-      "focus-visible:outline-none focus-visible:ring-0",
+      "focus-visible:ring-0 focus-visible:outline-none",
       // React Flow displays node elements inside of a `NodeWrapper` component,
       // which compiles down to a div with the class `react-flow__node`.
       // When a node is selected, the class `selected` is added to the
@@ -86,7 +98,7 @@ export const BaseNodeFooter = forwardRef<
     ref={ref}
     data-slot="base-node-footer"
     className={cn(
-      "flex flex-col items-center gap-y-2 border-t px-3 pb-3 pt-2",
+      "flex flex-col items-center gap-y-2 border-t px-3 pt-2 pb-3",
       className,
     )}
     {...props}

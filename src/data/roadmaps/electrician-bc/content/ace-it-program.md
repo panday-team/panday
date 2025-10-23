@@ -5,6 +5,9 @@ title: "ACE IT Program"
 subtitle: "High School Youth"
 nodeType: "hub"
 glow: true
+layout:
+  position: { x: 0, y: 0 }
+  connectsTo: ["level-2"]
 ---
 
 # ACE IT Program (Accelerated Credit Enrolment in Industry Training)

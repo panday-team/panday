@@ -2,9 +2,13 @@
 id: "level-2"
 type: "hub"
 title: "Electrician Common Core Level 2"
-subtitle: "10 weeks technical training"
+subtitle: "10 weeks"
 nodeType: "hub"
 glow: true
+duration: "10 weeks"
+layout:
+  position: { x: 0, y: -2000 }
+  connectsTo: ["level-3"]
 ---
 
 # Electrician Common Core Level 2
@@ -16,6 +20,7 @@ Level 2 technical training represents the second year of classroom-based instruc
 The training combines theoretical knowledge with practical skills development to prepare apprentices for increasingly sophisticated electrical work in construction environments:
 
 ### Technical Theory
+
 - Advanced electrical theory and calculations
 - Three-phase power systems and transformations
 - Complex circuit analysis and troubleshooting
@@ -23,6 +28,7 @@ The training combines theoretical knowledge with practical skills development to
 - Electrical distribution systems and equipment
 
 ### Practical Skills
+
 - Sophisticated wiring methods and installations
 - Installation of distribution panels and switchgear
 - Advanced conduit bending and installation techniques
@@ -36,6 +42,7 @@ Level 2 consists of **10 weeks of intensive classroom and shop-based learning**,
 ### Work-Based Training Requirements
 
 Following technical training, you must complete:
+
 - **1,500 additional hours** of supervised on-the-job training
 - Cumulative total of **3,000 hours** at this stage
 - Work under a certified journeyperson electrician
@@ -45,6 +52,7 @@ Following technical training, you must complete:
 ## Eligibility Requirements
 
 To enter Level 2 technical training, you must have:
+
 - Successfully completed Level 1 technical training
 - Passed the Level 1 certification exam
 - Completed and logged 1,500 work-based hours
@@ -55,6 +63,7 @@ To enter Level 2 technical training, you must have:
 ## Career Benefits
 
 Completing Level 2 provides significant advantages:
+
 - **Increased earning potential** as skills progress
 - **Enhanced job security** and career advancement opportunities
 - **Greater responsibility** on job sites
@@ -65,6 +74,7 @@ Completing Level 2 provides significant advantages:
 ## Certification
 
 Upon successful completion of technical training and work hours, you'll:
+
 - Take the Level 2 certification exam
 - Receive official recognition of intermediate competency
 - Be eligible to advance to Level 3 training

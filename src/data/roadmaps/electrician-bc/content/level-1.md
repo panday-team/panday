@@ -6,6 +6,9 @@ subtitle: "10 weeks"
 nodeType: "hub"
 glow: true
 duration: "10 weeks"
+layout:
+  position: { x: 1200, y: -1000 }
+  connectsTo: ["level-2"]
 ---
 
 # Electrician Common Core Level 1
