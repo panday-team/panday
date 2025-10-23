@@ -8,7 +8,8 @@ export type NodeType =
   | "requirement"
   | "portal"
   | "checkpoint"
-  | "terminal";
+  | "terminal"
+  | "checklist";
 
 /**
  * Metadata for an entire roadmap/career path
@@ -21,6 +22,28 @@ export interface RoadmapMetadata {
   description?: string;
   version: string;
   lastUpdated: string;
+}
+
+/**
+ * Checklist item for a node
+ */
+export interface ChecklistItem {
+  id: string;
+  label: string;
+  description?: string;
+  completed?: boolean;
+  required?: boolean;
+  type?: "requirement" | "resource" | "task" | "milestone";
+  link?: string;
+}
+
+/**
+ * Checklist section in a node
+ */
+export interface ChecklistSection {
+  title: string;
+  items: ChecklistItem[];
+  collapsible?: boolean;
 }
 
 /**
@@ -39,6 +62,8 @@ export interface NodeContentFrontmatter {
   prerequisites?: string[];
   nextSteps?: string[];
   estimatedDuration?: string;
+  duration?: string;
+  checklists?: ChecklistSection[];
 }
 
 /**
@@ -64,6 +89,7 @@ export interface GraphNode {
   position: { x: number; y: number };
   sourcePosition?: Position;
   targetPosition?: Position;
+  parentId?: string | null;
 }
 
 /**

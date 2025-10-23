@@ -1,0 +1,16 @@
+# FastAPI and ASGI server
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# LlamaIndex core
+llama-index-core==0.11.0
+
+# HuggingFace embeddings for LlamaIndex
+llama-index-embeddings-huggingface==0.3.0
+
+# Sentence transformers (used by HF embeddings)
+sentence-transformers==3.0.1
+
+# Pydantic for data validation
+pydantic==2.12.3
+pydantic-settings==2.7.1

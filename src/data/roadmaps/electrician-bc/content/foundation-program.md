@@ -1,53 +1,80 @@
 ---
 id: "foundation-program"
 type: "hub"
-title: "Foundation Program"
+title: "Electrician Foundation"
+subtitle: "24 weeks"
 nodeType: "hub"
 glow: true
+duration: "24 weeks"
+layout:
+  position: { x: -1200, y: 0 }
+  connectsTo: ["level-2"]
+checklists:
+  - title: "Requirements"
+    items:
+      - id: "req-1"
+        label: "Interest in electrical construction career"
+        type: "requirement"
+        required: true
+      - id: "req-2"
+        label: "Eligible to work in British Columbia"
+        type: "requirement"
+        required: true
+      - id: "req-3"
+        label: "Basic math and physics understanding (helpful)"
+        type: "requirement"
+        required: false
+  - title: "Training Components"
+    items:
+      - id: "train-1"
+        label: "Classroom electrical theory"
+        type: "task"
+      - id: "train-2"
+        label: "Hands-on shop training"
+        type: "task"
+      - id: "train-3"
+        label: "Safety protocols and equipment"
+        type: "task"
+      - id: "train-4"
+        label: "Blueprint reading basics"
+        type: "task"
+      - id: "train-5"
+        label: "Basic wiring techniques"
+        type: "task"
+  - title: "Resources"
+    items:
+      - id: "res-1"
+        label: "Foundation Programs Overview"
+        type: "resource"
+        link: "https://skilledtradesbc.ca/foundation-programs"
+      - id: "res-2"
+        label: "Approved Training Providers"
+        type: "resource"
+        link: "https://skilledtradesbc.ca/all-approved-training-providers-list"
+      - id: "res-3"
+        label: "Trades Training BC"
+        type: "resource"
+        link: "https://www.tradestrainingbc.ca/"
 ---
 
-# Foundation Program
+# Electrician Foundation
 
-## Description
+The Foundation Program provides essential knowledge and practical skills to prepare individuals for entry into the electrical construction trade. This 24-week program offers classroom and shop-based training without requiring employer sponsorship.
 
-The Foundation Program provides basic knowledge and skills introduction to prepare individuals for entry into the electrical construction trade. This program offers classroom and shop-based training without requiring employer sponsorship, making it an accessible entry point for those interested in becoming construction electricians. The program focuses on fundamental electrical concepts and practical skills needed to begin an apprenticeship in electrical construction.
+## What You'll Learn
 
-## Eligibility
+- Fundamental electrical theory and terminology
+- Basic electrical installation and safety procedures
+- Industry standards and electrical codes
+- Tool usage and safety equipment
+- Basic wiring techniques and blueprint reading
 
-- Interest in pursuing a career as a construction electrician
-- No prior sponsorship or employer relationship required
-- Basic understanding of math and physics concepts helpful but not mandatory
-- Must be eligible to work in British Columbia
-- No specific educational prerequisites required
+## Outcome
 
-## Benefits
+Upon completion, you'll receive:
 
-- Gain foundational knowledge before committing to full apprenticeship
-- Develop practical skills in a structured learning environment
-- Build confidence and competence in electrical fundamentals
-- Network with industry professionals and potential employers
-- Receive certification of completion that enhances resume
-- Smooth transition into formal apprenticeship programs
-- Reduced learning curve when beginning paid apprenticeship
+- **Foundation Program certificate**
+- **Level 1 technical training credit** - Progress directly to Level 2
+- **375 work-based training hours** - Applied toward Level 2 requirements
 
-## Final Outcome
-
-- Acquire basic electrical theory knowledge and terminology
-- Develop fundamental practical skills in electrical installation and safety
-- Gain understanding of industry standards and codes
-- Build confidence to pursue electrical construction apprenticeship
-- Receive foundation program completion certificate
-- Improved employability and job prospects in electrical field
-- Clearer understanding of career pathway in electrical construction
-
-## Resources
-
-- [Foundation Programs Overview](https://skilledtradesbc.ca/foundation-programs)
-- [Electrical Construction Program Profile](https://skilledtradesbc.ca/electrician-construction)
-- [Approved Training Providers List](https://skilledtradesbc.ca/all-approved-training-providers-list)
-- [Trades Training BC](https://www.tradestrainingbc.ca/)
-- [EducationPlannerBC](https://educationplannerbc.ca/search)
-
-## What Happens During This Period
-
-During the Foundation Program period, participants engage in structured learning that includes both theoretical and practical components. Students attend classroom sessions covering electrical theory, safety protocols, and industry regulations. Hands-on shop time provides practical experience with basic electrical installations, tool usage, and safety equipment. Students learn about electrical codes, blueprint reading, and basic wiring techniques. The program typically includes assessments and culminates in a completion certificate that demonstrates readiness for apprenticeship entry.
+This means you enter the apprenticeship system at Level 2, bypassing Level 1 entirely and advancing faster toward certification.

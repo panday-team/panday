@@ -94,14 +94,11 @@ function RequirementNodeComponent({
           labelPosition === "right"
             ? "flex-row items-center gap-2"
             : "flex-col items-center gap-2",
-          "border-none bg-transparent p-0 text-xs font-medium leading-tight text-[#D9DEE7]",
+          "border-none bg-transparent p-0 text-xs leading-tight font-medium text-[#D9DEE7]",
         )}
       >
         {showLabelDot ? (
-          <span
-            aria-hidden
-            className="h-1.5 w-1.5 rounded-full bg-[#7DE068]"
-          />
+          <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[#7DE068]" />
         ) : null}
         <span>{label}</span>
       </NodeAppendix>

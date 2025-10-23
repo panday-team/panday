@@ -1,5 +1,7 @@
 import type { ComponentPropsWithoutRef } from "react";
 import { cn } from "@/lib/utils";
+import { RoadmapChecklist } from "@/components/roadmap-checklist";
+import type { ChecklistSection } from "@/data/types/roadmap";
 
 type ResourceLink = {
   label: string;
@@ -15,6 +17,7 @@ export interface NodeInfoPanelProps extends ComponentPropsWithoutRef<"aside"> {
   benefits?: string[];
   outcomes?: string[];
   resources?: ResourceLink[];
+  checklists?: ChecklistSection[];
 }
 
 export function NodeInfoPanel({
@@ -26,9 +29,56 @@ export function NodeInfoPanel({
   benefits,
   outcomes,
   resources,
+  checklists,
   className,
   ...props
 }: NodeInfoPanelProps) {
+  // If we have checklists, render the new checklist-based UI
+  if (checklists?.length) {
+    return (
+      <aside
+        className={cn(
+          "w-md max-w-[33vw] rounded-3xl border border-white/10 bg-[#2D354B]/95 px-8 pt-8 pb-10 text-[#FFEDDA] shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur",
+          className,
+        )}
+        {...props}
+      >
+        <div className="flex items-center justify-between gap-4">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#76E54A] px-3 py-1 text-xs font-semibold tracking-wide text-[#1D2740] uppercase">
+            {badge}
+          </span>
+          {subtitle ? (
+            <span className="text-xs font-medium text-white/60">
+              {subtitle}
+            </span>
+          ) : null}
+        </div>
+
+        <div className="mt-6 space-y-5">
+          <header>
+            <h1 className="font-['Inria_Sans',sans-serif] text-[31px] leading-tight text-white">
+              {title}
+            </h1>
+            {description ? (
+              <p className="mt-2 text-sm leading-relaxed text-white/75">
+                {description}
+              </p>
+            ) : null}
+          </header>
+
+          <div className="max-h-[60vh] overflow-y-auto pr-2">
+            <RoadmapChecklist sections={checklists} />
+          </div>
+
+          <button className="w-full rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-[#1D2740] transition hover:bg-[#FFEDDA]">
+            More details
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
+  // Fallback to the old UI if no checklists
   return (
     <aside
       className={cn(
