@@ -2,27 +2,195 @@
   "nodes": [
     {
       "id": "red-seal-certification",
-      "position": { "x": 0, "y": -6000 },
+      "position": { "x": 0, "y": -4800 },
       "sourcePosition": "bottom",
       "targetPosition": "top"
+    },
+    {
+      "id": "red-seal-req-levels",
+      "position": { "x": -450, "y": -5000 }
+    },
+    {
+      "id": "red-seal-req-hours",
+      "position": { "x": -550, "y": -4880 }
+    },
+    {
+      "id": "red-seal-req-exams",
+      "position": { "x": -550, "y": -4720 }
+    },
+    {
+      "id": "red-seal-req-experience",
+      "position": { "x": -450, "y": -4600 }
+    },
+    {
+      "id": "red-seal-prep-guide",
+      "position": { "x": 450, "y": -5000 }
+    },
+    {
+      "id": "red-seal-prep-practice",
+      "position": { "x": 550, "y": -4880 }
+    },
+    {
+      "id": "red-seal-prep-code",
+      "position": { "x": 550, "y": -4720 }
+    },
+    {
+      "id": "red-seal-prep-schedule",
+      "position": { "x": 450, "y": -4600 }
+    },
+    {
+      "id": "red-seal-resource-prep",
+      "position": { "x": -200, "y": -5050 }
+    },
+    {
+      "id": "red-seal-resource-exam",
+      "position": { "x": 0, "y": -5100 }
+    },
+    {
+      "id": "red-seal-resource-profile",
+      "position": { "x": 200, "y": -5050 }
     },
     {
       "id": "level-4-construction",
-      "position": { "x": -200, "y": -4000 },
+      "position": { "x": -900, "y": -4000 },
       "sourcePosition": "bottom",
       "targetPosition": "top"
     },
     {
+      "id": "level-4-construction-req-level3",
+      "position": { "x": -1350, "y": -4200 }
+    },
+    {
+      "id": "level-4-construction-req-hours",
+      "position": { "x": -1450, "y": -4080 }
+    },
+    {
+      "id": "level-4-construction-req-exam",
+      "position": { "x": -1450, "y": -3920 }
+    },
+    {
+      "id": "level-4-construction-req-specialization",
+      "position": { "x": -1350, "y": -3800 }
+    },
+    {
+      "id": "level-4-construction-training-site",
+      "position": { "x": -450, "y": -4200 }
+    },
+    {
+      "id": "level-4-construction-training-installations",
+      "position": { "x": -350, "y": -4080 }
+    },
+    {
+      "id": "level-4-construction-training-fire",
+      "position": { "x": -350, "y": -3920 }
+    },
+    {
+      "id": "level-4-construction-training-code",
+      "position": { "x": -450, "y": -3800 }
+    },
+    {
+      "id": "level-4-construction-resource-profile",
+      "position": { "x": -150, "y": -4050 }
+    },
+    {
+      "id": "level-4-construction-resource-exam",
+      "position": { "x": -100, "y": -3950 }
+    },
+    {
       "id": "level-4-industrial",
-      "position": { "x": 200, "y": -4000 },
+      "position": { "x": 900, "y": -4000 },
       "sourcePosition": "bottom",
       "targetPosition": "top"
+    },
+    {
+      "id": "level-4-industrial-req-level3",
+      "position": { "x": 450, "y": -4200 }
+    },
+    {
+      "id": "level-4-industrial-req-hours",
+      "position": { "x": 350, "y": -4080 }
+    },
+    {
+      "id": "level-4-industrial-req-exam",
+      "position": { "x": 350, "y": -3920 }
+    },
+    {
+      "id": "level-4-industrial-req-specialization",
+      "position": { "x": 450, "y": -3800 }
+    },
+    {
+      "id": "level-4-industrial-training-controls",
+      "position": { "x": 1350, "y": -4200 }
+    },
+    {
+      "id": "level-4-industrial-training-plc",
+      "position": { "x": 1450, "y": -4080 }
+    },
+    {
+      "id": "level-4-industrial-training-motors",
+      "position": { "x": 1450, "y": -3920 }
+    },
+    {
+      "id": "level-4-industrial-training-maintenance",
+      "position": { "x": 1350, "y": -3800 }
+    },
+    {
+      "id": "level-4-industrial-resource-profile",
+      "position": { "x": 1650, "y": -4050 }
+    },
+    {
+      "id": "level-4-industrial-resource-exam",
+      "position": { "x": 1700, "y": -3950 }
     },
     {
       "id": "level-3",
       "position": { "x": 0, "y": -2000 },
       "sourcePosition": "bottom",
       "targetPosition": "top"
+    },
+    {
+      "id": "level-3-req-level2",
+      "position": { "x": -450, "y": -2200 }
+    },
+    {
+      "id": "level-3-req-hours",
+      "position": { "x": -550, "y": -2080 }
+    },
+    {
+      "id": "level-3-req-exam",
+      "position": { "x": -550, "y": -1920 }
+    },
+    {
+      "id": "level-3-req-sponsor",
+      "position": { "x": -450, "y": -1800 }
+    },
+    {
+      "id": "level-3-training-motors",
+      "position": { "x": 450, "y": -2200 }
+    },
+    {
+      "id": "level-3-training-transformers",
+      "position": { "x": 550, "y": -2080 }
+    },
+    {
+      "id": "level-3-training-industrial",
+      "position": { "x": 550, "y": -1920 }
+    },
+    {
+      "id": "level-3-training-troubleshooting",
+      "position": { "x": 450, "y": -1800 }
+    },
+    {
+      "id": "level-3-resource-outline",
+      "position": { "x": 750, "y": -2200 }
+    },
+    {
+      "id": "level-3-resource-exam",
+      "position": { "x": 800, "y": -2050 }
+    },
+    {
+      "id": "level-3-resource-portal",
+      "position": { "x": 800, "y": -1900 }
     },
     {
       "id": "level-2",
@@ -79,6 +247,46 @@
       "position": { "x": 0, "y": 2000 },
       "sourcePosition": "bottom",
       "targetPosition": "top"
+    },
+    {
+      "id": "level-1-req-foundation",
+      "position": { "x": -450, "y": 1800 }
+    },
+    {
+      "id": "level-1-req-sponsor",
+      "position": { "x": -550, "y": 1920 }
+    },
+    {
+      "id": "level-1-req-registration",
+      "position": { "x": -550, "y": 2080 }
+    },
+    {
+      "id": "level-1-training-theory",
+      "position": { "x": 450, "y": 1800 }
+    },
+    {
+      "id": "level-1-training-safety",
+      "position": { "x": 550, "y": 1880 }
+    },
+    {
+      "id": "level-1-training-tools",
+      "position": { "x": 550, "y": 2000 }
+    },
+    {
+      "id": "level-1-training-drawings",
+      "position": { "x": 550, "y": 2120 }
+    },
+    {
+      "id": "level-1-resource-outline",
+      "position": { "x": -200, "y": 2350 }
+    },
+    {
+      "id": "level-1-resource-exam",
+      "position": { "x": 0, "y": 2400 }
+    },
+    {
+      "id": "level-1-resource-portal",
+      "position": { "x": 200, "y": 2350 }
     },
     {
       "id": "foundation-program",
@@ -244,6 +452,422 @@
       "target": "level-2-resource-code",
       "sourceHandle": "right-source",
       "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level1-req-foundation",
+      "source": "level-1",
+      "target": "level-1-req-foundation",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level1-req-sponsor",
+      "source": "level-1",
+      "target": "level-1-req-sponsor",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level1-req-registration",
+      "source": "level-1",
+      "target": "level-1-req-registration",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level1-training-theory",
+      "source": "level-1",
+      "target": "level-1-training-theory",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level1-training-safety",
+      "source": "level-1",
+      "target": "level-1-training-safety",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level1-training-tools",
+      "source": "level-1",
+      "target": "level-1-training-tools",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level1-training-drawings",
+      "source": "level-1",
+      "target": "level-1-training-drawings",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level1-resource-outline",
+      "source": "level-1",
+      "target": "level-1-resource-outline",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level1-resource-exam",
+      "source": "level-1",
+      "target": "level-1-resource-exam",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level1-resource-portal",
+      "source": "level-1",
+      "target": "level-1-resource-portal",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level3-req-level2",
+      "source": "level-3",
+      "target": "level-3-req-level2",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level3-req-hours",
+      "source": "level-3",
+      "target": "level-3-req-hours",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level3-req-exam",
+      "source": "level-3",
+      "target": "level-3-req-exam",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level3-req-sponsor",
+      "source": "level-3",
+      "target": "level-3-req-sponsor",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level3-training-motors",
+      "source": "level-3",
+      "target": "level-3-training-motors",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level3-training-transformers",
+      "source": "level-3",
+      "target": "level-3-training-transformers",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level3-training-industrial",
+      "source": "level-3",
+      "target": "level-3-training-industrial",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level3-training-troubleshooting",
+      "source": "level-3",
+      "target": "level-3-training-troubleshooting",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level3-resource-outline",
+      "source": "level-3",
+      "target": "level-3-resource-outline",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level3-resource-exam",
+      "source": "level-3",
+      "target": "level-3-resource-exam",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level3-resource-portal",
+      "source": "level-3",
+      "target": "level-3-resource-portal",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4construction-req-level3",
+      "source": "level-4-construction",
+      "target": "level-4-construction-req-level3",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4construction-req-hours",
+      "source": "level-4-construction",
+      "target": "level-4-construction-req-hours",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4construction-req-exam",
+      "source": "level-4-construction",
+      "target": "level-4-construction-req-exam",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4construction-req-specialization",
+      "source": "level-4-construction",
+      "target": "level-4-construction-req-specialization",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4construction-training-site",
+      "source": "level-4-construction",
+      "target": "level-4-construction-training-site",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4construction-training-installations",
+      "source": "level-4-construction",
+      "target": "level-4-construction-training-installations",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4construction-training-fire",
+      "source": "level-4-construction",
+      "target": "level-4-construction-training-fire",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4construction-training-code",
+      "source": "level-4-construction",
+      "target": "level-4-construction-training-code",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4construction-resource-profile",
+      "source": "level-4-construction",
+      "target": "level-4-construction-resource-profile",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4construction-resource-exam",
+      "source": "level-4-construction",
+      "target": "level-4-construction-resource-exam",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4industrial-req-level3",
+      "source": "level-4-industrial",
+      "target": "level-4-industrial-req-level3",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4industrial-req-hours",
+      "source": "level-4-industrial",
+      "target": "level-4-industrial-req-hours",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4industrial-req-exam",
+      "source": "level-4-industrial",
+      "target": "level-4-industrial-req-exam",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4industrial-req-specialization",
+      "source": "level-4-industrial",
+      "target": "level-4-industrial-req-specialization",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4industrial-training-controls",
+      "source": "level-4-industrial",
+      "target": "level-4-industrial-training-controls",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4industrial-training-plc",
+      "source": "level-4-industrial",
+      "target": "level-4-industrial-training-plc",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4industrial-training-motors",
+      "source": "level-4-industrial",
+      "target": "level-4-industrial-training-motors",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4industrial-training-maintenance",
+      "source": "level-4-industrial",
+      "target": "level-4-industrial-training-maintenance",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4industrial-resource-profile",
+      "source": "level-4-industrial",
+      "target": "level-4-industrial-resource-profile",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level4industrial-resource-exam",
+      "source": "level-4-industrial",
+      "target": "level-4-industrial-resource-exam",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-redseal-req-levels",
+      "source": "red-seal-certification",
+      "target": "red-seal-req-levels",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-redseal-req-hours",
+      "source": "red-seal-certification",
+      "target": "red-seal-req-hours",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-redseal-req-exams",
+      "source": "red-seal-certification",
+      "target": "red-seal-req-exams",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-redseal-req-experience",
+      "source": "red-seal-certification",
+      "target": "red-seal-req-experience",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-redseal-prep-guide",
+      "source": "red-seal-certification",
+      "target": "red-seal-prep-guide",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-redseal-prep-practice",
+      "source": "red-seal-certification",
+      "target": "red-seal-prep-practice",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-redseal-prep-code",
+      "source": "red-seal-certification",
+      "target": "red-seal-prep-code",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-redseal-prep-schedule",
+      "source": "red-seal-certification",
+      "target": "red-seal-prep-schedule",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-redseal-resource-prep",
+      "source": "red-seal-certification",
+      "target": "red-seal-resource-prep",
+      "sourceHandle": "top-source",
+      "targetHandle": "bottom-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-redseal-resource-exam",
+      "source": "red-seal-certification",
+      "target": "red-seal-resource-exam",
+      "sourceHandle": "top-source",
+      "targetHandle": "bottom-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-redseal-resource-profile",
+      "source": "red-seal-certification",
+      "target": "red-seal-resource-profile",
+      "sourceHandle": "top-source",
+      "targetHandle": "bottom-target",
       "type": "default"
     }
   ]
