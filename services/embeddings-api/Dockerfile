@@ -16,6 +16,10 @@ COPY services/embeddings-api/requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Pre-download the embedding model during build to avoid runtime download
+# This downloads ~500MB but prevents first-request timeout on Railway
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-base-en-v1.5')"
+
 # Copy application code
 COPY services/embeddings-api/main.py .
 
