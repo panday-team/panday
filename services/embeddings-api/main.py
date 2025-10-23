@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 # Environment configuration
 EMBEDDINGS_PATH = os.getenv("EMBEDDINGS_PATH", "../../src/data/embeddings")
 ROADMAP_ID = os.getenv("ROADMAP_ID", "electrician-bc")
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5")
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
 app = FastAPI(
@@ -170,20 +170,18 @@ async def query(request: QueryRequest):
         # Load index
         index = load_index(roadmap_id)
 
-        # Create query engine
-        query_engine = index.as_query_engine(
-            similarity_top_k=request.top_k,
-            response_mode="no_text",  # We only want sources, not generated text
-        )
+        # Use retriever directly instead of query engine
+        # This avoids needing an LLM since we only want document retrieval
+        retriever = index.as_retriever(similarity_top_k=request.top_k)
 
-        # Execute query
-        response = query_engine.query(request.query)
+        # Execute retrieval
+        nodes = retriever.retrieve(request.query)
 
         # Extract source documents
         sources = []
         context_parts = []
 
-        for node in response.source_nodes:
+        for node in nodes:
             # Extract metadata
             metadata = node.node.metadata
             text_snippet = node.node.text[:200] + "..." if len(node.node.text) > 200 else node.node.text
