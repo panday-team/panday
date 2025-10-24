@@ -19,29 +19,15 @@ import "@xyflow/react/dist/style.css";
 import { animate } from "motion";
 
 import {
-  CheckpointNode,
   HubNode,
-  PortalNode,
-  RequirementNode,
-  TerminalNode,
   ChecklistNode,
-  type CheckpointNodeType,
   type HubNodeType,
-  type PortalNodeType,
-  type RequirementNodeType,
-  type TerminalNodeType,
   type ChecklistNodeType,
 } from "@/components/nodes";
 import { NodeInfoPanel } from "@/components/node-info-panel";
 import type { Roadmap } from "@/data/types/roadmap";
 
-type FlowNode =
-  | HubNodeType
-  | RequirementNodeType
-  | PortalNodeType
-  | CheckpointNodeType
-  | TerminalNodeType
-  | ChecklistNodeType;
+type FlowNode = HubNodeType | ChecklistNodeType;
 type FlowEdge = Edge;
 
 const flowColor = "#35C1B9";
@@ -259,10 +245,6 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
   const nodeTypes = useMemo<NodeTypes>(
     () => ({
       hub: HubNode,
-      requirement: RequirementNode,
-      portal: PortalNode,
-      checkpoint: CheckpointNode,
-      terminal: TerminalNode,
       checklist: ChecklistNode,
     }),
     [],
