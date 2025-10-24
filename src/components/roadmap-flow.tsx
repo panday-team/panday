@@ -10,7 +10,6 @@ import {
   type Edge,
   type NodeTypes,
   Position,
-  MiniMap,
   type Node as FlowNodeType,
   useNodesState,
   useEdgesState,
@@ -21,13 +20,15 @@ import { animate } from "motion";
 import {
   HubNode,
   ChecklistNode,
+  TerminalNode,
   type HubNodeType,
   type ChecklistNodeType,
+  type TerminalNodeType,
 } from "@/components/nodes";
 import { NodeInfoPanel } from "@/components/node-info-panel";
 import type { Roadmap } from "@/data/types/roadmap";
 
-type FlowNode = HubNodeType | ChecklistNodeType;
+type FlowNode = HubNodeType | ChecklistNodeType | TerminalNodeType;
 type FlowEdge = Edge;
 
 const flowColor = "#35C1B9";
@@ -95,16 +96,29 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
   }, [roadmap]);
 
   const initialEdges = useMemo<FlowEdge[]>(() => {
-    return roadmap.graph.edges.map((graphEdge) => ({
-      id: graphEdge.id,
-      source: graphEdge.source,
-      target: graphEdge.target,
-      sourceHandle: graphEdge.sourceHandle,
-      targetHandle: graphEdge.targetHandle,
-      type: graphEdge.type ?? "bezier",
-      style: baseEdgeStyle,
-      markerEnd: arrowMarker,
-    }));
+    return roadmap.graph.edges
+      .filter((graphEdge) => {
+        const targetNode = roadmap.graph.nodes.find(
+          (n) => n.id === graphEdge.target,
+        );
+        const sourceNode = roadmap.graph.nodes.find(
+          (n) => n.id === graphEdge.source,
+        );
+        if (targetNode?.parentId === sourceNode?.id) {
+          return false;
+        }
+        return true;
+      })
+      .map((graphEdge) => ({
+        id: graphEdge.id,
+        source: graphEdge.source,
+        target: graphEdge.target,
+        sourceHandle: graphEdge.sourceHandle,
+        targetHandle: graphEdge.targetHandle,
+        type: graphEdge.type ?? "bezier",
+        style: baseEdgeStyle,
+        markerEnd: arrowMarker,
+      }));
   }, [roadmap]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -246,6 +260,10 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
     () => ({
       hub: HubNode,
       checklist: ChecklistNode,
+      terminal: TerminalNode,
+      requirement: HubNode,
+      portal: HubNode,
+      checkpoint: HubNode,
     }),
     [],
   );
@@ -301,13 +319,6 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
           color="rgba(53, 193, 185, 0.2)"
           gap={36}
           variant={BackgroundVariant.Lines}
-        />
-
-        <MiniMap
-          nodeStrokeWidth={3}
-          pannable
-          zoomable
-          className="bg-[#1D2740]/80 backdrop-blur"
         />
       </ReactFlow>
 

@@ -28,7 +28,7 @@
 - React Flow UI’s `BaseNode`, `BaseNodeHeader`, `BaseNodeContent`, and `BaseNodeFooter` give us shadcn-aligned node shells—wrap interactive children with the `nodrag` utility class to prevent accidental drags and keep styling tweaks in Tailwind classes. citeturn1search0
 - Use the `NodeAppendix` wrapper when you need badges or controls anchored to a node edge; combine it with the BaseNode structure so appendix content stays positioned and accessible. citeturn1search1
 - For large diagrams, memoize custom node/edge components and callback props with `React.memo`, `useCallback`, and `useMemo`; avoid reading the full nodes/edges arrays inside components and collapse deep node trees to reduce re-renders. citeturn1search5
-- Custom node primitives for the Panday flow live under `src/components/nodes` (`HubNode`, `RequirementNode`, `PortalNode`, `CheckpointNode`, `TerminalNode`); each wraps `BaseNode` + `NodeAppendix`, applies the brand palette (teal `#35C1B9` connectors, lime requirements, light-blue portals, purple checkpoints, yellow hubs/terminal), and pre-registers handle IDs so edges land tangent to the circle rim without arrowheads.
+- Custom node primitives for the Panday flow live under `src/components/nodes` (`HubNode`, `TerminalNode`, `ChecklistNode`); each wraps `BaseNode` + `NodeAppendix`, applies the brand palette (teal `#35C1B9` connectors/edges, yellow `#FFD84D` hubs for main path nodes, purple `purple-500` terminal for final goal, smaller teal checklist subnodes), and pre-registers handle IDs so edges land tangent to the circle rim without arrowheads. Note: `requirement`, `portal`, and `checkpoint` types are registered as aliases to `HubNode` but not currently used in the electrician roadmap.
 
 ## Dynamic Roadmap System
 
@@ -50,7 +50,7 @@
   - `loadNodeContent(roadmapId, nodeId)`: Parses markdown frontmatter + content sections
   - Uses `gray-matter` for frontmatter parsing
 - **Rendering Flow**: `app/page.tsx` (server) → `roadmapCache.get()` → `ErrorBoundary` → `RoadmapFlow` (client) → React Flow visualization
-- **Node Types**: `hub` (yellow), `terminal` (purple), `requirement` (lime), `portal` (blue), `checkpoint` (purple)
+- **Node Types**: `hub` (yellow `#FFD84D`, main path nodes), `terminal` (purple `purple-500`, final goal - Red Seal certification), `checklist` (teal, subnodes) — fully implemented in `src/components/nodes/`. Types `requirement`, `portal`, `checkpoint` are registered as aliases to `hub` but not used in current electrician roadmap.
 - **Animations**: Framer Motion integration in `BaseNode` component provides smooth scale/opacity transitions on load and 1.05x scale on hover
 - **Content Sections**: Each markdown file can have: Eligibility, Benefits, Final Outcome, Resources
 - **Testing**: Comprehensive test suite in `src/lib/__tests__/roadmap-loader.test.ts` (15 tests covering all core functions)
@@ -152,6 +152,7 @@
     - Log errors with full error objects, not just messages
     - Use appropriate log levels (debug for verbose, info for normal operations, warn for recoverable issues, error for failures)
   - **Testing**: See `src/lib/__tests__/logger.test.ts` for comprehensive examples
+
 - **Where Used**: Chat API (`route.ts`), System Status (`systemStatus.ts`), Redis client (`redisClient.ts`), Error Boundary (`error-boundary.tsx`)
 
 ## Performance & Reliability
