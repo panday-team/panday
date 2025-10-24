@@ -52,3 +52,20 @@ CLAUDE.md
 
 # my burger
 /src/data/roadmaps/burgermap*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+ENV/
+.venv
+**/venv/
+**/.venv
+services/embeddings-api/venv/
+*.egg-info/
+dist/
+build/
+*.egg

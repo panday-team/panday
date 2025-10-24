@@ -2,6 +2,7 @@ import type { ComponentPropsWithoutRef } from "react";
 import { cn } from "@/lib/utils";
 import { RoadmapChecklist } from "@/components/roadmap-checklist";
 import type { ChecklistSection } from "@/data/types/roadmap";
+import ChatInput from "./chat/chat-input";
 
 type ResourceLink = {
   label: string;
@@ -141,6 +142,7 @@ export function NodeInfoPanel({
         <button className="w-full rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-[#1D2740] transition hover:bg-[#FFEDDA]">
           More details
         </button>
+        <ChatInput />
       </div>
     </aside>
   );

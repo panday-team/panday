@@ -9,10 +9,14 @@ llama-index-core==0.11.0
 llama-index-embeddings-huggingface==0.3.0
 
 # CPU-only PyTorch (Railway runs on CPU servers, not GPU)
+# Install CPU wheels on Linux; on macOS default PyPI wheels are CPU-only.
 # This must be installed BEFORE sentence-transformers to avoid pulling CUDA packages
 # Using PyTorch 2.4.1 (requires >= 2.1 for torch.compiler support)
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.4.1+cpu
+# Linux/Windows (CPU wheels from PyTorch index)
+torch==2.4.1+cpu; platform_system != "Darwin"
+# macOS (CPU-only by default on PyPI)
+torch==2.4.1; platform_system == "Darwin"
 
 # Sentence transformers (used by HF embeddings)
 sentence-transformers==3.0.1
