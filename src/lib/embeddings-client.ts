@@ -77,7 +77,10 @@ export class EmbeddingsClient {
       throw new Error(`Health check failed (${response.status})`);
     }
 
-    return response.json() as Promise<{ status: string; loaded_indexes: string[] }>;
+    return response.json() as Promise<{
+      status: string;
+      loaded_indexes: string[];
+    }>;
   }
 }
 

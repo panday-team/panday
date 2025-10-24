@@ -85,9 +85,22 @@
 
 ## Testing Guidance
 
-- Automated tests not wired up yet; mirror source structure under `src/<feature>/__tests__` when adding
-- Prefer React Testing Library for components and integration tests seeded via the local database
-- Document manual QA steps in PRs until automated coverage exists
+- **Framework**: Vitest (`vitest.config.ts`) with 65+ tests across core functionality
+- **Structure**: Mirror source structure with `__tests__/` folders (e.g., `src/lib/__tests__/utils.test.ts`)
+- **Coverage**: Core modules tested include roadmap-loader, embeddings-client, system status, utils, chat API, and type definitions
+- **Patterns**:
+  - Use `vi.mock()` for module-level mocking (e.g., Prisma client, Redis, fetch)
+  - Use `vi.fn()` for function-level mocking (e.g., AI SDK `streamText`)
+  - Test happy paths, error scenarios, edge cases, and parameter variations
+  - Mock external dependencies to isolate units under test
+- **ESLint Overrides**: Test files disable strict type-checking rules (`no-unsafe-assignment`, `no-unsafe-member-access`, `unbound-method`) that conflict with Vitest patterns
+- **Running Tests**:
+  - `bun run test` — watch mode for development (uses Vitest)
+  - `bun run test:run` — single run for CI/verification (uses Vitest)
+  - `bun run test:ui` — interactive UI for debugging (uses Vitest)
+  - ⚠️ **Do NOT use** `bun test` — this runs Bun's native test runner which is incompatible with these tests
+- **Adding Tests**: Create `__tests__/` folder next to source, name test files `*.test.ts`, follow existing patterns
+- **Future**: Add React Testing Library for component tests, Testcontainers for integration tests with real database
 
 ## Database & Configuration
 
