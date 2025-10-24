@@ -35,14 +35,10 @@ export class EmbeddingsClient {
     this.baseUrl = baseUrl ?? env.EMBEDDINGS_API_URL;
   }
 
-  /**
-   * Query the embeddings for relevant context.
-   *
-   * @param request Query parameters
-   * @returns Relevant sources and context for RAG
-   * @throws Error if the API request fails
-   */
-  async query(request: QueryRequest): Promise<QueryResponse> {
+  async query(
+    request: QueryRequest,
+    signal?: AbortSignal,
+  ): Promise<QueryResponse> {
     const response = await fetch(`${this.baseUrl}/query`, {
       method: "POST",
       headers: {
@@ -53,6 +49,7 @@ export class EmbeddingsClient {
         top_k: request.top_k ?? 5,
         roadmap_id: request.roadmap_id,
       }),
+      signal,
     });
 
     if (!response.ok) {

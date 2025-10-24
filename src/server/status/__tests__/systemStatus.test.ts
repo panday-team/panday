@@ -49,7 +49,7 @@ describe("systemStatus", () => {
       expect(status.environment.databaseName).toBe("testdb");
       expect(status.environment.redisProvider).toBe("Local Redis");
 
-      expect(status.services).toHaveLength(3);
+      expect(status.services).toHaveLength(4);
 
       const dbService = status.services.find((s) => s.name === "Database");
       expect(dbService).toBeDefined();

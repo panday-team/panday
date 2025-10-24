@@ -1,36 +1,26 @@
-/**
- * Chat API endpoint for RAG (Retrieval Augmented Generation).
- *
- * This endpoint:
- * 1. Queries the embeddings API for relevant context
- * 2. Sends the context + user question to the configured AI provider
- * 3. Streams the response back to the client
- */
-
-// import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-// import { createOpenAI } from "@ai-sdk/openai";
 import { streamText, type LanguageModel } from "ai";
 import { type NextRequest } from "next/server";
+import { z } from "zod";
 
 import { embeddingsClient } from "@/lib/embeddings-client";
+import { logger } from "@/lib/logger";
+import { chatRateLimit } from "@/lib/rate-limit";
 import { env } from "@/env";
 
-// Configure AI provider based on environment
+const ChatMessageSchema = z.object({
+  role: z.enum(["user", "assistant", "system"]),
+  content: z.string().min(1).max(10000),
+});
+
+const ChatRequestSchema = z.object({
+  messages: z.array(ChatMessageSchema).min(1).max(50),
+  roadmap_id: z.string().optional(),
+  top_k: z.number().int().min(1).max(20).optional(),
+});
+
 function getAIModel(): LanguageModel {
   switch (env.AI_PROVIDER) {
-    // case "anthropic": {
-    //   const anthropic = createAnthropic({
-    //     apiKey: env.ANTHROPIC_API_KEY,
-    //   });
-    //   return anthropic(env.AI_MODEL);
-    // }
-    // case "openai": {
-    //   const openai = createOpenAI({
-    //     apiKey: env.OPENAI_API_KEY,
-    //   });
-    //   return openai(env.AI_MODEL);
-    // }
     case "google": {
       const google = createGoogleGenerativeAI({
         apiKey: env.GOOGLE_API_KEY,
@@ -45,34 +35,51 @@ function getAIModel(): LanguageModel {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-interface ChatMessage {
-  role: "user" | "assistant" | "system";
-  content: string;
-}
-
-interface ChatRequest {
-  messages: ChatMessage[];
-  roadmap_id?: string;
-  top_k?: number;
-}
-
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as ChatRequest;
+    const identifier =
+      req.headers.get("x-forwarded-for") ??
+      req.headers.get("x-real-ip") ??
+      "anonymous";
 
-    if (
-      !body.messages ||
-      !Array.isArray(body.messages) ||
-      body.messages.length === 0
-    ) {
+    const { success, limit, reset, remaining } =
+      await chatRateLimit.limit(identifier);
+
+    if (!success) {
       return Response.json(
-        { error: "Messages array is required" },
+        {
+          error: "Rate limit exceeded",
+          limit,
+          reset: new Date(reset).toISOString(),
+          remaining,
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": limit.toString(),
+            "X-RateLimit-Remaining": remaining.toString(),
+            "X-RateLimit-Reset": reset.toString(),
+          },
+        },
+      );
+    }
+
+    const body: unknown = await req.json();
+
+    const validationResult = ChatRequestSchema.safeParse(body);
+    if (!validationResult.success) {
+      return Response.json(
+        {
+          error: "Invalid request",
+          details: validationResult.error.flatten(),
+        },
         { status: 400 },
       );
     }
 
-    // Get the last user message
-    const lastUserMessage = body.messages
+    const validatedBody = validationResult.data;
+
+    const lastUserMessage = validatedBody.messages
       .filter((msg) => msg.role === "user")
       .slice(-1)[0];
 
@@ -80,14 +87,23 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "No user message found" }, { status: 400 });
     }
 
-    // 1. Query embeddings API for relevant context
-    const embeddingsResponse = await embeddingsClient.query({
-      query: lastUserMessage.content,
-      roadmap_id: body.roadmap_id,
-      top_k: body.top_k ?? 5,
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-    // 2. Build system prompt with context
+    let embeddingsResponse;
+    try {
+      embeddingsResponse = await embeddingsClient.query(
+        {
+          query: lastUserMessage.content,
+          roadmap_id: validatedBody.roadmap_id,
+          top_k: validatedBody.top_k ?? 5,
+        },
+        controller.signal,
+      );
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
     const systemPrompt = `You are a helpful career guidance assistant for skilled trades in British Columbia, Canada.
 
 You have access to the following relevant information from the career roadmap database:
@@ -98,34 +114,46 @@ Use this information to answer the user's question accurately. If the informatio
 
 Always cite which specific sections or documents your answer comes from when possible.`;
 
-    // 3. Stream response from AI provider using Vercel AI SDK
     const result = streamText({
       model: getAIModel(),
       system: systemPrompt,
-      messages: body.messages.map((msg) => ({
+      messages: validatedBody.messages.map((msg) => ({
         role: msg.role,
         content: msg.content,
       })),
       maxTokens: 1024,
       onFinish: async () => {
-        // Log completion or store in database if needed
-        console.log(
-          `Chat completion finished (${env.AI_PROVIDER}/${env.AI_MODEL})`,
-        );
+        logger.info("Chat completion finished", {
+          provider: env.AI_PROVIDER,
+          model: env.AI_MODEL,
+        });
       },
     });
 
-    // 4. Return streaming response with sources in headers
     return result.toDataStreamResponse({
       headers: {
         "X-Sources": JSON.stringify(embeddingsResponse.sources),
         "X-Roadmap-Id": embeddingsResponse.roadmap_id,
+        "X-RateLimit-Limit": limit.toString(),
+        "X-RateLimit-Remaining": remaining.toString(),
+        "X-RateLimit-Reset": reset.toString(),
       },
     });
   } catch (error) {
-    console.error("Chat API error:", error);
+    logger.error("Chat API error", error, {
+      identifier:
+        req.headers.get("x-forwarded-for") ??
+        req.headers.get("x-real-ip") ??
+        "anonymous",
+    });
 
     if (error instanceof Error) {
+      if (error.name === "AbortError") {
+        return Response.json(
+          { error: "Request timeout - embeddings API took too long" },
+          { status: 504 },
+        );
+      }
       return Response.json({ error: error.message }, { status: 500 });
     }
 

@@ -20,6 +20,19 @@ vi.mock("ai", () => ({
   })),
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  chatRateLimit: {
+    limit: vi.fn(() =>
+      Promise.resolve({
+        success: true,
+        limit: 10,
+        reset: Date.now() + 60000,
+        remaining: 9,
+      }),
+    ),
+  },
+}));
+
 vi.mock("@/env", () => ({
   env: {
     AI_PROVIDER: "google",
@@ -34,7 +47,7 @@ describe("Chat API Route", () => {
   });
 
   describe("POST /api/chat", () => {
-    it("should reject requests without message", async () => {
+    it("should reject requests without messages", async () => {
       const request = new NextRequest("http://localhost:3000/api/chat", {
         method: "POST",
         body: JSON.stringify({}),
@@ -44,20 +57,21 @@ describe("Chat API Route", () => {
       const data = await response.json();
 
       expect(response.status).toBe(400);
-      expect(data.error).toBe("Message is required and must be a string");
+      expect(data.error).toBe("Invalid request");
+      expect(data.details).toBeDefined();
     });
 
-    it("should reject requests with non-string message", async () => {
+    it("should reject requests with empty messages array", async () => {
       const request = new NextRequest("http://localhost:3000/api/chat", {
         method: "POST",
-        body: JSON.stringify({ message: 123 }),
+        body: JSON.stringify({ messages: [] }),
       });
 
       const response = await POST(request);
       const data = await response.json();
 
       expect(response.status).toBe(400);
-      expect(data.error).toBe("Message is required and must be a string");
+      expect(data.error).toBe("Invalid request");
     });
 
     it("should query embeddings with provided parameters", async () => {
@@ -86,7 +100,7 @@ describe("Chat API Route", () => {
       const request = new NextRequest("http://localhost:3000/api/chat", {
         method: "POST",
         body: JSON.stringify({
-          message: "test query",
+          messages: [{ role: "user", content: "test query" }],
           roadmap_id: "electrician-bc",
           top_k: 10,
         }),
@@ -94,11 +108,14 @@ describe("Chat API Route", () => {
 
       await POST(request);
 
-      expect(embeddingsClient.query).toHaveBeenCalledWith({
-        query: "test query",
-        roadmap_id: "electrician-bc",
-        top_k: 10,
-      });
+      expect(embeddingsClient.query).toHaveBeenCalledWith(
+        {
+          query: "test query",
+          roadmap_id: "electrician-bc",
+          top_k: 10,
+        },
+        expect.any(AbortSignal),
+      );
     });
 
     it("should use default top_k value when not provided", async () => {
@@ -119,17 +136,20 @@ describe("Chat API Route", () => {
       const request = new NextRequest("http://localhost:3000/api/chat", {
         method: "POST",
         body: JSON.stringify({
-          message: "test query",
+          messages: [{ role: "user", content: "test query" }],
         }),
       });
 
       await POST(request);
 
-      expect(embeddingsClient.query).toHaveBeenCalledWith({
-        query: "test query",
-        roadmap_id: undefined,
-        top_k: 5,
-      });
+      expect(embeddingsClient.query).toHaveBeenCalledWith(
+        {
+          query: "test query",
+          roadmap_id: undefined,
+          top_k: 5,
+        },
+        expect.any(AbortSignal),
+      );
     });
 
     it("should handle embeddings API errors", async () => {
@@ -142,7 +162,7 @@ describe("Chat API Route", () => {
       const request = new NextRequest("http://localhost:3000/api/chat", {
         method: "POST",
         body: JSON.stringify({
-          message: "test query",
+          messages: [{ role: "user", content: "test query" }],
         }),
       });
 
@@ -171,7 +191,7 @@ describe("Chat API Route", () => {
       const request = new NextRequest("http://localhost:3000/api/chat", {
         method: "POST",
         body: JSON.stringify({
-          message: "test query",
+          messages: [{ role: "user", content: "test query" }],
         }),
       });
 
@@ -212,7 +232,7 @@ describe("Chat API Route", () => {
       const request = new NextRequest("http://localhost:3000/api/chat", {
         method: "POST",
         body: JSON.stringify({
-          message: "test query",
+          messages: [{ role: "user", content: "test query" }],
         }),
       });
 
@@ -250,7 +270,7 @@ describe("Chat API Route", () => {
       const request = new NextRequest("http://localhost:3000/api/chat", {
         method: "POST",
         body: JSON.stringify({
-          message: "test query",
+          messages: [{ role: "user", content: "test query" }],
         }),
       });
 

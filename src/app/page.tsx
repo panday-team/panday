@@ -1,8 +1,13 @@
-import { buildRoadmap } from "@/lib/roadmap-loader";
+import { roadmapCache } from "@/lib/roadmap-cache";
 import { RoadmapFlow } from "@/components/roadmap-flow";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 export default async function Page() {
-  const roadmap = await buildRoadmap("electrician-bc");
+  const roadmap = await roadmapCache.get("electrician-bc");
 
-  return <RoadmapFlow roadmap={roadmap} />;
+  return (
+    <ErrorBoundary>
+      <RoadmapFlow roadmap={roadmap} />
+    </ErrorBoundary>
+  );
 }

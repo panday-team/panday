@@ -3,17 +3,18 @@ import "dotenv/config";
 import { createClient } from "redis";
 
 import { env } from "@/env";
+import { logger } from "@/lib/logger";
 
 const createLocalRedisClient = () => {
   const client = createClient({ url: env.REDIS_URL });
 
   client.on("error", (err) => {
-    console.error("Redis client error", err);
+    logger.error("Redis client error", err);
   });
 
   client
     .connect()
-    .catch((err) => console.error("Unable to connect to Redis", err));
+    .catch((err) => logger.error("Unable to connect to Redis", err));
 
   return client;
 };

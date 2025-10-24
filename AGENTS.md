@@ -8,11 +8,12 @@
 
 ## Runtime Status Page
 
-- `src/app/page.tsx` now renders deployment diagnostics instead of the starter marketing content
-- Connection checks live in `src/server/status/systemStatus.ts`; reuse this module if other routes need health data
+- `src/app/page.tsx` renders the interactive roadmap wrapped in an ErrorBoundary
+- System status checks moved to `src/app/health/page.tsx` for deployment diagnostics
+- Connection checks live in `src/server/status/systemStatus.ts` and monitor: Database, Redis, Clerk, and Embeddings API
 - Clerk controls are centralized in `src/components/AuthControls.tsx` to keep auth UI client-side
 - Root layout wraps the tree in `ClerkProvider` (`src/app/layout.tsx`) so `SignedIn`/`SignedOut` helpers work
-- Health dashboard presentation uses shadcn cards/badges (`src/app/page.tsx` + `src/components/ui`) for consistent theming
+- Health dashboard presentation uses shadcn cards/badges for consistent theming
 - Root layout forces `dark` mode and applies base background/foreground classes globally
 
 ## UI Toolkit
@@ -43,11 +44,12 @@
   - Forces: Link (pulls together), Charge (repels), Collision (prevents overlap), Center (weak centering)
   - 300 iterations ensure stable, deterministic positions
   - See `docs/ROADMAP_AUTO_LAYOUT.md` for physics parameters and configuration
-- **Data Loading**: Server-side loading via `src/lib/roadmap-loader.ts` with functions:
-  - `buildRoadmap(id)`: Loads complete roadmap (metadata + graph + content)
+- **Data Loading**: Server-side loading via `src/lib/roadmap-loader.ts` with caching via `src/lib/roadmap-cache.ts`
+  - `roadmapCache.get(id)`: Loads complete roadmap with 5-minute in-memory cache
+  - `buildRoadmap(id)`: Direct loader (bypasses cache) - loads metadata + graph + content
   - `loadNodeContent(roadmapId, nodeId)`: Parses markdown frontmatter + content sections
   - Uses `gray-matter` for frontmatter parsing
-- **Rendering Flow**: `app/page.tsx` (server) → `buildRoadmap()` → `RoadmapFlow` (client) → React Flow visualization
+- **Rendering Flow**: `app/page.tsx` (server) → `roadmapCache.get()` → `ErrorBoundary` → `RoadmapFlow` (client) → React Flow visualization
 - **Node Types**: `hub` (yellow), `terminal` (purple), `requirement` (lime), `portal` (blue), `checkpoint` (purple)
 - **Animations**: Framer Motion integration in `BaseNode` component provides smooth scale/opacity transitions on load and 1.05x scale on hover
 - **Content Sections**: Each markdown file can have: Eligibility, Benefits, Final Outcome, Resources
@@ -110,11 +112,62 @@
 - Restart dev server after schema or environment changes
 - Do not commit generated Prisma client or local database artifacts
 
+## Chat API & RAG System
+
+- **Endpoint**: `/api/chat` - RAG-powered chat using embeddings + AI
+- **Flow**: User query → Embeddings API (LlamaIndex) → Google Gemini (system prompt + context) → Streamed response
+- **Security**:
+  - Rate limiting: 10 requests/minute per IP via `@upstash/ratelimit` (Redis-backed sliding window)
+  - Input validation: Zod schema enforces max 50 messages, 10k chars per message
+  - Timeout: 30s AbortController timeout on embeddings API calls
+  - ⚠️ No authentication yet (MVP-acceptable) - add Clerk protection before public launch
+- **Implementation**: `src/app/api/chat/route.ts`, `src/lib/embeddings-client.ts`, `src/lib/rate-limit.ts`
+- **Testing**: See `src/app/api/chat/__tests__/route.test.ts` and `src/lib/__tests__/embeddings-client.test.ts`
+
+## Logging & Observability
+
+- **Structured Logging**: Production-ready JSON logging via `src/lib/logger.ts`
+  - Log levels: `debug`, `info`, `warn`, `error` with environment-based filtering via `LOG_LEVEL` env var
+  - JSON output format: `{"timestamp":"ISO8601","level":"INFO","message":"...","context":{...},"error":{...}}`
+  - Error serialization: Automatic extraction of `name`, `message`, and `stack` from Error objects
+  - Context support: Add structured metadata to any log entry via second parameter
+  - Factory pattern: Use `createLogger(defaultContext)` to create loggers with preset context
+  - **Usage Examples**:
+
+    ```typescript
+    import { logger } from "@/lib/logger";
+
+    // Basic logging
+    logger.info("User logged in", { userId: "123" });
+    logger.error("Database connection failed", error, { host: "localhost" });
+
+    // Create logger with default context
+    const apiLogger = createLogger({ service: "api" });
+    apiLogger.info("Request received"); // Auto-adds service: "api"
+    ```
+
+  - **Best Practices**:
+    - Replace all `console.log/error` with structured logger calls
+    - Add relevant context (identifiers, providers, models) to aid debugging
+    - Log errors with full error objects, not just messages
+    - Use appropriate log levels (debug for verbose, info for normal operations, warn for recoverable issues, error for failures)
+  - **Testing**: See `src/lib/__tests__/logger.test.ts` for comprehensive examples
+- **Where Used**: Chat API (`route.ts`), System Status (`systemStatus.ts`), Redis client (`redisClient.ts`), Error Boundary (`error-boundary.tsx`)
+
+## Performance & Reliability
+
+- **Caching**: Roadmap data cached in-memory with 5-minute TTL via `roadmapCache` (`src/lib/roadmap-cache.ts`)
+- **Error Boundaries**: `ErrorBoundary` component wraps `RoadmapFlow` to catch React errors gracefully (`src/components/error-boundary.tsx`)
+- **Health Checks**: System status monitors Database, Redis, Clerk, and Embeddings API with latency tracking (`src/server/status/systemStatus.ts`)
+- **Timeouts**: All external API calls (embeddings) use AbortController with 30s timeout
+
 ## Security & Secrets
 
 - Never commit secrets; store credentials in the shared secret manager
 - Add new env vars to `src/env.js` so they are validated via `@t3-oss/env-nextjs`
 - Be mindful of server-only code paths to keep sensitive logic off the client
+- Rate limiting protects expensive AI API calls from abuse
+- Zod validation prevents injection attacks and malformed data
 
 ## Git & Collaboration
 
