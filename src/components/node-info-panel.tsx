@@ -39,7 +39,7 @@ export function NodeInfoPanel({
     return (
       <aside
         className={cn(
-          "w-md max-w-[33vw] rounded-3xl border border-white/10 bg-[#2D354B]/95 px-8 pt-8 pb-10 text-[#FFEDDA] shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur",
+          "w-full rounded-3xl border border-white/10 bg-[#2D354B]/95 px-8 pt-8 pb-10 text-[#FFEDDA] shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur md:w-md md:max-w-[33vw]",
           className,
         )}
         {...props}
@@ -70,10 +70,6 @@ export function NodeInfoPanel({
           <div className="max-h-[60vh] overflow-y-auto pr-2">
             <RoadmapChecklist sections={checklists} />
           </div>
-
-          <button className="w-full rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-[#1D2740] transition hover:bg-[#FFEDDA]">
-            More details
-          </button>
         </div>
       </aside>
     );
@@ -83,7 +79,7 @@ export function NodeInfoPanel({
   return (
     <aside
       className={cn(
-        "w-md max-w-[33vw] rounded-3xl border border-white/10 bg-[#2D354B]/95 px-8 pt-8 pb-10 text-[#FFEDDA] shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur",
+        "w-full rounded-3xl border border-white/10 bg-[#2D354B]/95 px-8 pt-8 pb-10 text-[#FFEDDA] shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur md:w-md md:max-w-[33vw]",
         className,
       )}
       {...props}
@@ -139,9 +135,6 @@ export function NodeInfoPanel({
           </section>
         ) : null}
 
-        <button className="w-full rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-[#1D2740] transition hover:bg-[#FFEDDA]">
-          More details
-        </button>
         <ChatInput />
       </div>
     </aside>

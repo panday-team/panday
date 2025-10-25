@@ -8,33 +8,6 @@ glow: true
 layout:
   position: { x: 1200, y: 0 }
   connectsTo: ["level-1"]
-checklists:
-  - title: "Requirements"
-    items:
-      - id: "req-1"
-        label: "Employer sponsorship secured"
-        type: "requirement"
-        required: true
-      - id: "req-2"
-        label: "Eligible to work in British Columbia"
-        type: "requirement"
-        required: true
-      - id: "req-3"
-        label: "Grade 12 or equivalent"
-        type: "requirement"
-        required: true
-  - title: "Next Steps"
-    items:
-      - id: "step-1"
-        label: "Register with SkilledTradesBC"
-        type: "task"
-        link: "https://skilledtradesbc.ca"
-      - id: "step-2"
-        label: "Complete employer sponsorship paperwork"
-        type: "task"
-      - id: "step-3"
-        label: "Begin work-based training hours"
-        type: "task"
 ---
 
 # Direct Entry

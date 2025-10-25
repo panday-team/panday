@@ -9,52 +9,6 @@ duration: "24 weeks"
 layout:
   position: { x: -1200, y: 0 }
   connectsTo: ["level-2"]
-checklists:
-  - title: "Requirements"
-    items:
-      - id: "req-1"
-        label: "Interest in electrical construction career"
-        type: "requirement"
-        required: true
-      - id: "req-2"
-        label: "Eligible to work in British Columbia"
-        type: "requirement"
-        required: true
-      - id: "req-3"
-        label: "Basic math and physics understanding (helpful)"
-        type: "requirement"
-        required: false
-  - title: "Training Components"
-    items:
-      - id: "train-1"
-        label: "Classroom electrical theory"
-        type: "task"
-      - id: "train-2"
-        label: "Hands-on shop training"
-        type: "task"
-      - id: "train-3"
-        label: "Safety protocols and equipment"
-        type: "task"
-      - id: "train-4"
-        label: "Blueprint reading basics"
-        type: "task"
-      - id: "train-5"
-        label: "Basic wiring techniques"
-        type: "task"
-  - title: "Resources"
-    items:
-      - id: "res-1"
-        label: "Foundation Programs Overview"
-        type: "resource"
-        link: "https://skilledtradesbc.ca/foundation-programs"
-      - id: "res-2"
-        label: "Approved Training Providers"
-        type: "resource"
-        link: "https://skilledtradesbc.ca/all-approved-training-providers-list"
-      - id: "res-3"
-        label: "Trades Training BC"
-        type: "resource"
-        link: "https://www.tradestrainingbc.ca/"
 ---
 
 # Electrician Foundation

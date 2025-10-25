@@ -7,55 +7,6 @@ nodeType: "terminal"
 badge: "Goal"
 layout:
   position: { x: 0, y: -8000 }
-checklists:
-  - title: "Requirements"
-    items:
-      - id: "req-1"
-        label: "All Level 1-4 technical training completed"
-        type: "requirement"
-        required: true
-      - id: "req-2"
-        label: "All Level 1-4 exams passed"
-        type: "requirement"
-        required: true
-      - id: "req-3"
-        label: "6,000 work-based hours documented"
-        type: "requirement"
-        required: true
-      - id: "req-4"
-        label: "Full-scope trade experience demonstrated"
-        type: "requirement"
-        required: true
-  - title: "Exam Preparation"
-    items:
-      - id: "prep-1"
-        label: "Review Red Seal exam preparation guide"
-        type: "task"
-        link: "https://red-seal.ca/eng/resources/g.2tr.2.1dy.shtml"
-      - id: "prep-2"
-        label: "Complete practice exams"
-        type: "task"
-      - id: "prep-3"
-        label: "Study Canadian Electrical Code"
-        type: "task"
-      - id: "prep-4"
-        label: "Schedule Red Seal exam"
-        type: "task"
-        link: "https://skilledtradesbc.ca/get-certified/about-exams"
-  - title: "Resources"
-    items:
-      - id: "res-1"
-        label: "Red Seal Exam Preparation Guide"
-        type: "resource"
-        link: "https://red-seal.ca/eng/resources/g.2tr.2.1dy.shtml"
-      - id: "res-2"
-        label: "SkilledTradesBC Exam Info"
-        type: "resource"
-        link: "https://skilledtradesbc.ca/get-certified/about-exams"
-      - id: "res-3"
-        label: "Construction Electrician Profile"
-        type: "resource"
-        link: "https://skilledtradesbc.ca/sites/default/files/2023-08/construction-electrician-program-profile-december-2022-harmonized_v1.pdf"
 ---
 
 # Red Seal Certification
