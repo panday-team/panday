@@ -1,4 +1,4 @@
-# Quick Start Guide
+# Quick Start Guide - OpenAI Embeddings
 
 ## Current Status
 
@@ -14,7 +14,7 @@ src/data/embeddings/electrician-bc/
 ### 1. Install Python Dependencies (One-time setup)
 
 ```bash
-# Option A: Using npm script (recommended)
+# Option A: Using bun script (recommended)
 bun run embeddings:setup
 
 # Option B: Manual setup
@@ -24,85 +24,118 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**Note:** This will download ~4GB of dependencies (PyTorch, CUDA libraries, transformers). It takes 5-10 minutes.
+**Note:** This installs LlamaIndex and OpenAI SDK. Takes ~2 minutes.
 
-### 2. Generate Embeddings
+### 2. Configure OpenAI API Key
+
+Add to `.env` at project root:
 
 ```bash
-# Option A: Using npm script (from project root)
-bun run embeddings:generate -- --roadmap electrician-bc
+OPENAI_API_KEY=sk-...
+```
 
-# Option B: Direct python (from project root)
+### 3. Generate Embeddings
+
+```bash
+# Option A: Using bun script (from project root)
+bun run embeddings:generate electrician-bc
+
+# Option B: Using helper script
+./scripts/embeddings/generate.sh electrician-bc
+
+# Option C: Direct python
 cd scripts/embeddings
 source venv/bin/activate
 python generate.py --roadmap electrician-bc
 ```
 
 **What happens:**
-- Loads `electrician-foundation-program.md`
-- Downloads embedding model `BAAI/bge-small-en-v1.5` (~100MB, cached after first run)
-- Generates vector embeddings
+
+- Loads all `.md` and `.pdf` files from `src/data/embeddings/electrician-bc/`
+- Calls OpenAI API to generate embeddings (model: `text-embedding-3-small`)
 - Saves to `src/data/embeddings/electrician-bc/index/`
 
 **Output:**
+
 ```
 src/data/embeddings/electrician-bc/
 ├── electrician-foundation-program.md      # Your source (unchanged)
 └── index/                                  # Generated index (NEW)
     ├── docstore.json
     ├── index_store.json
-    ├── vector_store.json
+    ├── default__vector_store.json
     ├── graph_store.json
+    ├── image__vector_store.json
     └── metadata.json
 ```
 
-### 3. Commit to Git
+**Cost:** ~$0.02 per 1M tokens with text-embedding-3-small
+
+### 4. Commit to Git
 
 ```bash
 git add src/data/embeddings/electrician-bc/index/
-git commit -m "Add LlamaIndex embeddings for electrician foundation program"
+git commit -m "Add OpenAI embeddings for electrician foundation program"
 ```
 
-### 4. Add More Reference Documents (Future)
+### 5. Add More Reference Documents (Future)
 
-Just add more markdown files to the same directory:
+Just add more files to the same directory:
 
 ```bash
 src/data/embeddings/electrician-bc/
 ├── electrician-foundation-program.md
-├── red-seal-exam-guide.md              # Add this
-├── apprenticeship-levels-guide.md      # Add this
-└── safety-certifications.md            # Add this
+├── red-seal-exam-guide.md              # Add markdown
+├── apprenticeship-levels-guide.md      # Add markdown
+└── safety-regulations.pdf              # Add PDF (requires llama-index-readers-file)
 ```
 
 Then regenerate embeddings:
+
 ```bash
-bun run embeddings:generate -- --roadmap electrician-bc
+bun run embeddings:generate electrician-bc
 ```
 
 ## Troubleshooting
 
 ### Error: "Content directory not found"
+
 Make sure you're running from the project root and the path exists:
+
 ```bash
 ls src/data/embeddings/electrician-bc/
 ```
 
-### Slow installation
-The first `pip install` downloads ~4GB. Use fast internet or let it run overnight.
+### Error: "OPENAI_API_KEY not found"
 
-### Memory issues
-Use a smaller embedding model:
+Add your API key to `.env` at project root:
+
 ```bash
-bun run embeddings:generate -- --roadmap electrician-bc --model sentence-transformers/all-MiniLM-L6-v2
+OPENAI_API_KEY=sk-...
+```
+
+### Want to use PDFs?
+
+Install the optional PDF reader:
+
+```bash
+cd scripts/embeddings
+source venv/bin/activate
+pip install llama-index-readers-file
+```
+
+### Use a different model?
+
+```bash
+bun run embeddings:generate electrician-bc --model text-embedding-3-large
 ```
 
 ## What's Next?
 
-After generating embeddings, you'll need:
+After generating embeddings:
 
-1. **Python FastAPI service** - To load the index and provide `/query` endpoint
-2. **Next.js integration** - To call FastAPI from your chatbot
-3. **LLM integration** - To generate final answers using retrieved context
+1. ✅ **Next.js loads them automatically** - The chat API (`/api/chat`) loads indexes on first query
+2. ✅ **RAG system works** - Queries find relevant context from your documents
+3. ✅ **LLM generates answers** - Gemini/Claude/GPT uses context to answer questions
 
-These are not yet implemented but will come next!
+Everything is already integrated - just add content and regenerate embeddings!

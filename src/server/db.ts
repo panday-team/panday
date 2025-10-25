@@ -4,9 +4,12 @@ import { env } from "@/env";
 
 const dockerLocalDatabaseUrl = `postgresql://neon:npg@localhost:5432/neondb`;
 const localDatabaseUrl = env.LOCAL_DATABASE_URL ?? dockerLocalDatabaseUrl;
-const resolvedDatabaseUrl = env.PRODUCTION
-  ? env.DATABASE_URL!
-  : localDatabaseUrl;
+
+const productionDatabaseUrl = env.PRODUCTION
+  ? `${env.DATABASE_URL}?connection_limit=10&pool_timeout=10`
+  : null;
+
+const resolvedDatabaseUrl = productionDatabaseUrl ?? localDatabaseUrl;
 const resolvedDirectUrl = env.PRODUCTION
   ? (env.DATABASE_URL_UNPOOLED ?? env.DATABASE_URL!)
   : localDatabaseUrl;

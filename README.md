@@ -7,8 +7,8 @@ Panday helps aspiring tradespeople navigate their career path through interactiv
 ## Features
 
 - **Interactive Visual Roadmaps**: React Flow-based interactive diagrams showing career progression paths
-- **AI Career Guidance**: RAG-powered chat using LlamaIndex embeddings + Google Gemini
-- **System Status Dashboard**: Real-time health monitoring for all services (Database, Redis, Clerk, Embeddings API)
+- **AI Career Guidance**: RAG-powered chat using OpenAI embeddings + LLM (Gemini/Claude/GPT)
+- **System Status Dashboard**: Real-time health monitoring for all services (Database, Redis, Clerk, OpenAI)
 - **Auto-Layout System**: Physics-based graph generation using D3-force simulation
 - **Content-Driven Architecture**: Markdown + YAML frontmatter for easy content updates
 - **Production Ready**: Rate limiting, input validation, caching, error boundaries, and comprehensive testing
@@ -19,13 +19,13 @@ Panday helps aspiring tradespeople navigate their career path through interactiv
 - **Database**: PostgreSQL (Neon in production, local Docker in dev)
 - **Caching**: Redis (Upstash in production, local Docker in dev)
 - **Auth**: Clerk
-- **AI**: Google Gemini via Vercel AI SDK
-- **Embeddings**: LlamaIndex (FastAPI service)
+- **AI**: Google Gemini / Anthropic Claude / OpenAI via Vercel AI SDK
+- **Embeddings**: LlamaIndex + OpenAI text-embedding-3-small
 - **Visualization**: React Flow + Framer Motion
 - **Styling**: Tailwind CSS + shadcn/ui
 - **Validation**: Zod
 - **Rate Limiting**: Upstash Ratelimit
-- **Testing**: Vitest (65+ tests)
+- **Testing**: Vitest (67+ tests)
 - **Runtime**: Bun
 
 ## Quick Start
@@ -93,9 +93,11 @@ Visit `http://localhost:3000` to see the system status dashboard and interactive
 - `bun run services:stop` - Stop Docker services
 - `bun run services:status` - Check service status
 
-### Roadmap
+### Roadmap & Embeddings
 
 - `bun run roadmap:build` - Regenerate graph.json from markdown content
+- `bun run embeddings:setup` - Setup Python venv for embeddings generation (one-time)
+- `bun run embeddings:generate <roadmap-id>` - Generate OpenAI embeddings for RAG system
 
 ### Quality
 
@@ -132,9 +134,12 @@ panday/
 │   │   │       ├── content/   # Node content (markdown with YAML frontmatter)
 │   │   │       ├── graph.json # Auto-generated React Flow graph
 │   │   │       └── metadata.json
-│   │   └── embeddings/        # LlamaIndex embeddings
+│   │   └── embeddings/        # OpenAI embeddings + source documents
+│   │       └── electrician-bc/
+│   │           ├── *.md       # Detailed reference content
+│   │           └── index/     # LlamaIndex persisted index
 │   ├── lib/                   # Shared utilities
-│   │   ├── embeddings-client.ts
+│   │   ├── embeddings-service.ts
 │   │   ├── rate-limit.ts
 │   │   ├── roadmap-cache.ts
 │   │   ├── roadmap-loader.ts
@@ -144,11 +149,14 @@ panday/
 │   │   ├── status/
 │   │   └── db.ts
 │   └── styles/
-├── services/
-│   └── embeddings-api/        # FastAPI embeddings service
 ├── prisma/
 │   └── schema.prisma
 └── scripts/
+    ├── embeddings/            # Embedding generation tools
+    │   ├── generate.py        # Python script to generate embeddings
+    │   ├── generate.sh        # Helper script
+    │   └── README.md
+    └── build-graph.ts         # Auto-layout roadmap builder
 ```
 
 ## Adding Content
@@ -173,33 +181,33 @@ See `docs/ROADMAP_SYSTEM.md` for detailed instructions on:
 ```
 User Query → /api/chat
   ↓
-  ├─→ Embeddings API (LlamaIndex) → Relevant context
+  ├─→ OpenAI Embeddings (in-process LlamaIndex) → Relevant context
   │
-  └─→ Google Gemini (system prompt + context) → Streamed response
+  └─→ LLM (Gemini/Claude/GPT) + system prompt + context → Streamed response
 ```
 
 ### Caching Strategy
 
 - **Roadmap Data**: In-memory cache with 5-minute TTL
+- **Embeddings Indexes**: In-memory cache (loaded on first query per roadmap)
 - **Rate Limiting**: Redis-backed sliding window (10 req/min)
 
 ### Security
 
 - ✅ Rate limiting on chat endpoint
 - ✅ Zod input validation (max 50 messages, 10k chars each)
-- ✅ 30s timeout on embeddings API calls
-- ✅ CORS configuration (embeddings API)
+- ✅ Environment-based API key validation
 - ⚠️ No authentication on chat API (MVP - acceptable for now)
 
 ## Testing
 
-65+ tests covering:
+67+ tests covering:
 
 - Roadmap loader (data parsing, frontmatter, checklists)
-- Embeddings client (query, health check)
-- System status (Postgres, Redis health checks)
+- Embeddings service (query, index loading)
+- System status (Postgres, Redis, OpenAI health checks)
 - Chat API (RAG flow, validation)
-- Utils
+- Utils and type definitions
 
 Run tests with `bun run test` (watch mode) or `bun run test:run` (single run).
 
@@ -211,20 +219,28 @@ See `.env.example` for complete list. Key variables:
 - `DATABASE_URL` / `DATABASE_URL_UNPOOLED` - Neon Postgres (prod)
 - `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` - Redis (prod)
 - `CLERK_SECRET_KEY` / `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Auth
-- `GOOGLE_API_KEY` - Gemini API
-- `EMBEDDINGS_API_URL` - FastAPI service URL
-- `AI_PROVIDER` / `AI_MODEL` - AI config
+- `OPENAI_API_KEY` - OpenAI embeddings (required)
+- `AI_PROVIDER` / `AI_MODEL` - AI chat provider config (anthropic/openai/google)
+- `ANTHROPIC_API_KEY` / `GOOGLE_API_KEY` - LLM API keys
 
 ## Deployment
 
 The app is designed for deployment to:
 
-- **Next.js App**: Vercel, Railway, or any Node.js host
-- **Embeddings API**: Railway, Render, or any Python host
+- **Next.js App**: Vercel, Railway, or any Node.js host (single deployment, no separate services needed)
 - **Database**: Neon (Postgres)
 - **Redis**: Upstash
 
 Set `PRODUCTION=true` to switch from local services to production providers.
+
+### Embedding Generation
+
+Embeddings are generated locally and committed to git:
+
+1. Add reference documents to `src/data/embeddings/{roadmap-id}/` (markdown or PDF)
+2. Run `bun run embeddings:generate {roadmap-id}`
+3. Commit generated `index/` directory to git
+4. Deploy - embeddings load from disk on first query
 
 ## Contributing
 

@@ -8,6 +8,13 @@ import {
   forceCollide,
 } from "d3-force";
 import type { SimulationNodeDatum, SimulationLinkDatum } from "d3-force";
+import {
+  validateParentReferences,
+  validateConnectionTargets,
+  validateNodePositions,
+  logValidationErrors,
+  type ValidationError,
+} from "../src/lib/graph-validation";
 
 interface Position {
   x: number;
@@ -152,19 +159,23 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
   const nodeLayouts = new Map<string, LayoutConfig>();
   const subnodesByParent = new Map<string, SubnodeConfig[]>();
   const allNodeIds = new Set<string>();
-  const errors: string[] = [];
+  const validationErrors: ValidationError[] = [];
 
   // Load main nodes with fixed positions
+  const nodesToValidate: Array<{ nodeId: string; hasPosition: boolean }> = [];
+
   for (const file of mainFiles) {
     const nodeId = file.replace(".md", "");
     const { layout, exists } = await loadMainNodeContent(roadmapId, nodeId);
 
     if (!exists) continue;
 
-    if (!layout.position) {
-      errors.push(`❌ Node "${nodeId}" missing layout.position`);
-      continue;
-    }
+    nodesToValidate.push({
+      nodeId,
+      hasPosition: !!layout.position,
+    });
+
+    if (!layout.position) continue;
 
     nodeLayouts.set(nodeId, layout);
     allNodeIds.add(nodeId);
@@ -189,23 +200,25 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
     }
   }
 
+  validationErrors.push(...validateNodePositions(nodesToValidate));
+
   // Load checklist nodes
+  const checklistRefs: Array<{ fileName: string; parentId: string }> = [];
+
   for (const file of checklistFiles) {
     const checklist = await loadChecklistContent(roadmapId, file);
     if (!checklist) continue;
 
     const parentId = checklist.milestoneId;
+    checklistRefs.push({ fileName: file, parentId });
 
-    if (!allNodeIds.has(parentId)) {
-      errors.push(
-        `❌ Checklist file "${file}" references non-existent parent "${parentId}"`,
-      );
-      continue;
-    }
+    if (!allNodeIds.has(parentId)) continue;
 
     subnodesByParent.set(parentId, checklist.nodes);
     checklist.nodes.forEach((node) => allNodeIds.add(node.id));
   }
+
+  validationErrors.push(...validateParentReferences(checklistRefs, allNodeIds));
 
   // Create subnode simulation nodes with initial positions near parent
   for (const [parentId, subnodes] of subnodesByParent) {
@@ -267,23 +280,20 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
   }
 
   // Validate all connectsTo targets exist
+  const connections: Array<{ nodeId: string; targetIds: string[] }> = [];
+
   for (const [nodeId, layout] of nodeLayouts) {
     if (layout.connectsTo) {
-      for (const targetId of layout.connectsTo) {
-        if (!allNodeIds.has(targetId)) {
-          errors.push(
-            `❌ Node "${nodeId}" connects to non-existent node "${targetId}"`,
-          );
-        }
-      }
+      connections.push({
+        nodeId,
+        targetIds: layout.connectsTo,
+      });
     }
   }
 
-  if (errors.length > 0) {
-    console.error("\n⚠️  Validation errors found:");
-    errors.forEach((error) => console.error(`  ${error}`));
-    console.error("");
-  }
+  validationErrors.push(...validateConnectionTargets(connections, allNodeIds));
+
+  logValidationErrors(validationErrors);
 
   // Run physics simulation
   console.log("Running physics simulation...");

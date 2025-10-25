@@ -35,12 +35,17 @@ function getAIModel(): LanguageModel {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function getRequestIdentifier(req: NextRequest): string {
+  return (
+    req.headers.get("x-forwarded-for") ??
+    req.headers.get("x-real-ip") ??
+    "anonymous"
+  );
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const identifier =
-      req.headers.get("x-forwarded-for") ??
-      req.headers.get("x-real-ip") ??
-      "anonymous";
+    const identifier = getRequestIdentifier(req);
 
     const { success, limit, reset, remaining } =
       await chatRateLimit.limit(identifier);
@@ -130,10 +135,7 @@ Always cite which specific sections or documents your answer comes from when pos
     });
   } catch (error) {
     logger.error("Chat API error", error, {
-      identifier:
-        req.headers.get("x-forwarded-for") ??
-        req.headers.get("x-real-ip") ??
-        "anonymous",
+      identifier: getRequestIdentifier(req),
     });
 
     if (error instanceof Error) {

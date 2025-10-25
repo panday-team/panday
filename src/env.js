@@ -95,14 +95,16 @@ if (env.PRODUCTION && !env.DATABASE_URL_UNPOOLED) {
   throw new Error("DATABASE_URL_UNPOOLED must be set when PRODUCTION is true");
 }
 
-// if (env.AI_PROVIDER === "anthropic" && !env.ANTHROPIC_API_KEY) {
-//   throw new Error("ANTHROPIC_API_KEY must be set when AI_PROVIDER is 'anthropic'");
-// }
-//
-// if (env.AI_PROVIDER === "openai" && !env.OPENAI_API_KEY) {
-//   throw new Error("OPENAI_API_KEY must be set when AI_PROVIDER is 'openai'");
-// }
-//
+if (env.AI_PROVIDER === "anthropic" && !env.ANTHROPIC_API_KEY) {
+  throw new Error(
+    "ANTHROPIC_API_KEY must be set when AI_PROVIDER is 'anthropic'",
+  );
+}
+
+if (env.AI_PROVIDER === "openai" && !env.OPENAI_API_KEY) {
+  throw new Error("OPENAI_API_KEY must be set when AI_PROVIDER is 'openai'");
+}
+
 if (env.AI_PROVIDER === "google" && !env.GOOGLE_API_KEY) {
   throw new Error("GOOGLE_API_KEY must be set when AI_PROVIDER is 'google'");
 }

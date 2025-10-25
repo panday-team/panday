@@ -15,7 +15,6 @@ import {
   useEdgesState,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { animate } from "motion";
 
 import {
   HubNode,
@@ -27,6 +26,11 @@ import {
 } from "@/components/nodes";
 import { NodeInfoPanel } from "@/components/node-info-panel";
 import type { Roadmap } from "@/data/types/roadmap";
+import {
+  calculateChildOffsets,
+  calculateChildPosition,
+  createChildAnimation,
+} from "@/lib/child-position-utils";
 
 type FlowNode = HubNodeType | ChecklistNodeType | TerminalNodeType;
 type FlowEdge = Edge;
@@ -124,28 +128,10 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges] = useEdgesState(initialEdges);
 
-  const childOffsets = useMemo(() => {
-    const offsets = new Map<
-      string,
-      { parentId: string; offsetX: number; offsetY: number }
-    >();
-
-    initialNodes.forEach((node) => {
-      const nodeData = node.data as { parentId?: string | null };
-      if (nodeData.parentId) {
-        const parent = initialNodes.find((n) => n.id === nodeData.parentId);
-        if (parent) {
-          offsets.set(node.id, {
-            parentId: nodeData.parentId,
-            offsetX: node.position.x - parent.position.x,
-            offsetY: node.position.y - parent.position.y,
-          });
-        }
-      }
-    });
-
-    return offsets;
-  }, [initialNodes]);
+  const childOffsets = useMemo(
+    () => calculateChildOffsets(initialNodes),
+    [initialNodes],
+  );
 
   const updateChildrenPositions = useCallback(
     (parentId: string, parentX: number, parentY: number, smooth = false) => {
@@ -153,23 +139,16 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
         currentNodes.map((node) => {
           const offset = childOffsets.get(node.id);
           if (offset && offset.parentId === parentId) {
-            const targetX = parentX + offset.offsetX;
-            const targetY = parentY + offset.offsetY;
-
-            if (smooth) {
-              const currentX = node.position.x;
-              const currentY = node.position.y;
-              const lagFactor = 0.3;
-              return {
-                ...node,
-                position: {
-                  x: currentX + (targetX - currentX) * lagFactor,
-                  y: currentY + (targetY - currentY) * lagFactor,
-                },
-              };
-            } else {
-              return { ...node, position: { x: targetX, y: targetY } };
-            }
+            const targetPosition = {
+              x: parentX + offset.offsetX,
+              y: parentY + offset.offsetY,
+            };
+            const newPosition = calculateChildPosition(
+              node.position,
+              targetPosition,
+              smooth,
+            );
+            return { ...node, position: newPosition };
           }
           return node;
         }),
@@ -183,43 +162,25 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
       const childNode = nodes.find((n) => n.id === childId);
       if (!childNode) return;
 
-      if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) {
-        return;
-      }
-
       const existingAnimation = animationsRef.current.get(childId);
       if (existingAnimation) {
         existingAnimation();
       }
 
-      const pos = {
-        x: Number.isFinite(childNode.position.x) ? childNode.position.x : 0,
-        y: Number.isFinite(childNode.position.y) ? childNode.position.y : 0,
-      };
-
-      const controls = animate(
-        pos,
-        { x: targetX, y: targetY },
-        {
-          type: "spring",
-          stiffness: 300,
-          damping: 30,
-          mass: 0.5,
-          onUpdate: () => {
-            if (Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
-              setNodes((currentNodes) =>
-                currentNodes.map((n) =>
-                  n.id === childId
-                    ? { ...n, position: { x: pos.x, y: pos.y } }
-                    : n,
-                ),
-              );
-            }
-          },
+      const stopAnimation = createChildAnimation(
+        childNode,
+        targetX,
+        targetY,
+        (position) => {
+          setNodes((currentNodes) =>
+            currentNodes.map((n) =>
+              n.id === childId ? { ...n, position } : n,
+            ),
+          );
         },
       );
 
-      animationsRef.current.set(childId, () => controls.stop());
+      animationsRef.current.set(childId, stopAnimation);
     },
     [nodes, setNodes],
   );

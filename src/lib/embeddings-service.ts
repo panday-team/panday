@@ -31,11 +31,21 @@ export interface QueryRequest {
 const DEFAULT_ROADMAP_ID = "electrician-bc";
 const EMBEDDINGS_BASE_PATH = path.join(process.cwd(), "src/data/embeddings");
 
-const indexCache = new Map<string, VectorStoreIndex>();
+const INDEX_CACHE_TTL_MS = 60 * 60 * 1000;
+
+interface CachedIndex {
+  index: VectorStoreIndex;
+  timestamp: number;
+}
+
+const indexCache = new Map<string, CachedIndex>();
 
 async function loadIndex(roadmapId: string): Promise<VectorStoreIndex> {
-  if (indexCache.has(roadmapId)) {
-    return indexCache.get(roadmapId)!;
+  const cached = indexCache.get(roadmapId);
+  const now = Date.now();
+
+  if (cached && now - cached.timestamp < INDEX_CACHE_TTL_MS) {
+    return cached.index;
   }
 
   const indexPath = path.join(EMBEDDINGS_BASE_PATH, roadmapId, "index");
@@ -57,10 +67,28 @@ async function loadIndex(roadmapId: string): Promise<VectorStoreIndex> {
     nodes: [],
   });
 
-  indexCache.set(roadmapId, index);
+  indexCache.set(roadmapId, { index, timestamp: now });
   logger.info("Index loaded and cached", { roadmapId });
 
   return index;
+}
+
+function buildSourceDocument(nodeWithScore: {
+  node: { metadata: Record<string, unknown>; text?: string };
+  score?: number;
+}): SourceDocument {
+  const node = nodeWithScore.node;
+  const metadata = node.metadata;
+  const nodeText = ("text" in node ? node.text : "")!;
+  const textSnippet =
+    nodeText.length > 200 ? nodeText.substring(0, 200) + "..." : nodeText;
+
+  return {
+    node_id: (metadata.node_id as string | undefined) ?? "unknown",
+    title: (metadata.title as string | undefined) ?? "Unknown",
+    score: nodeWithScore.score ?? 0,
+    text_snippet: textSnippet,
+  };
 }
 
 export async function queryEmbeddings(
@@ -71,51 +99,46 @@ export async function queryEmbeddings(
 
   logger.info("Querying embeddings", { roadmapId, topK, query: request.query });
 
-  try {
-    const index = await loadIndex(roadmapId);
+  const index = await loadIndex(roadmapId).catch((error) => {
+    logger.error("Failed to load embeddings index", error, { roadmapId });
+    throw new Error(
+      `Failed to load embeddings index: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  });
 
-    const retriever = index.asRetriever({ similarityTopK: topK });
-    const nodes = await retriever.retrieve({ query: request.query });
-
-    const sources: SourceDocument[] = [];
-    const contextParts: string[] = [];
-
-    for (const nodeWithScore of nodes) {
-      const node = nodeWithScore.node;
-      const metadata = node.metadata;
-
-      const nodeText = "text" in node ? (node.text as string) : "";
-      const textSnippet =
-        nodeText.length > 200 ? nodeText.substring(0, 200) + "..." : nodeText;
-
-      const source: SourceDocument = {
-        node_id: (metadata.node_id as string) ?? "unknown",
-        title: (metadata.title as string) ?? "Unknown",
-        score: nodeWithScore.score ?? 0,
-        text_snippet: textSnippet,
-      };
-
-      sources.push(source);
-      contextParts.push(`[${source.title}]\n${nodeText}\n`);
-    }
-
-    const context = contextParts.join("\n---\n");
-
-    logger.info("Embeddings query completed", {
-      roadmapId,
-      sourcesFound: sources.length,
+  const retriever = index.asRetriever({ similarityTopK: topK });
+  const nodes = await retriever
+    .retrieve({ query: request.query })
+    .catch((error) => {
+      logger.error("Failed to retrieve embeddings", error, { roadmapId });
+      throw new Error(
+        `Failed to retrieve embeddings: ${error instanceof Error ? error.message : String(error)}`,
+      );
     });
 
-    return {
-      query: request.query,
-      roadmap_id: roadmapId,
-      sources,
-      context,
-    };
-  } catch (error) {
-    logger.error("Failed to query embeddings", error, { roadmapId });
-    throw new Error(
-      `Failed to query embeddings: ${error instanceof Error ? error.message : String(error)}`,
-    );
+  const sources: SourceDocument[] = [];
+  const contextParts: string[] = [];
+
+  for (const nodeWithScore of nodes) {
+    const source = buildSourceDocument(nodeWithScore);
+    const nodeText =
+      "text" in nodeWithScore.node ? (nodeWithScore.node.text as string) : "";
+
+    sources.push(source);
+    contextParts.push(`[${source.title}]\n${nodeText}\n`);
   }
+
+  const context = contextParts.join("\n---\n");
+
+  logger.info("Embeddings query completed", {
+    roadmapId,
+    sourcesFound: sources.length,
+  });
+
+  return {
+    query: request.query,
+    roadmap_id: roadmapId,
+    sources,
+    context,
+  };
 }

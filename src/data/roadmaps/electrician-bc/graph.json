@@ -1,9 +1,9 @@
 {
   "nodes": [
     {
-      "id": "foundation-program",
+      "id": "ace-it-program",
       "position": {
-        "x": -1200,
+        "x": 0,
         "y": 0
       },
       "sourcePosition": "bottom",
@@ -19,10 +19,28 @@
       "targetPosition": "top"
     },
     {
+      "id": "foundation-program",
+      "position": {
+        "x": -1200,
+        "y": 0
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top"
+    },
+    {
       "id": "level-1",
       "position": {
         "x": 1200,
         "y": -1000
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top"
+    },
+    {
+      "id": "level-2",
+      "position": {
+        "x": 0,
+        "y": -2000
       },
       "sourcePosition": "bottom",
       "targetPosition": "top"
@@ -64,22 +82,194 @@
       "targetPosition": "top"
     },
     {
-      "id": "level-2",
+      "id": "ace-it-req-highschool",
       "position": {
-        "x": 0,
-        "y": -2000
+        "x": -160,
+        "y": 154
       },
       "sourcePosition": "bottom",
-      "targetPosition": "top"
+      "targetPosition": "top",
+      "parentId": "ace-it-program"
     },
     {
-      "id": "ace-it-program",
+      "id": "ace-it-benefit-dualcredit",
       "position": {
-        "x": 0,
-        "y": 0
+        "x": 1,
+        "y": 225
       },
       "sourcePosition": "bottom",
-      "targetPosition": "top"
+      "targetPosition": "top",
+      "parentId": "ace-it-program"
+    },
+    {
+      "id": "ace-it-resource-youthprograms",
+      "position": {
+        "x": 150,
+        "y": 156
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "ace-it-program"
+    },
+    {
+      "id": "direct-entry-req-sponsor",
+      "position": {
+        "x": 1144,
+        "y": 218
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry"
+    },
+    {
+      "id": "direct-entry-benefit-earnings",
+      "position": {
+        "x": 1297,
+        "y": 209
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry"
+    },
+    {
+      "id": "direct-entry-resource-jobsearch",
+      "position": {
+        "x": 1393,
+        "y": 118
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry"
+    },
+    {
+      "id": "foundation-req-education",
+      "position": {
+        "x": -1401,
+        "y": 97
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "foundation-program"
+    },
+    {
+      "id": "foundation-benefit-credits",
+      "position": {
+        "x": -1247,
+        "y": 218
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "foundation-program"
+    },
+    {
+      "id": "foundation-resource-providers",
+      "position": {
+        "x": -1035,
+        "y": 122
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "foundation-program"
+    },
+    {
+      "id": "level-1-req-foundation",
+      "position": {
+        "x": 1037,
+        "y": -854
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "level-1"
+    },
+    {
+      "id": "level-1-req-sponsor",
+      "position": {
+        "x": 988,
+        "y": -992
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "level-1"
+    },
+    {
+      "id": "level-1-req-registration",
+      "position": {
+        "x": 1104,
+        "y": -1186
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "level-1"
+    },
+    {
+      "id": "level-1-training-theory",
+      "position": {
+        "x": 1410,
+        "y": -892
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "level-1"
+    },
+    {
+      "id": "level-1-training-safety",
+      "position": {
+        "x": 1435,
+        "y": -999
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "level-1"
+    },
+    {
+      "id": "level-1-training-tools",
+      "position": {
+        "x": 1403,
+        "y": -1104
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "level-1"
+    },
+    {
+      "id": "level-1-training-drawings",
+      "position": {
+        "x": 1325,
+        "y": -1181
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "level-1"
+    },
+    {
+      "id": "level-1-resource-outline",
+      "position": {
+        "x": 1125,
+        "y": -789
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "level-1"
+    },
+    {
+      "id": "level-1-resource-exam",
+      "position": {
+        "x": 1234,
+        "y": -772
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "level-1"
+    },
+    {
+      "id": "level-1-resource-portal",
+      "position": {
+        "x": 1337,
+        "y": -809
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "level-1"
     },
     {
       "id": "level-2-req-level1",
@@ -192,106 +382,6 @@
       "parentId": "level-2"
     },
     {
-      "id": "level-1-req-foundation",
-      "position": {
-        "x": 1037,
-        "y": -854
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "level-1"
-    },
-    {
-      "id": "level-1-req-sponsor",
-      "position": {
-        "x": 988,
-        "y": -992
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "level-1"
-    },
-    {
-      "id": "level-1-req-registration",
-      "position": {
-        "x": 1104,
-        "y": -1186
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "level-1"
-    },
-    {
-      "id": "level-1-training-theory",
-      "position": {
-        "x": 1410,
-        "y": -892
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "level-1"
-    },
-    {
-      "id": "level-1-training-safety",
-      "position": {
-        "x": 1435,
-        "y": -999
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "level-1"
-    },
-    {
-      "id": "level-1-training-tools",
-      "position": {
-        "x": 1403,
-        "y": -1104
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "level-1"
-    },
-    {
-      "id": "level-1-training-drawings",
-      "position": {
-        "x": 1325,
-        "y": -1181
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "level-1"
-    },
-    {
-      "id": "level-1-resource-outline",
-      "position": {
-        "x": 1125,
-        "y": -789
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "level-1"
-    },
-    {
-      "id": "level-1-resource-exam",
-      "position": {
-        "x": 1234,
-        "y": -772
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "level-1"
-    },
-    {
-      "id": "level-1-resource-portal",
-      "position": {
-        "x": 1337,
-        "y": -809
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "level-1"
-    },
-    {
       "id": "level-3-req-level2",
       "position": {
         "x": -206,
@@ -335,7 +425,7 @@
       "id": "level-3-training-motors",
       "position": {
         "x": 198,
-        "y": -3899
+        "y": -3900
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -710,102 +800,12 @@
       "sourcePosition": "bottom",
       "targetPosition": "top",
       "parentId": "red-seal-certification"
-    },
-    {
-      "id": "foundation-req-education",
-      "position": {
-        "x": -1401,
-        "y": 97
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "foundation-program"
-    },
-    {
-      "id": "foundation-benefit-credits",
-      "position": {
-        "x": -1247,
-        "y": 218
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "foundation-program"
-    },
-    {
-      "id": "foundation-resource-providers",
-      "position": {
-        "x": -1035,
-        "y": 122
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "foundation-program"
-    },
-    {
-      "id": "ace-it-req-highschool",
-      "position": {
-        "x": -160,
-        "y": 154
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "ace-it-program"
-    },
-    {
-      "id": "ace-it-benefit-dualcredit",
-      "position": {
-        "x": 1,
-        "y": 225
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "ace-it-program"
-    },
-    {
-      "id": "ace-it-resource-youthprograms",
-      "position": {
-        "x": 150,
-        "y": 156
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "ace-it-program"
-    },
-    {
-      "id": "direct-entry-req-sponsor",
-      "position": {
-        "x": 1144,
-        "y": 218
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry"
-    },
-    {
-      "id": "direct-entry-benefit-earnings",
-      "position": {
-        "x": 1297,
-        "y": 209
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry"
-    },
-    {
-      "id": "direct-entry-resource-jobsearch",
-      "position": {
-        "x": 1393,
-        "y": 118
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry"
     }
   ],
   "edges": [
     {
-      "id": "edge-foundation-program-to-level-2",
-      "source": "foundation-program",
+      "id": "edge-ace-it-program-to-level-2",
+      "source": "ace-it-program",
       "target": "level-2",
       "sourceHandle": "top-source",
       "targetHandle": "bottom-target",
@@ -820,9 +820,25 @@
       "type": "default"
     },
     {
+      "id": "edge-foundation-program-to-level-2",
+      "source": "foundation-program",
+      "target": "level-2",
+      "sourceHandle": "top-source",
+      "targetHandle": "bottom-target",
+      "type": "default"
+    },
+    {
       "id": "edge-level-1-to-level-2",
       "source": "level-1",
       "target": "level-2",
+      "sourceHandle": "top-source",
+      "targetHandle": "bottom-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level-2-to-level-3",
+      "source": "level-2",
+      "target": "level-3",
       "sourceHandle": "top-source",
       "targetHandle": "bottom-target",
       "type": "default"
@@ -860,19 +876,155 @@
       "type": "default"
     },
     {
-      "id": "edge-level-2-to-level-3",
-      "source": "level-2",
-      "target": "level-3",
-      "sourceHandle": "top-source",
-      "targetHandle": "bottom-target",
+      "id": "edge-ace-it-program-ace-it-req-highschool",
+      "source": "ace-it-program",
+      "target": "ace-it-req-highschool",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
       "type": "default"
     },
     {
-      "id": "edge-ace-it-program-to-level-2",
+      "id": "edge-ace-it-program-ace-it-benefit-dualcredit",
       "source": "ace-it-program",
-      "target": "level-2",
-      "sourceHandle": "top-source",
-      "targetHandle": "bottom-target",
+      "target": "ace-it-benefit-dualcredit",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-ace-it-program-ace-it-resource-youthprograms",
+      "source": "ace-it-program",
+      "target": "ace-it-resource-youthprograms",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-direct-entry-req-sponsor",
+      "source": "direct-entry",
+      "target": "direct-entry-req-sponsor",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-direct-entry-benefit-earnings",
+      "source": "direct-entry",
+      "target": "direct-entry-benefit-earnings",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-direct-entry-resource-jobsearch",
+      "source": "direct-entry",
+      "target": "direct-entry-resource-jobsearch",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-foundation-program-foundation-req-education",
+      "source": "foundation-program",
+      "target": "foundation-req-education",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-foundation-program-foundation-benefit-credits",
+      "source": "foundation-program",
+      "target": "foundation-benefit-credits",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-foundation-program-foundation-resource-providers",
+      "source": "foundation-program",
+      "target": "foundation-resource-providers",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level-1-level-1-req-foundation",
+      "source": "level-1",
+      "target": "level-1-req-foundation",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level-1-level-1-req-sponsor",
+      "source": "level-1",
+      "target": "level-1-req-sponsor",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level-1-level-1-req-registration",
+      "source": "level-1",
+      "target": "level-1-req-registration",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level-1-level-1-training-theory",
+      "source": "level-1",
+      "target": "level-1-training-theory",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level-1-level-1-training-safety",
+      "source": "level-1",
+      "target": "level-1-training-safety",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level-1-level-1-training-tools",
+      "source": "level-1",
+      "target": "level-1-training-tools",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level-1-level-1-training-drawings",
+      "source": "level-1",
+      "target": "level-1-training-drawings",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level-1-level-1-resource-outline",
+      "source": "level-1",
+      "target": "level-1-resource-outline",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level-1-level-1-resource-exam",
+      "source": "level-1",
+      "target": "level-1-resource-exam",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level-1-level-1-resource-portal",
+      "source": "level-1",
+      "target": "level-1-resource-portal",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
       "type": "default"
     },
     {
@@ -959,86 +1111,6 @@
       "id": "edge-level-2-level-2-resource-code",
       "source": "level-2",
       "target": "level-2-resource-code",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-level-1-level-1-req-foundation",
-      "source": "level-1",
-      "target": "level-1-req-foundation",
-      "sourceHandle": "left-source",
-      "targetHandle": "right-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-level-1-level-1-req-sponsor",
-      "source": "level-1",
-      "target": "level-1-req-sponsor",
-      "sourceHandle": "left-source",
-      "targetHandle": "right-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-level-1-level-1-req-registration",
-      "source": "level-1",
-      "target": "level-1-req-registration",
-      "sourceHandle": "left-source",
-      "targetHandle": "right-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-level-1-level-1-training-theory",
-      "source": "level-1",
-      "target": "level-1-training-theory",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-level-1-level-1-training-safety",
-      "source": "level-1",
-      "target": "level-1-training-safety",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-level-1-level-1-training-tools",
-      "source": "level-1",
-      "target": "level-1-training-tools",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-level-1-level-1-training-drawings",
-      "source": "level-1",
-      "target": "level-1-training-drawings",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-level-1-level-1-resource-outline",
-      "source": "level-1",
-      "target": "level-1-resource-outline",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-level-1-level-1-resource-exam",
-      "source": "level-1",
-      "target": "level-1-resource-exam",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-level-1-level-1-resource-portal",
-      "source": "level-1",
-      "target": "level-1-resource-portal",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
       "type": "default"
@@ -1377,78 +1449,6 @@
       "target": "red-seal-resource-profile",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-foundation-program-foundation-req-education",
-      "source": "foundation-program",
-      "target": "foundation-req-education",
-      "sourceHandle": "left-source",
-      "targetHandle": "right-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-foundation-program-foundation-benefit-credits",
-      "source": "foundation-program",
-      "target": "foundation-benefit-credits",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-foundation-program-foundation-resource-providers",
-      "source": "foundation-program",
-      "target": "foundation-resource-providers",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-ace-it-program-ace-it-req-highschool",
-      "source": "ace-it-program",
-      "target": "ace-it-req-highschool",
-      "sourceHandle": "left-source",
-      "targetHandle": "right-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-ace-it-program-ace-it-benefit-dualcredit",
-      "source": "ace-it-program",
-      "target": "ace-it-benefit-dualcredit",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-ace-it-program-ace-it-resource-youthprograms",
-      "source": "ace-it-program",
-      "target": "ace-it-resource-youthprograms",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-direct-entry-direct-entry-req-sponsor",
-      "source": "direct-entry",
-      "target": "direct-entry-req-sponsor",
-      "sourceHandle": "left-source",
-      "targetHandle": "right-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-direct-entry-direct-entry-benefit-earnings",
-      "source": "direct-entry",
-      "target": "direct-entry-benefit-earnings",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-direct-entry-direct-entry-resource-jobsearch",
-      "source": "direct-entry",
-      "target": "direct-entry-resource-jobsearch",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
       "type": "default"
     }
   ]

@@ -14,6 +14,77 @@ import type {
  */
 const ROADMAPS_BASE_PATH = path.join(process.cwd(), "src/data/roadmaps");
 
+function extractMarkdownListItems(content: string): string[] {
+  return content
+    .split("\n")
+    .filter(
+      (line) => line.trim().startsWith("-") || line.trim().startsWith("*"),
+    )
+    .map((line) => line.replace(/^[-*]\s+/, "").trim())
+    .filter((line) => line && !line.includes("TODO"));
+}
+
+function extractMarkdownSection(
+  content: string,
+  sectionName: string,
+): string | null {
+  const regex = new RegExp(
+    `##\\s+${sectionName}\\s*\\n([\\s\\S]*?)(?=\\n##|\\n---|$)`,
+    "i",
+  );
+  const match = regex.exec(content);
+  return match?.[1] ?? null;
+}
+
+function parseMarkdownSections(content: string): {
+  eligibility?: string[];
+  benefits?: string[];
+  outcomes?: string[];
+  resources?: Array<{ label: string; href: string }>;
+} {
+  const sections: {
+    eligibility?: string[];
+    benefits?: string[];
+    outcomes?: string[];
+    resources?: Array<{ label: string; href: string }>;
+  } = {};
+
+  const eligibilityText = extractMarkdownSection(content, "Eligibility");
+  if (eligibilityText) {
+    sections.eligibility = extractMarkdownListItems(eligibilityText);
+  }
+
+  const benefitsText = extractMarkdownSection(content, "Benefits");
+  if (benefitsText) {
+    sections.benefits = extractMarkdownListItems(benefitsText);
+  }
+
+  const outcomesText = extractMarkdownSection(content, "Final Outcome");
+  if (outcomesText) {
+    sections.outcomes = extractMarkdownListItems(outcomesText);
+  }
+
+  const resourcesText = extractMarkdownSection(content, "Resources");
+  if (resourcesText) {
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/;
+    sections.resources = resourcesText
+      .split("\n")
+      .filter((line) => line.includes("]("))
+      .map((line) => {
+        const match = linkRegex.exec(line);
+        if (match?.[1] && match?.[2]) {
+          return { label: match[1], href: match[2] };
+        }
+        return null;
+      })
+      .filter((resource): resource is { label: string; href: string } =>
+        Boolean(resource),
+      );
+  }
+
+  return sections;
+}
+
 /**
  * Load roadmap metadata from metadata.json
  */
@@ -54,84 +125,6 @@ export async function loadRoadmapGraph(
       `Failed to load graph for roadmap "${roadmapId}": ${error instanceof Error ? error.message : String(error)}`,
     );
   }
-}
-
-/**
- * Parse markdown content sections into structured data
- */
-function parseMarkdownSections(content: string): {
-  eligibility?: string[];
-  benefits?: string[];
-  outcomes?: string[];
-  resources?: Array<{ label: string; href: string }>;
-} {
-  const sections: {
-    eligibility?: string[];
-    benefits?: string[];
-    outcomes?: string[];
-    resources?: Array<{ label: string; href: string }>;
-  } = {};
-
-  // Extract Eligibility section
-  const eligibilityRegex = /##\s+Eligibility\s*\n([\s\S]*?)(?=\n##|\n---|$)/i;
-  const eligibilityMatch = eligibilityRegex.exec(content);
-  if (eligibilityMatch?.[1]) {
-    sections.eligibility = eligibilityMatch[1]
-      .split("\n")
-      .filter(
-        (line) => line.trim().startsWith("-") || line.trim().startsWith("*"),
-      )
-      .map((line) => line.replace(/^[-*]\s+/, "").trim())
-      .filter((line) => line && !line.includes("TODO"));
-  }
-
-  // Extract Benefits section
-  const benefitsRegex = /##\s+Benefits\s*\n([\s\S]*?)(?=\n##|\n---|$)/i;
-  const benefitsMatch = benefitsRegex.exec(content);
-  if (benefitsMatch?.[1]) {
-    sections.benefits = benefitsMatch[1]
-      .split("\n")
-      .filter(
-        (line) => line.trim().startsWith("-") || line.trim().startsWith("*"),
-      )
-      .map((line) => line.replace(/^[-*]\s+/, "").trim())
-      .filter((line) => line && !line.includes("TODO"));
-  }
-
-  // Extract Final Outcome section
-  const outcomesRegex = /##\s+Final Outcome\s*\n([\s\S]*?)(?=\n##|\n---|$)/i;
-  const outcomesMatch = outcomesRegex.exec(content);
-  if (outcomesMatch?.[1]) {
-    sections.outcomes = outcomesMatch[1]
-      .split("\n")
-      .filter(
-        (line) => line.trim().startsWith("-") || line.trim().startsWith("*"),
-      )
-      .map((line) => line.replace(/^[-*]\s+/, "").trim())
-      .filter((line) => line && !line.includes("TODO"));
-  }
-
-  // Extract Resources section
-  const resourcesRegex = /##\s+Resources\s*\n([\s\S]*?)(?=\n##|\n---|$)/i;
-  const resourcesMatch = resourcesRegex.exec(content);
-  if (resourcesMatch?.[1]) {
-    const resourceLines = resourcesMatch[1].split("\n");
-    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/;
-    sections.resources = resourceLines
-      .filter((line) => line.includes("]("))
-      .map((line) => {
-        const match = linkRegex.exec(line);
-        if (match?.[1] && match?.[2]) {
-          return { label: match[1], href: match[2] };
-        }
-        return null;
-      })
-      .filter((resource): resource is { label: string; href: string } =>
-        Boolean(resource),
-      );
-  }
-
-  return sections;
 }
 
 /**
