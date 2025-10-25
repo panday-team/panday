@@ -3,18 +3,20 @@
 Generate embeddings for roadmap markdown content using LlamaIndex.
 
 This script reads markdown files from src/data/roadmaps/{roadmap-id}/content/,
-generates a LlamaIndex VectorStoreIndex with HuggingFace embeddings,
+generates a LlamaIndex VectorStoreIndex with OpenAI embeddings,
 and persists the index to src/data/embeddings/{roadmap-id}/ for use by the RAG system.
 """
 
 import argparse
 import json
+import os
 import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import yaml
+from dotenv import load_dotenv
 from llama_index.core import (
     Document,
     Settings,
@@ -22,7 +24,7 @@ from llama_index.core import (
     VectorStoreIndex,
     load_index_from_storage,
 )
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.embeddings.openai import OpenAIEmbedding
 
 
 def find_project_root() -> Path:
@@ -89,7 +91,11 @@ def parse_markdown_sections(content: str) -> dict[str, Any]:
 
 
 def load_roadmap_documents(roadmap_id: str, base_path: Path) -> list[Document]:
-    """Load all markdown content files for a roadmap as LlamaIndex Documents."""
+    """Load all markdown and PDF content files for a roadmap as LlamaIndex Documents.
+    
+    Note: PDF support requires llama-index-readers-file package.
+    Install via: pip install llama-index-readers-file
+    """
     # Look for detailed reference content in embeddings directory
     content_dir = base_path / "src/data/embeddings" / roadmap_id
 
@@ -98,6 +104,16 @@ def load_roadmap_documents(roadmap_id: str, base_path: Path) -> list[Document]:
 
     documents = []
 
+    # Check if PDF reader is available
+    pdf_reader = None
+    try:
+        from llama_index.readers.file import PDFReader
+        pdf_reader = PDFReader()
+    except ImportError:
+        print("Warning: llama-index-readers-file not installed. PDF files will be skipped.")
+        print("Install with: pip install llama-index-readers-file")
+
+    # Process markdown files
     for md_file in sorted(content_dir.glob("*.md")):
         node_id = md_file.stem
         content_text = md_file.read_text(encoding="utf-8")
@@ -155,25 +171,55 @@ def load_roadmap_documents(roadmap_id: str, base_path: Path) -> list[Document]:
                 "title": title,
                 "type": node_type,
                 "file_name": md_file.name,
+                "file_type": "markdown",
                 **frontmatter,
             },
-            # Use node_id as doc_id for easy reference
             doc_id=f"{roadmap_id}:{node_id}",
         )
 
         documents.append(doc)
 
+    # Process PDF files if reader is available
+    if pdf_reader:
+        for pdf_file in sorted(content_dir.glob("*.pdf")):
+            node_id = pdf_file.stem
+            
+            try:
+                # Load PDF using LlamaIndex PDFReader
+                pdf_documents = pdf_reader.load_data(file=pdf_file)
+                
+                # Combine all pages into a single document
+                full_text = "\n\n".join(doc.text for doc in pdf_documents)
+                
+                # Create LlamaIndex Document with metadata
+                doc = Document(
+                    text=full_text,
+                    metadata={
+                        "node_id": node_id,
+                        "roadmap_id": roadmap_id,
+                        "title": node_id.replace("-", " ").title(),
+                        "file_name": pdf_file.name,
+                        "file_type": "pdf",
+                        "page_count": len(pdf_documents),
+                    },
+                    doc_id=f"{roadmap_id}:{node_id}",
+                )
+
+                documents.append(doc)
+            except Exception as e:
+                print(f"Warning: Failed to process PDF {pdf_file.name}: {e}")
+
     return documents
 
 
 def create_index(
-    documents: list[Document], model_name: str = "BAAI/bge-base-en-v1.5"
+    documents: list[Document], model_name: str = "text-embedding-3-small"
 ) -> VectorStoreIndex:
-    """Create a LlamaIndex VectorStoreIndex with HuggingFace embeddings."""
-    print(f"\nLoading embedding model: {model_name}...")
+    """Create a LlamaIndex VectorStoreIndex with OpenAI embeddings."""
+    print(f"\nUsing OpenAI embedding model: {model_name}...")
 
     # Configure embedding model
-    embed_model = HuggingFaceEmbedding(model_name=model_name)
+    embed_model = OpenAIEmbedding(model=model_name)
 
     # Set global embedding model
     Settings.embed_model = embed_model
@@ -233,8 +279,8 @@ def main():
     )
     parser.add_argument(
         "--model",
-        default="BAAI/bge-base-en-v1.5",
-        help="HuggingFace embedding model (default: BAAI/bge-base-en-v1.5)",
+        default="text-embedding-3-small",
+        help="OpenAI embedding model (default: text-embedding-3-small)",
     )
     parser.add_argument(
         "--base-path",
@@ -249,13 +295,30 @@ def main():
     if args.base_path is None:
         args.base_path = find_project_root()
 
+    # Load environment variables from .env at project root
+    env_path = args.base_path / ".env"
+    if env_path.exists():
+        load_dotenv(env_path)
+        print(f"Loaded environment from {env_path}")
+    
+    # Verify OpenAI API key is available
+    if not os.getenv("OPENAI_API_KEY"):
+        raise ValueError(
+            "OPENAI_API_KEY not found in environment. "
+            "Please add it to .env file at project root."
+        )
+
     print(f"=== Generating LlamaIndex Embeddings for {args.roadmap} ===")
     print(f"Project root: {args.base_path}")
 
     # Load documents
     print(f"\nLoading detailed reference content from src/data/embeddings/{args.roadmap}/...")
     documents = load_roadmap_documents(args.roadmap, args.base_path)
-    print(f"Loaded {len(documents)} markdown files")
+    
+    # Count file types
+    md_count = sum(1 for d in documents if d.metadata.get("file_type") == "markdown")
+    pdf_count = sum(1 for d in documents if d.metadata.get("file_type") == "pdf")
+    print(f"Loaded {len(documents)} files ({md_count} markdown, {pdf_count} PDF)")
 
     # Create index
     index = create_index(documents, args.model)
@@ -269,7 +332,7 @@ def main():
         f"\nGenerated index saved to: src/data/embeddings/{args.roadmap}/index/"
     )
     print(
-        f"Source markdown files remain at: src/data/embeddings/{args.roadmap}/*.md"
+        f"Source files remain at: src/data/embeddings/{args.roadmap}/ (*.md, *.pdf)"
     )
 
 

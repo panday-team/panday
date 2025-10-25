@@ -2,10 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "../route";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/embeddings-client", () => ({
-  embeddingsClient: {
-    query: vi.fn(),
-  },
+vi.mock("@/lib/embeddings-service", () => ({
+  queryEmbeddings: vi.fn(),
 }));
 
 vi.mock("@ai-sdk/google", () => ({
@@ -75,10 +73,10 @@ describe("Chat API Route", () => {
     });
 
     it("should query embeddings with provided parameters", async () => {
-      const { embeddingsClient } = await import("@/lib/embeddings-client");
+      const { queryEmbeddings } = await import("@/lib/embeddings-service");
       const { streamText } = await import("ai");
 
-      vi.mocked(embeddingsClient.query).mockResolvedValueOnce({
+      vi.mocked(queryEmbeddings).mockResolvedValueOnce({
         query: "test query",
         roadmap_id: "electrician-bc",
         sources: [],
@@ -108,21 +106,18 @@ describe("Chat API Route", () => {
 
       await POST(request);
 
-      expect(embeddingsClient.query).toHaveBeenCalledWith(
-        {
-          query: "test query",
-          roadmap_id: "electrician-bc",
-          top_k: 10,
-        },
-        expect.any(AbortSignal),
-      );
+      expect(queryEmbeddings).toHaveBeenCalledWith({
+        query: "test query",
+        roadmap_id: "electrician-bc",
+        top_k: 10,
+      });
     });
 
     it("should use default top_k value when not provided", async () => {
-      const { embeddingsClient } = await import("@/lib/embeddings-client");
+      const { queryEmbeddings } = await import("@/lib/embeddings-service");
       const { streamText } = await import("ai");
 
-      vi.mocked(embeddingsClient.query).mockResolvedValueOnce({
+      vi.mocked(queryEmbeddings).mockResolvedValueOnce({
         query: "test query",
         roadmap_id: "electrician-bc",
         sources: [],
@@ -142,21 +137,18 @@ describe("Chat API Route", () => {
 
       await POST(request);
 
-      expect(embeddingsClient.query).toHaveBeenCalledWith(
-        {
-          query: "test query",
-          roadmap_id: undefined,
-          top_k: 5,
-        },
-        expect.any(AbortSignal),
-      );
+      expect(queryEmbeddings).toHaveBeenCalledWith({
+        query: "test query",
+        roadmap_id: undefined,
+        top_k: 5,
+      });
     });
 
     it("should handle embeddings API errors", async () => {
-      const { embeddingsClient } = await import("@/lib/embeddings-client");
+      const { queryEmbeddings } = await import("@/lib/embeddings-service");
 
-      vi.mocked(embeddingsClient.query).mockRejectedValueOnce(
-        new Error("Embeddings service unavailable"),
+      vi.mocked(queryEmbeddings).mockRejectedValueOnce(
+        new Error("Failed to query embeddings: Embeddings service unavailable"),
       );
 
       const request = new NextRequest("http://localhost:3000/api/chat", {
@@ -170,14 +162,14 @@ describe("Chat API Route", () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data.error).toBe("Embeddings service unavailable");
+      expect(data.error).toContain("Embeddings service unavailable");
     });
 
     it("should handle AI provider errors", async () => {
-      const { embeddingsClient } = await import("@/lib/embeddings-client");
+      const { queryEmbeddings } = await import("@/lib/embeddings-service");
       const { streamText } = await import("ai");
 
-      vi.mocked(embeddingsClient.query).mockResolvedValueOnce({
+      vi.mocked(queryEmbeddings).mockResolvedValueOnce({
         query: "test query",
         roadmap_id: "electrician-bc",
         sources: [],
@@ -203,7 +195,7 @@ describe("Chat API Route", () => {
     });
 
     it("should call streamText with proper parameters", async () => {
-      const { embeddingsClient } = await import("@/lib/embeddings-client");
+      const { queryEmbeddings } = await import("@/lib/embeddings-service");
       const { streamText } = await import("ai");
 
       const mockSources = [
@@ -215,7 +207,7 @@ describe("Chat API Route", () => {
         },
       ];
 
-      vi.mocked(embeddingsClient.query).mockResolvedValueOnce({
+      vi.mocked(queryEmbeddings).mockResolvedValueOnce({
         query: "test query",
         roadmap_id: "electrician-bc",
         sources: mockSources,
@@ -253,10 +245,10 @@ describe("Chat API Route", () => {
     });
 
     it("should build system prompt with context", async () => {
-      const { embeddingsClient } = await import("@/lib/embeddings-client");
+      const { queryEmbeddings } = await import("@/lib/embeddings-service");
       const { streamText } = await import("ai");
 
-      vi.mocked(embeddingsClient.query).mockResolvedValueOnce({
+      vi.mocked(queryEmbeddings).mockResolvedValueOnce({
         query: "test query",
         roadmap_id: "electrician-bc",
         sources: [],

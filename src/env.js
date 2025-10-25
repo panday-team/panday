@@ -25,11 +25,10 @@ export const env = createEnv({
       .min(1)
       .max(65535)
       .default(8079),
-    EMBEDDINGS_API_URL: z.string().url().default("http://localhost:8000"),
     AI_PROVIDER: z.enum(["anthropic", "openai", "google"]).default("anthropic"),
     AI_MODEL: z.string().default("claude-3-5-sonnet-20241022"),
     ANTHROPIC_API_KEY: z.string().optional(),
-    OPENAI_API_KEY: z.string().optional(),
+    OPENAI_API_KEY: z.string(),
     GOOGLE_API_KEY: z.string().optional(),
   },
 
@@ -59,7 +58,6 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_PORT: process.env.UPSTASH_REDIS_REST_PORT,
-    EMBEDDINGS_API_URL: process.env.EMBEDDINGS_API_URL,
     AI_PROVIDER: process.env.AI_PROVIDER,
     AI_MODEL: process.env.AI_MODEL,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,

@@ -24,6 +24,7 @@ vi.mock("@/env", () => ({
     NODE_ENV: "test",
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_123",
     CLERK_SECRET_KEY: "sk_test_123",
+    OPENAI_API_KEY: "sk-test-openai-key",
   },
 }));
 
@@ -67,6 +68,13 @@ describe("systemStatus", () => {
       expect(clerkService).toBeDefined();
       expect(clerkService?.state).toBe("ok");
       expect(clerkService?.detail).toBe("Clerk keys loaded");
+
+      const openaiService = status.services.find(
+        (s) => s.name === "OpenAI Embeddings",
+      );
+      expect(openaiService).toBeDefined();
+      expect(openaiService?.state).toBe("ok");
+      expect(openaiService?.detail).toBe("OpenAI API key configured");
     });
 
     it("should handle database connection failures", async () => {

@@ -3,7 +3,7 @@ import { streamText, type LanguageModel } from "ai";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
-import { embeddingsClient } from "@/lib/embeddings-client";
+import { queryEmbeddings } from "@/lib/embeddings-service";
 import { logger } from "@/lib/logger";
 import { chatRateLimit } from "@/lib/rate-limit";
 import { env } from "@/env";
@@ -87,22 +87,11 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "No user message found" }, { status: 400 });
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-    let embeddingsResponse;
-    try {
-      embeddingsResponse = await embeddingsClient.query(
-        {
-          query: lastUserMessage.content,
-          roadmap_id: validatedBody.roadmap_id,
-          top_k: validatedBody.top_k ?? 5,
-        },
-        controller.signal,
-      );
-    } finally {
-      clearTimeout(timeoutId);
-    }
+    const embeddingsResponse = await queryEmbeddings({
+      query: lastUserMessage.content,
+      roadmap_id: validatedBody.roadmap_id,
+      top_k: validatedBody.top_k ?? 5,
+    });
 
     const systemPrompt = `You are a helpful career guidance assistant for skilled trades in British Columbia, Canada.
 

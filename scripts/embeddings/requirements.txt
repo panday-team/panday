@@ -1,14 +1,14 @@
 # LlamaIndex core
 llama-index-core==0.11.0
 
-# HuggingFace embeddings for LlamaIndex
-llama-index-embeddings-huggingface==0.3.0
+# OpenAI embeddings for LlamaIndex
+llama-index-embeddings-openai==0.2.5
 
-# Sentence transformers (used by HF embeddings)
-sentence-transformers==3.0.1
+# File readers for LlamaIndex (PDF, DOCX, PPTX, etc.)
+llama-index-readers-file==0.2.2
 
 # Markdown and YAML parsing
 PyYAML==6.0.1
 
-# For FastAPI service (separate requirements)
-# See scripts/embeddings/service/requirements.txt
+# Environment variables
+python-dotenv

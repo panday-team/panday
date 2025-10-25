@@ -2,7 +2,6 @@ import { env } from "@/env";
 import { logger } from "@/lib/logger";
 import redis from "@/server/database/redisClient";
 import { db, databaseConnectionConfig } from "@/server/db";
-import { embeddingsClient } from "@/lib/embeddings-client";
 
 type ServiceState = "ok" | "warn" | "error";
 
@@ -119,31 +118,14 @@ export const getSystemStatus = async (): Promise<SystemStatus> => {
       : "Clerk environment variables missing",
   });
 
-  try {
-    const start = Date.now();
-    const healthResponse = await embeddingsClient.health();
-    const latencyMs = formatLatency(Date.now() - start);
-
-    const indexCount = healthResponse.loaded_indexes.length;
-    services.push({
-      name: "Embeddings API",
-      state: "ok",
-      detail: `Healthy with ${indexCount} loaded index${indexCount === 1 ? "" : "es"}`,
-      latencyMs,
-      target: env.EMBEDDINGS_API_URL,
-    });
-  } catch (error) {
-    logger.error("Embeddings API health check failed", error, {
-      url: env.EMBEDDINGS_API_URL,
-    });
-    services.push({
-      name: "Embeddings API",
-      state: "error",
-      detail: "Embeddings API health check failed",
-      target: env.EMBEDDINGS_API_URL,
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
+  const openaiConfigured = Boolean(env.OPENAI_API_KEY);
+  services.push({
+    name: "OpenAI Embeddings",
+    state: openaiConfigured ? "ok" : "error",
+    detail: openaiConfigured
+      ? "OpenAI API key configured"
+      : "OPENAI_API_KEY missing",
+  });
 
   return {
     environment: {
