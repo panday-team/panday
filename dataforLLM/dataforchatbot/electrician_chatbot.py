@@ -12,7 +12,8 @@ from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
 import openai
 
-# Set OpenAI API key
+# Set OpenAI API key from environment variable
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Base URL for relative links
 BASE_URL = "https://skilledtradesbc.ca"
