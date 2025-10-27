@@ -8,16 +8,14 @@ Generate OpenAI embeddings for roadmap reference content to power the RAG chat s
 # First time setup (creates Python venv and installs dependencies)
 bun run embeddings:setup
 
-# Generate embeddings for a roadmap
+# Generate embeddings (incremental update if index exists)
 bun run embeddings:generate electrician-bc
 
-# Or use a different OpenAI model
-bun run embeddings:generate electrician-bc --model text-embedding-3-large
 ```
 
 ## Content Organization
 
-Your content is organized into two separate directories:
+the content is organized into two separate directories:
 
 - `src/data/roadmaps/{roadmap-id}/content/` - Short, structured markdown files for React Flow visualization
 - `src/data/embeddings/{roadmap-id}/` - Detailed reference documents for RAG (this is what gets embedded)
@@ -81,6 +79,13 @@ src/data/embeddings/electrician-bc/
 
 The script will automatically find and embed all `.md` and `.pdf` files.
 
+When you run the generator again, it will:
+
+- **Skip unchanged files** (no API calls, no cost)
+- **Add new files** (one API call per new file)
+- **Update modified files** (one API call per modified file)
+- **Remove deleted files** from the index
+
 ## Output Structure
 
 The script creates a persisted LlamaIndex index:
@@ -95,45 +100,52 @@ src/data/embeddings/{roadmap-id}/
     ├── default__vector_store.json        # Vector embeddings
     ├── graph_store.json                  # Graph relationships
     ├── image__vector_store.json          # Image vectors (if any)
-    └── metadata.json                     # Generation metadata
+    └── metadata.json                     # Generation metadata with file tracking
 ```
 
 **Important:** Commit both your source files AND the generated `index/` directory to git!
 
-## OpenAI Embedding Models
+### Metadata File with Change Tracking
 
-### text-embedding-3-small (Default, Recommended)
+The `metadata.json` now tracks file hashes for incremental updates:
 
-- **Dimensions:** 1536
-- **Cost:** $0.00002 per 1K tokens (~$0.02 per 1M tokens)
-- **Performance:** Fast inference, excellent quality
-- **Best for:** Most use cases, production
-
-### text-embedding-3-large
-
-- **Dimensions:** 3072
-- **Cost:** $0.00013 per 1K tokens (~$0.13 per 1M tokens)
-- **Performance:** Slower, highest quality
-- **Best for:** Maximum accuracy requirements
-
-### ada-002 (Legacy)
-
-- **Dimensions:** 1536
-- **Cost:** $0.0001 per 1K tokens
-- **Performance:** Older model, superseded by 3-small
-- **Best for:** Legacy compatibility
+```json
+{
+  "model": "text-embedding-3-small",
+  "roadmapId": "electrician-bc",
+  "generatedAt": "2025-10-27T17:42:41.185365Z",
+  "documentCount": 72,
+  "files": {
+    "electrician-foundation-program.md": {
+      "hash": "abc123def456...",
+      "size": 57044,
+      "lastModified": "2025-10-23T11:22:00Z"
+    },
+    "construction-electrician-program.pdf": {
+      "hash": "xyz789abc456...",
+      "size": 2923737,
+      "lastModified": "2025-10-27T10:29:00Z"
+    }
+  }
+}
+```
 
 ## Architecture
 
 ### 1. Local Generation (This Script)
 
 1. Reads detailed files from `src/data/embeddings/{roadmap-id}/`
-2. Parses markdown frontmatter and content sections
-3. Extracts PDF text using LlamaIndex PDFReader
-4. Creates LlamaIndex Documents with rich metadata
-5. Generates embeddings using OpenAI API
-6. Persists complete index to `src/data/embeddings/{roadmap-id}/index/`
-7. **Commit both source files and the persisted index to git**
+2. Computes SHA-256 hash of each file for change detection
+3. Detects new/modified/deleted files by comparing hashes
+4. For changed files:
+   - Parses markdown frontmatter and content sections
+   - Extracts PDF text using LlamaIndex PDFReader
+   - Creates LlamaIndex Documents with rich metadata
+   - Generates embeddings using OpenAI API
+5. Updates existing index with new documents, modified documents, or deletions
+6. Persists updated index to `src/data/embeddings/{roadmap-id}/index/`
+7. Stores file hashes in `metadata.json` for future change detection
+8. **Commit both source files and the persisted index to git**
 
 ### 2. Next.js Application (Production)
 
@@ -142,29 +154,54 @@ src/data/embeddings/{roadmap-id}/
 - Queries index for semantic search during chat
 - Passes relevant context to Gemini for final answer generation
 
-## Helper Script Options
+## Command-Line Options
+
+### Full Syntax
 
 ```bash
-# Show help
-./scripts/embeddings/generate.sh --help
+bun run embeddings:generate <roadmap-id> [options]
+# or
+./scripts/embeddings/generate.sh <roadmap-id> [options]
+```
 
-# Setup virtual environment
+### Options
+
+```bash
+# Incremental update (default - only regenerates changed files)
+bun run embeddings:generate electrician-bc
+
+# Force full rebuild (regenerate all embeddings)
+bun run embeddings:generate electrician-bc --force-rebuild
+
+# Dry run (show what would change without making changes)
+bun run embeddings:generate electrician-bc --dry-run
+
+# Use a different embedding model
+bun run embeddings:generate electrician-bc --model text-embedding-3-large
+
+# Setup virtual environment (one-time)
 ./scripts/embeddings/generate.sh --setup
 
-# Generate with default model
-./scripts/embeddings/generate.sh electrician-bc
-
-# Use a different model
-./scripts/embeddings/generate.sh electrician-bc --model text-embedding-3-large
+# Show help
+./scripts/embeddings/generate.sh --help
 ```
+
+### When to Use Each Mode
+
+| Mode                      | When                     | Cost                |
+| ------------------------- | ------------------------ | ------------------- |
+| **Default (incremental)** | Adding/modifying files   | Only changed files  |
+| **`--force-rebuild`**     | Updating embedding model | All files           |
+| **`--dry-run`**           | Previewing changes       | Zero (no API calls) |
 
 ## Usage Notes
 
 - Run this script locally whenever reference content changes
-- Commit the generated embeddings to version control
+- Commit both source files AND the `index/` directory to version control
 - No embedding generation happens in production (only queries)
 - Index loading happens lazily on first query per roadmap
 - Indexes are cached in memory for performance
+- **Always commit `metadata.json`** - it tracks file hashes for future incremental updates
 
 ## Troubleshooting
 
@@ -183,9 +220,3 @@ bun run embeddings:setup
 ### "Content directory not found"
 
 Ensure you have source files in `src/data/embeddings/{roadmap-id}/`
-
-### Cost Optimization
-
-- Use `text-embedding-3-small` for development and production (default)
-- Only use `text-embedding-3-large` if you need maximum accuracy
-- Monitor usage at https://platform.openai.com/usage

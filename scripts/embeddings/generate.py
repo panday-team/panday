@@ -2,16 +2,20 @@
 """
 Generate embeddings for roadmap markdown content using LlamaIndex.
 
-This script reads markdown files from src/data/roadmaps/{roadmap-id}/content/,
+This script reads markdown files from src/data/embeddings/{roadmap-id}/,
 generates a LlamaIndex VectorStoreIndex with OpenAI embeddings,
-and persists the index to src/data/embeddings/{roadmap-id}/ for use by the RAG system.
+and persists the index to src/data/embeddings/{roadmap-id}/index/ for use by the RAG system.
+
+Supports incremental updates: only regenerates embeddings for new/modified files.
+Use --force-rebuild to regenerate all embeddings.
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -90,8 +94,30 @@ def parse_markdown_sections(content: str) -> dict[str, Any]:
     return sections
 
 
-def load_roadmap_documents(roadmap_id: str, base_path: Path) -> list[Document]:
+def compute_file_hash(file_path: Path) -> str:
+    """Compute SHA-256 hash of a file."""
+    sha256_hash = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for byte_block in iter(lambda: f.read(4096), b""):
+            sha256_hash.update(byte_block)
+    return sha256_hash.hexdigest()
+
+
+def get_file_metadata(file_path: Path) -> dict[str, Any]:
+    """Get metadata for a file (hash, size, modified time)."""
+    stat = file_path.stat()
+    return {
+        "hash": compute_file_hash(file_path),
+        "size": stat.st_size,
+        "lastModified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+    }
+
+
+def load_roadmap_documents(roadmap_id: str, base_path: Path) -> tuple[list[Document], dict[str, dict[str, Any]]]:
     """Load all markdown and PDF content files for a roadmap as LlamaIndex Documents.
+    
+    Returns:
+        tuple of (documents, file_metadata) where file_metadata maps filename to file info
     
     Note: PDF support requires llama-index-readers-file package.
     Install via: pip install llama-index-readers-file
@@ -103,6 +129,7 @@ def load_roadmap_documents(roadmap_id: str, base_path: Path) -> list[Document]:
         raise ValueError(f"Content directory not found: {content_dir}")
 
     documents = []
+    file_metadata = {}
 
     # Check if PDF reader is available
     pdf_reader = None
@@ -165,19 +192,20 @@ def load_roadmap_documents(roadmap_id: str, base_path: Path) -> list[Document]:
         # Create LlamaIndex Document with metadata
         doc = Document(
             text=full_text,
-            metadata={
-                "node_id": node_id,
-                "roadmap_id": roadmap_id,
-                "title": title,
-                "type": node_type,
-                "file_name": md_file.name,
-                "file_type": "markdown",
-                **frontmatter,
-            },
             doc_id=f"{roadmap_id}:{node_id}",
         )
+        doc.metadata = {
+            "node_id": node_id,
+            "roadmap_id": roadmap_id,
+            "title": title,
+            "type": node_type,
+            "file_name": md_file.name,
+            "file_type": "markdown",
+            **frontmatter,
+        }
 
         documents.append(doc)
+        file_metadata[md_file.name] = get_file_metadata(md_file)
 
     # Process PDF files if reader is available
     if pdf_reader:
@@ -194,22 +222,54 @@ def load_roadmap_documents(roadmap_id: str, base_path: Path) -> list[Document]:
                 # Create LlamaIndex Document with metadata
                 doc = Document(
                     text=full_text,
-                    metadata={
-                        "node_id": node_id,
-                        "roadmap_id": roadmap_id,
-                        "title": node_id.replace("-", " ").title(),
-                        "file_name": pdf_file.name,
-                        "file_type": "pdf",
-                        "page_count": len(pdf_documents),
-                    },
                     doc_id=f"{roadmap_id}:{node_id}",
                 )
+                doc.metadata = {
+                    "node_id": node_id,
+                    "roadmap_id": roadmap_id,
+                    "title": node_id.replace("-", " ").title(),
+                    "file_name": pdf_file.name,
+                    "file_type": "pdf",
+                    "page_count": len(pdf_documents),
+                }
 
                 documents.append(doc)
+                file_metadata[pdf_file.name] = get_file_metadata(pdf_file)
             except Exception as e:
                 print(f"Warning: Failed to process PDF {pdf_file.name}: {e}")
 
-    return documents
+    return documents, file_metadata
+
+
+def load_existing_metadata(persist_dir: Path) -> dict[str, Any]:
+    """Load existing metadata from index directory."""
+    metadata_file = persist_dir / "metadata.json"
+    if metadata_file.exists():
+        with metadata_file.open("r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+def detect_changes(
+    current_files: dict[str, dict[str, Any]], 
+    previous_metadata: dict[str, Any]
+) -> tuple[set[str], set[str], set[str]]:
+    """Detect which files are new, modified, or deleted.
+    
+    Returns:
+        tuple of (new_files, modified_files, deleted_files)
+    """
+    previous_files = previous_metadata.get("files", {})
+    
+    new_files = set(current_files.keys()) - set(previous_files.keys())
+    deleted_files = set(previous_files.keys()) - set(current_files.keys())
+    
+    modified_files = set()
+    for filename in set(current_files.keys()) & set(previous_files.keys()):
+        if current_files[filename]["hash"] != previous_files[filename].get("hash"):
+            modified_files.add(filename)
+    
+    return new_files, modified_files, deleted_files
 
 
 def create_index(
@@ -233,13 +293,67 @@ def create_index(
     return index
 
 
+def load_existing_index(persist_dir: Path) -> VectorStoreIndex:
+    """Load existing index from storage."""
+    storage_context = StorageContext.from_defaults(persist_dir=str(persist_dir))
+    return load_index_from_storage(storage_context)
+
+
+def update_index_incremental(
+    index: VectorStoreIndex,
+    documents: list[Document],
+    new_files: set[str],
+    modified_files: set[str],
+    deleted_files: set[str],
+    roadmap_id: str,
+) -> None:
+    """Update index incrementally by adding/updating/deleting files."""
+    # Create mapping of doc_id to document
+    doc_map = {doc.doc_id: doc for doc in documents}
+    
+    # Delete removed files
+    for filename in deleted_files:
+        # Extract node_id from filename
+        node_id = Path(filename).stem
+        doc_id = f"{roadmap_id}:{node_id}"
+        try:
+            index.delete(doc_id)
+            print(f"  Deleted: {filename}")
+        except Exception as e:
+            print(f"  Warning: Failed to delete {filename}: {e}")
+    
+    # Update modified files (delete old, insert new)
+    for filename in modified_files:
+        node_id = Path(filename).stem
+        doc_id = f"{roadmap_id}:{node_id}"
+        try:
+            index.delete(doc_id)
+            if doc_id in doc_map:
+                index.insert(doc_map[doc_id])
+            print(f"  Updated: {filename}")
+        except Exception as e:
+            print(f"  Warning: Failed to update {filename}: {e}")
+    
+    # Insert new files
+    for filename in new_files:
+        node_id = Path(filename).stem
+        doc_id = f"{roadmap_id}:{node_id}"
+        try:
+            if doc_id in doc_map:
+                index.insert(doc_map[doc_id])
+            print(f"  Added: {filename}")
+        except Exception as e:
+            print(f"  Warning: Failed to add {filename}: {e}")
+
+
 def persist_index(
     index: VectorStoreIndex,
     roadmap_id: str,
     model_name: str,
     output_path: Path,
+    file_metadata: dict[str, dict[str, Any]],
 ):
-    """Persist the LlamaIndex index to disk."""
+    """Persist the LlamaIndex index to disk with file tracking metadata."""
     # Save index to a subdirectory to keep source markdown files separate
     persist_dir = output_path / roadmap_id / "index"
     persist_dir.mkdir(parents=True, exist_ok=True)
@@ -247,12 +361,13 @@ def persist_index(
     print(f"\nPersisting index to {persist_dir}...")
     index.storage_context.persist(persist_dir=str(persist_dir))
 
-    # Save metadata about the index
+    # Save metadata about the index including file tracking
     metadata = {
         "model": model_name,
         "roadmapId": roadmap_id,
-        "generatedAt": datetime.utcnow().isoformat() + "Z",
+        "generatedAt": datetime.now(timezone.utc).isoformat(),
         "documentCount": len(index.docstore.docs),
+        "files": file_metadata,
     }
 
     metadata_file = persist_dir / "metadata.json"
@@ -270,7 +385,7 @@ def persist_index(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate LlamaIndex embeddings for roadmap content"
+        description="Generate LlamaIndex embeddings for roadmap content (with incremental updates)"
     )
     parser.add_argument(
         "--roadmap",
@@ -287,6 +402,16 @@ def main():
         type=Path,
         default=None,
         help="Base project path (default: auto-detect project root)",
+    )
+    parser.add_argument(
+        "--force-rebuild",
+        action="store_true",
+        help="Force full rebuild of all embeddings (skip incremental update)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be changed without making changes",
     )
 
     args = parser.parse_args()
@@ -311,21 +436,76 @@ def main():
     print(f"=== Generating LlamaIndex Embeddings for {args.roadmap} ===")
     print(f"Project root: {args.base_path}")
 
-    # Load documents
-    print(f"\nLoading detailed reference content from src/data/embeddings/{args.roadmap}/...")
-    documents = load_roadmap_documents(args.roadmap, args.base_path)
+    # Load documents and get file metadata
+    print(f"\nLoading content from src/data/embeddings/{args.roadmap}/...")
+    documents, file_metadata = load_roadmap_documents(args.roadmap, args.base_path)
     
     # Count file types
     md_count = sum(1 for d in documents if d.metadata.get("file_type") == "markdown")
     pdf_count = sum(1 for d in documents if d.metadata.get("file_type") == "pdf")
-    print(f"Loaded {len(documents)} files ({md_count} markdown, {pdf_count} PDF)")
+    print(f"Found {len(documents)} files ({md_count} markdown, {pdf_count} PDF)")
 
-    # Create index
-    index = create_index(documents, args.model)
+    # Check if index exists and detect changes
+    output_path = args.base_path / "src/data/embeddings"
+    persist_dir = output_path / args.roadmap / "index"
+    
+    new_files = set()
+    modified_files = set()
+    deleted_files = set()
+    
+    if persist_dir.exists() and not args.force_rebuild:
+        print("\n--- Checking for file changes (incremental mode) ---")
+        existing_metadata = load_existing_metadata(persist_dir)
+        new_files, modified_files, deleted_files = detect_changes(file_metadata, existing_metadata)
+        
+        total_changes = len(new_files) + len(modified_files) + len(deleted_files)
+        
+        if total_changes == 0:
+            print("✓ All files unchanged. No embeddings to regenerate.")
+            return
+        
+        print(f"Changes detected:")
+        if new_files:
+            print(f"  New files: {', '.join(new_files)}")
+        if modified_files:
+            print(f"  Modified files: {', '.join(modified_files)}")
+        if deleted_files:
+            print(f"  Deleted files: {', '.join(deleted_files)}")
+        
+        if args.dry_run:
+            print("\n[DRY RUN] Would perform the above changes.")
+            return
+        
+        # Load existing index and update incrementally
+        print("\nLoading existing index for incremental update...")
+        index = load_existing_index(persist_dir)
+        
+        print("Updating index with changes...")
+        update_index_incremental(
+            index,
+            documents,
+            new_files,
+            modified_files,
+            deleted_files,
+            args.roadmap,
+        )
+    else:
+        # Full rebuild
+        if args.force_rebuild:
+            print("\n--- Force rebuild mode ---")
+            print(f"Regenerating embeddings for all {len(documents)} files...")
+        else:
+            print("\n--- Creating new index ---")
+        
+        if args.dry_run:
+            print("[DRY RUN] Would create new index with all documents.")
+            return
+        
+        # Create index
+        index = create_index(documents, args.model)
 
     # Persist to disk
-    output_path = args.base_path / "src/data/embeddings"
-    persist_index(index, args.roadmap, args.model, output_path)
+    persist_index(index, args.roadmap, args.model, output_path, file_metadata)
 
     print("\n✓ Embedding generation complete!")
     print(
