@@ -25,6 +25,7 @@ import {
   type TerminalNodeType,
 } from "@/components/nodes";
 import { NodeInfoPanel } from "@/components/node-info-panel";
+import { ChatWidget } from "@/components/chat/chat-widget";
 import type { Roadmap } from "@/data/types/roadmap";
 import {
   calculateChildOffsets,
@@ -306,6 +307,8 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
           </div>
         </div>
       )}
+
+      <ChatWidget selectedNodeId={selectedNodeId ?? undefined} />
     </div>
   );
 }
