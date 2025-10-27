@@ -1,0 +1,6 @@
+{
+  "chunk_size": 1024,
+  "chunk_overlap": 100,
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "total_nodes": 285
+}
