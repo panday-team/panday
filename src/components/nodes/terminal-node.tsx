@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { motion } from "motion/react";
 
@@ -17,12 +17,31 @@ function TerminalNodeComponent({ id, data }: NodeProps<TerminalNodeType>) {
   const hiddenHandleClass =
     "pointer-events-none opacity-0 h-3 w-3 bg-transparent border-transparent";
 
+  // Generate unique animation parameters per node for organic variation
+  const animationParams = useMemo(() => {
+    const seed = id
+      .split("")
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const random = (min: number, max: number, offset = 0) => {
+      const x = Math.sin(seed + offset) * 10000;
+      return min + (max - min) * (x - Math.floor(x));
+    };
+
+    return {
+      glowDuration: random(3, 4.5),
+      breathDuration: random(4, 6),
+      shimmerDuration: random(2, 3.5),
+      phaseOffset: random(0, 2),
+    };
+  }, [id]);
+
   return (
     <BaseNode
       id={id}
       aria-label={label}
       className="relative flex h-32 w-32 cursor-pointer items-center justify-center rounded-full border-none bg-transparent shadow-none outline-none hover:ring-0 focus-visible:ring-0"
     >
+      {/* Outer pulse ring - shown when glow is enabled or subtle always-on version */}
       {glow ? (
         <motion.span
           aria-hidden
@@ -35,24 +54,62 @@ function TerminalNodeComponent({ id, data }: NodeProps<TerminalNodeType>) {
             duration: 2,
             repeat: Infinity,
             ease: "easeInOut",
+            delay: animationParams.phaseOffset * 0.3,
           }}
         />
       ) : null}
-      <span
+
+      {/* Outer glow with subtle breathing animation */}
+      <motion.span
         aria-hidden
         className="pointer-events-none absolute z-10 h-[180px] w-[180px] rounded-full bg-purple-500/[0.18]"
+        animate={{
+          scale: [1, 1.05, 1],
+          opacity: [0.18, 0.25, 0.18],
+        }}
+        transition={{
+          duration: animationParams.breathDuration,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: animationParams.phaseOffset,
+        }}
       />
+
+      {/* Main purple circle */}
       <span
         aria-hidden
         className="pointer-events-none absolute z-10 h-32 w-32 rounded-full bg-purple-500"
       />
-      <span
+
+      {/* White border ring with subtle pulse */}
+      <motion.span
         aria-hidden
         className="pointer-events-none absolute z-10 h-32 w-32 rounded-full border-2 border-white"
+        animate={{
+          opacity: [1, 0.85, 1],
+        }}
+        transition={{
+          duration: animationParams.glowDuration,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: animationParams.phaseOffset * 1.5,
+        }}
       />
-      <span
+
+      {/* Center dot with shimmer effect */}
+      <motion.span
         aria-hidden
         className="pointer-events-none absolute z-10 h-4 w-4 rounded-full bg-white"
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [1, 0.8, 1],
+        }}
+        transition={{
+          duration: animationParams.shimmerDuration,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: animationParams.phaseOffset * 2,
+        }}
       />
       <NodeAppendix
         position="left"
