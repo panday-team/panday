@@ -23,6 +23,7 @@ import {
   type HubNodeType,
   type ChecklistNodeType,
   type TerminalNodeType,
+  type ChecklistNodeData,
 } from "@/components/nodes";
 import { NodeInfoPanel } from "@/components/node-info-panel";
 import { ChatWidget } from "@/components/chat/chat-widget";
@@ -73,7 +74,8 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
   const isDraggingRef = useRef<string | null>(null);
 
   const initialNodes = useMemo<FlowNode[]>(() => {
-    return roadmap.graph.nodes.map((graphNode) => {
+    //build nodes from graph/content
+    const builtNodes: FlowNode[] = roadmap.graph.nodes.map((graphNode) => {
       const content = roadmap.content.get(graphNode.id);
       if (!content) {
         throw new Error(`Content not found for node: ${graphNode.id}`);
@@ -98,6 +100,43 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
         draggable: isMainNode,
       } as FlowNode;
     });
+
+    // adjust the spread space of the checklist nodes from their hub nodes here
+    const CHECKLIST_SPREAD = 1.25;
+    const nodesById = new Map<string, FlowNode>(
+      builtNodes.map((n) => [n.id, n]),
+    );
+
+    const adjusted = builtNodes.map((node) => {
+      const parentId =
+        node.type === "checklist"
+          ? (node.data as ChecklistNodeData & { parentId?: string })?.parentId
+          : undefined;
+      if (node.type === "checklist" && parentId) {
+        const parent = nodesById.get(parentId);
+        if (parent) {
+          const dx = node.position.x - parent.position.x;
+          const dy = node.position.y - parent.position.y;
+          // If already offset, scale outward slightly
+          if (
+            Number.isFinite(dx) &&
+            Number.isFinite(dy) &&
+            (dx !== 0 || dy !== 0)
+          ) {
+            return {
+              ...node,
+              position: {
+                x: parent.position.x + dx * CHECKLIST_SPREAD,
+                y: parent.position.y + dy * CHECKLIST_SPREAD,
+              },
+            } as FlowNode;
+          }
+        }
+      }
+      return node;
+    });
+
+    return adjusted;
   }, [roadmap]);
 
   const initialEdges = useMemo<FlowEdge[]>(() => {
@@ -278,8 +317,8 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
         proOptions={{ hideAttribution: true }}
       >
         <Background
-          color="rgba(53, 193, 185, 0.2)"
-          gap={36}
+          color="rgba(39, 86, 205, 0.2)"
+          gap={300}
           variant={BackgroundVariant.Lines}
         />
       </ReactFlow>
