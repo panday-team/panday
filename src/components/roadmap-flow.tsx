@@ -23,6 +23,7 @@ import {
   type HubNodeType,
   type ChecklistNodeType,
   type TerminalNodeType,
+  type ChecklistNodeData,
 } from "@/components/nodes";
 import { NodeInfoPanel } from "@/components/node-info-panel";
 import { ChatWidget } from "@/components/chat/chat-widget";
@@ -107,7 +108,10 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
     );
 
     const adjusted = builtNodes.map((node) => {
-      const parentId = (node.data as any)?.parentId as string | undefined;
+      const parentId =
+        node.type === "checklist"
+          ? (node.data as ChecklistNodeData & { parentId?: string })?.parentId
+          : undefined;
       if (node.type === "checklist" && parentId) {
         const parent = nodesById.get(parentId);
         if (parent) {

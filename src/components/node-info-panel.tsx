@@ -1,6 +1,5 @@
 import type { ComponentPropsWithoutRef } from "react";
 import { cn } from "@/lib/utils";
-import { RoadmapChecklist } from "@/components/roadmap-checklist";
 import type { ChecklistSection } from "@/data/types/roadmap";
 
 type ResourceLink = {
