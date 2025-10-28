@@ -313,7 +313,7 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
         proOptions={{ hideAttribution: true }}
       >
         <Background
-          color="rgba(53, 193, 185, 0.2)"
+          color="rgba(39, 86, 205, 0.2)"
           gap={300}
           variant={BackgroundVariant.Lines}
         />
