@@ -74,43 +74,6 @@ describe("roadmap-loader", () => {
       expect(content.content.length).toBeGreaterThan(0);
     });
 
-    it("should parse checklists from frontmatter", async () => {
-      const content = await loadNodeContent(
-        "electrician-bc",
-        "red-seal-certification",
-      );
-
-      expect(content.frontmatter.checklists).toBeDefined();
-      expect(content.frontmatter.checklists?.length).toBeGreaterThan(0);
-
-      const firstChecklist = content.frontmatter.checklists?.[0];
-      expect(firstChecklist).toHaveProperty("title");
-      expect(firstChecklist).toHaveProperty("items");
-      expect(firstChecklist?.items.length).toBeGreaterThan(0);
-
-      const firstItem = firstChecklist?.items[0];
-      expect(firstItem).toHaveProperty("id");
-      expect(firstItem).toHaveProperty("label");
-      expect(firstItem).toHaveProperty("type");
-    });
-
-    it("should parse checklist items with links", async () => {
-      const content = await loadNodeContent(
-        "electrician-bc",
-        "red-seal-certification",
-      );
-
-      const checklists = content.frontmatter.checklists ?? [];
-      const itemsWithLinks = checklists
-        .flatMap((checklist) => checklist.items)
-        .filter((item) => item.link);
-
-      expect(itemsWithLinks.length).toBeGreaterThan(0);
-
-      const firstLinkItem = itemsWithLinks[0];
-      expect(firstLinkItem?.link).toMatch(/^https?:\/\//);
-    });
-
     it("should throw error for non-existent node", async () => {
       await expect(
         loadNodeContent("electrician-bc", "non-existent-node"),

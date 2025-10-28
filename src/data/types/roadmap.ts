@@ -25,28 +25,6 @@ export interface RoadmapMetadata {
 }
 
 /**
- * Checklist item for a node
- */
-export interface ChecklistItem {
-  id: string;
-  label: string;
-  description?: string;
-  completed?: boolean;
-  required?: boolean;
-  type?: "requirement" | "resource" | "task" | "milestone";
-  link?: string;
-}
-
-/**
- * Checklist section in a node
- */
-export interface ChecklistSection {
-  title: string;
-  items: ChecklistItem[];
-  collapsible?: boolean;
-}
-
-/**
  * Frontmatter schema for markdown content files
  */
 export interface NodeContentFrontmatter {
@@ -63,7 +41,6 @@ export interface NodeContentFrontmatter {
   nextSteps?: string[];
   estimatedDuration?: string;
   duration?: string;
-  checklists?: ChecklistSection[];
 }
 
 /**

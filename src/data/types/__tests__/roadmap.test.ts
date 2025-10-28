@@ -7,8 +7,6 @@ import type {
   Roadmap,
   GraphNode,
   GraphEdge,
-  ChecklistItem,
-  ChecklistSection,
 } from "../roadmap";
 import { Position } from "@xyflow/react";
 
@@ -99,46 +97,6 @@ describe("Roadmap Types", () => {
     });
   });
 
-  describe("ChecklistItem", () => {
-    it("should accept checklist item with required fields", () => {
-      const item: ChecklistItem = {
-        id: "item-1",
-        label: "Complete safety training",
-        type: "task",
-      };
-
-      expect(item.id).toBe("item-1");
-      expect(item.label).toBe("Complete safety training");
-      expect(item.type).toBe("task");
-    });
-
-    it("should accept checklist item with link", () => {
-      const item: ChecklistItem = {
-        id: "item-2",
-        label: "Register for exam",
-        type: "resource",
-        link: "https://example.com/register",
-      };
-
-      expect(item.link).toBe("https://example.com/register");
-    });
-  });
-
-  describe("ChecklistSection", () => {
-    it("should accept checklist with items", () => {
-      const checklist: ChecklistSection = {
-        title: "Pre-requisites",
-        items: [
-          { id: "item-1", label: "Complete form", type: "task" },
-          { id: "item-2", label: "Submit documents", type: "task" },
-        ],
-      };
-
-      expect(checklist.title).toBe("Pre-requisites");
-      expect(checklist.items).toHaveLength(2);
-    });
-  });
-
   describe("NodeContentFrontmatter", () => {
     it("should accept minimal frontmatter", () => {
       const frontmatter: NodeContentFrontmatter = {
@@ -185,18 +143,11 @@ describe("Roadmap Types", () => {
         labelPosition: "top",
         showLabelDot: true,
         nodeType: "requirement",
-        checklists: [
-          {
-            title: "Requirements",
-            items: [{ id: "r1", label: "Register", type: "task" }],
-          },
-        ],
       };
 
       expect(frontmatter.duration).toBe("8 weeks");
       expect(frontmatter.badge).toBe("Required");
       expect(frontmatter.glow).toBe(true);
-      expect(frontmatter.checklists).toHaveLength(1);
     });
   });
 

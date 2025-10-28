@@ -341,7 +341,6 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
               benefits={selectedContent.benefits}
               outcomes={selectedContent.outcomes}
               resources={selectedContent.resources}
-              checklists={selectedContent.frontmatter.checklists}
             />
           </div>
         </div>
