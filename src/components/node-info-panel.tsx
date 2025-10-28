@@ -48,7 +48,7 @@ export function NodeInfoPanel({
 
       <div className="mt-6 space-y-5">
         <header>
-          <h1 className="font-['Inria_Sans',sans-serif] text-[31px] leading-tight text-white">
+          <h1 className="font-sans text-3xl leading-tight text-white">
             {title}
           </h1>
           {description ? (

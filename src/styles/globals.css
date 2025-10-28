@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Inria+Sans:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -6,7 +5,7 @@
 
 @theme {
   --font-sans:
-    var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
+    var(--font-inria-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
@@ -76,7 +75,6 @@
 }
 
 :root {
-  --main-font: "Inria Sans", sans-serif;
   --radius: 0.5rem;
   --background: oklch(0.9816 0.0017 247.839);
   --foreground: oklch(0.2101 0.0318 264.6645);
@@ -202,8 +200,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
     letter-spacing: var(--tracking-normal);
-    font-family: var(--main-font);
   }
 }

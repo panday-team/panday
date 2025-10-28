@@ -47,7 +47,7 @@ export default async function StatusPage() {
           <div className="space-y-6">
             <Badge
               variant="outline"
-              className="text-muted-foreground w-fit border-dashed px-3 py-1 text-[0.65rem] tracking-[0.32em] uppercase"
+              className="text-muted-foreground w-fit border-dashed px-3 py-1 text-[0.625rem] tracking-[0.32em] uppercase"
             >
               Runtime status
             </Badge>
@@ -139,7 +139,7 @@ const EnvironmentItem = ({
   value: string;
 }) => (
   <div className="border-border/50 bg-muted/10 rounded-xl border px-4 py-3 shadow-sm">
-    <dt className="text-muted-foreground text-[0.65rem] font-semibold tracking-[0.32em] uppercase">
+    <dt className="text-muted-foreground text-[0.625rem] font-semibold tracking-[0.32em] uppercase">
       {label}
     </dt>
     <dd className="text-foreground mt-1 text-sm font-semibold">{value}</dd>
@@ -149,7 +149,7 @@ const EnvironmentItem = ({
 const StatusBadge = ({ state }: { state: ServiceStatus["state"] }) => (
   <Badge
     variant={stateVariants[state]}
-    className="px-3 py-1 text-[0.6rem] font-semibold tracking-[0.26em] uppercase"
+    className="px-3 py-1 text-[0.625rem] font-semibold tracking-[0.26em] uppercase"
   >
     {stateLabels[state]}
   </Badge>
@@ -168,7 +168,7 @@ const ServiceMeta = ({
     <dl className="text-muted-foreground flex flex-col gap-2 text-xs">
       {target ? (
         <div>
-          <dt className="text-[0.65rem] font-semibold tracking-[0.32em] uppercase">
+          <dt className="text-[0.625rem] font-semibold tracking-[0.32em] uppercase">
             Target
           </dt>
           <dd className="text-foreground mt-1 text-sm font-medium">{target}</dd>
@@ -176,7 +176,7 @@ const ServiceMeta = ({
       ) : null}
       {latency ? (
         <div>
-          <dt className="text-[0.65rem] font-semibold tracking-[0.32em] uppercase">
+          <dt className="text-[0.625rem] font-semibold tracking-[0.32em] uppercase">
             Latency
           </dt>
           <dd className="text-foreground mt-1 text-sm font-medium">

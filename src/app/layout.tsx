@@ -2,7 +2,7 @@ import "@/styles/globals.css";
 
 import { ClerkProvider } from "@clerk/nextjs";
 import { type Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Inria_Sans } from "next/font/google";
 import { UserIdInitializer } from "@/components/user-id-initializer";
 
 export const metadata: Metadata = {
@@ -11,9 +11,11 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.svg" }],
 };
 
-const geist = Geist({
+const inriaSans = Inria_Sans({
   subsets: ["latin"],
-  variable: "--font-geist-sans",
+  weight: ["300", "400", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-inria-sans",
 });
 
 export default function RootLayout({
@@ -25,7 +27,7 @@ export default function RootLayout({
       signInFallbackRedirectUrl="/"
       signUpFallbackRedirectUrl="/"
     >
-      <html lang="en" className={`${geist.variable} dark`}>
+      <html lang="en" className={`${inriaSans.variable} dark`}>
         <body className="bg-background text-foreground min-h-dvh antialiased">
           <UserIdInitializer />
           {children}
