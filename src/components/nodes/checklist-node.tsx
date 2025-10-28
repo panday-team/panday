@@ -1,8 +1,7 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { BaseNode } from "@/components/base-node";
 import { NodeAppendix } from "@/components/node-appendix";
-
 import { motion } from "motion/react";
 
 export type ChecklistNodeData = {
@@ -15,28 +14,102 @@ export type ChecklistNodeType = Node<ChecklistNodeData, "checklist">;
 /**
  * Smaller circular checklist node that branches off main milestone nodes
  * Purple circle (40x40px) with external label
+ * Features Obsidian-inspired physics-based floating animation
  */
 function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
   const { label, labelPosition = "bottom" } = data;
   const hiddenHandleClass =
     "pointer-events-none opacity-0 h-3 w-3 bg-transparent border-transparent";
 
+  // Generate unique animation parameters per node for organic, non-synchronized movement
+  const animationParams = useMemo(() => {
+    // Use node ID as seed for deterministic randomness
+    const seed = id
+      .split("")
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const random = (min: number, max: number, offset = 0) => {
+      const x = Math.sin(seed + offset) * 10000;
+      return min + (max - min) * (x - Math.floor(x));
+    };
+
+    return {
+      // Drift range for x/y (Obsidian uses subtle 3-6px range)
+      driftX: random(3, 6),
+      driftY: random(3, 6),
+      // Different durations create elliptical/figure-8 paths
+      durationX: random(4, 7),
+      durationY: random(5, 8),
+      durationRotate: random(8, 12),
+      // Rotation range (very subtle, 1-2 degrees)
+      rotateRange: random(0.8, 1.5),
+      // Phase offset so nodes don't all start at the same position
+      phaseOffset: random(0, 2),
+      // Glow pulse parameters
+      glowDuration: random(3, 5),
+      glowScale: random(1.02, 1.08),
+    };
+  }, [id]);
+
   return (
-    <>
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{
+        opacity: 1,
+        scale: 1,
+      }}
+      transition={{
+        type: "spring",
+        stiffness: 200,
+        damping: 20,
+      }}
+      whileHover={{
+        scale: 1.1,
+      }}
+    >
+      {/* Main floating container with physics-based drift */}
       <motion.div
-        // initial={false}
-        // The component will instantly appear with these styles
         animate={{
-          opacity: 1,
-          scale: 1.2,
-          y: [5, -5, 5, -5],
-          x: [5, -5, 5, -5],
+          // Create smooth sinusoidal drift patterns
+          x: [
+            -animationParams.driftX,
+            animationParams.driftX,
+            -animationParams.driftX,
+          ],
+          y: [
+            -animationParams.driftY,
+            animationParams.driftY,
+            -animationParams.driftY,
+          ],
+          // Very subtle rotation that follows drift
+          rotate: [
+            -animationParams.rotateRange,
+            animationParams.rotateRange,
+            -animationParams.rotateRange,
+          ],
         }}
         transition={{
-          y: { duration: 3.5, repeat: Infinity, ease: "easeIn" },
-          x: { duration: 3.5, repeat: Infinity, ease: "easeIn" },
+          x: {
+            duration: animationParams.durationX,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: animationParams.phaseOffset,
+          },
+          y: {
+            duration: animationParams.durationY,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: animationParams.phaseOffset * 0.7, // Slightly offset from x
+          },
+          rotate: {
+            duration: animationParams.durationRotate,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: animationParams.phaseOffset * 0.5,
+          },
         }}
-        style={{ opacity: 0 }}
+        style={{
+          willChange: "transform", // Performance optimization
+        }}
       >
         <BaseNode
           id={id}
@@ -47,24 +120,51 @@ function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
             position={labelPosition}
             className="pointer-events-none border-none bg-transparent text-sm leading-tight font-medium text-[#D9DEE7]"
           >
-            <motion.div whileHover={{ scale: 200 }} />
             {label}
           </NodeAppendix>
-          <span
+
+          {/* Outer glow with independent pulsing animation */}
+          <motion.span
             aria-hidden
             className="pointer-events-none absolute h-[90px] w-[90px] rounded-full bg-[#9F7AEA]/[0.18]"
+            animate={{
+              scale: [1, animationParams.glowScale, 1],
+              opacity: [0.18, 0.25, 0.18],
+            }}
+            transition={{
+              duration: animationParams.glowDuration,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: animationParams.phaseOffset * 1.3,
+            }}
           />
+
+          {/* Main purple circle */}
           <span
             aria-hidden
             className="pointer-events-none absolute h-16 w-16 rounded-full bg-[#9F7AEA]"
           />
+
+          {/* White border ring */}
           <span
             aria-hidden
             className="pointer-events-none absolute h-16 w-16 rounded-full border-2 border-white"
           />
-          <span
+
+          {/* Center dot with subtle pulse */}
+          <motion.span
             aria-hidden
             className="pointer-events-none absolute h-2 w-2 rounded-full bg-white"
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [1, 0.8, 1],
+            }}
+            transition={{
+              duration: animationParams.glowDuration * 0.7,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: animationParams.phaseOffset * 1.8,
+            }}
           />
 
           <Handle
@@ -117,7 +217,7 @@ function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
           />
         </BaseNode>
       </motion.div>
-    </>
+    </motion.div>
   );
 }
 
