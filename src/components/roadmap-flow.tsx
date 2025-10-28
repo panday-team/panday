@@ -279,7 +279,7 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
       >
         <Background
           color="rgba(53, 193, 185, 0.2)"
-          gap={36}
+          gap={300}
           variant={BackgroundVariant.Lines}
         />
       </ReactFlow>
