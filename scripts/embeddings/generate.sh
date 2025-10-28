@@ -10,6 +10,7 @@ function usage() {
 Usage: $(basename "$0") <roadmap-id> [options]
 
 Generate embeddings for a roadmap using OpenAI's text-embedding-3-small model.
+Supports incremental updates: only regenerates embeddings for new/modified files.
 
 Arguments:
     roadmap-id              The roadmap ID (e.g., electrician-bc)
@@ -17,14 +18,22 @@ Arguments:
 Options:
     --model MODEL           OpenAI embedding model (default: text-embedding-3-small)
     --setup                 Set up Python virtual environment and install dependencies
+    --force-rebuild         Force full rebuild of all embeddings (skip incremental update)
+    --dry-run               Show what would be changed without making changes
     -h, --help              Show this help message
 
 Examples:
     # First time setup
     $(basename "$0") --setup
 
-    # Generate embeddings for electrician-bc roadmap
+    # Generate embeddings (incremental update if index exists)
     $(basename "$0") electrician-bc
+
+    # Force full rebuild
+    $(basename "$0") electrician-bc --force-rebuild
+
+    # Dry run to see what would change
+    $(basename "$0") electrician-bc --dry-run
 
     # Use a different OpenAI model
     $(basename "$0") electrician-bc --model text-embedding-3-large

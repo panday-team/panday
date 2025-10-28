@@ -2,25 +2,28 @@
 
 import { Input } from "@/components/ui/input";
 import { useChat } from "@ai-sdk/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 export default function ChatInput() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } =
-    useChat({
-      api: "/api/chat",
-      streamProtocol: "data",
-      onError: (error) => {
-        console.error("Chat error:", error);
-      },
-      onResponse: (response) => {
-        console.log("Chat response received:", response.status);
-      },
-      onFinish: (message) => {
-        console.log("Message finished:", message);
-      },
-    });
+  const [isLoading, setIsLoading] = useState(false);
+  const { messages, input, handleInputChange, handleSubmit, error } = useChat({
+    api: "/api/chat",
+    streamProtocol: "data",
+    onError: (error) => {
+      console.error("Chat error:", error);
+      setIsLoading(false);
+    },
+    onResponse: (response) => {
+      console.log("Chat response received:", response.status);
+      setIsLoading(true);
+    },
+    onFinish: (message) => {
+      console.log("Message finished:", message);
+      setIsLoading(false);
+    },
+  });
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
 

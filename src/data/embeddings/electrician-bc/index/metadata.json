@@ -1,6 +1,18 @@
 {
   "model": "text-embedding-3-small",
   "roadmapId": "electrician-bc",
-  "generatedAt": "2025-10-25T01:06:53.107384Z",
-  "documentCount": 1
+  "generatedAt": "2025-10-27T18:03:27.670984+00:00",
+  "documentCount": 144,
+  "files": {
+    "electrician-foundation-program.md": {
+      "hash": "88097d9142d7bc4a188bb4c0ec28c41682d9a05e2a4dcd6eb708779c36f0163b",
+      "size": 57044,
+      "lastModified": "2025-10-23T18:22:30.029895+00:00"
+    },
+    "construction-electrician-program-outline-september-2022-harmonized.pdf": {
+      "hash": "1a8d32b85302574b0f6f72f845eea3b09bfca6a5e6cbad28d1c5a9317ce3e4b7",
+      "size": 2923737,
+      "lastModified": "2025-10-27T17:29:03.968843+00:00"
+    }
+  }
 }

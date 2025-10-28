@@ -7,6 +7,11 @@ import { queryEmbeddings } from "@/lib/embeddings-service";
 import { logger } from "@/lib/logger";
 import { chatRateLimit } from "@/lib/rate-limit";
 import { env } from "@/env";
+import {
+  generateUserIdAsync,
+  getUserIdCookieHeader,
+  getCookieName,
+} from "@/lib/user-identifier";
 
 const ChatMessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]),
@@ -36,16 +41,21 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function getRequestIdentifier(req: NextRequest): string {
-  return (
-    req.headers.get("x-forwarded-for") ??
-    req.headers.get("x-real-ip") ??
-    "anonymous"
-  );
+  const cookieName = getCookieName();
+  const userIdCookie = req.cookies.get(cookieName)?.value;
+
+  if (userIdCookie) {
+    return userIdCookie;
+  }
+
+  return "anonymous";
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const identifier = getRequestIdentifier(req);
+    const cookieName = getCookieName();
+    const identifier =
+      req.cookies.get(cookieName)?.value ?? (await generateUserIdAsync());
 
     const { success, limit, reset, remaining } =
       await chatRateLimit.limit(identifier);
@@ -120,11 +130,12 @@ Always cite which specific sections or documents your answer comes from when pos
         logger.info("Chat completion finished", {
           provider: env.AI_PROVIDER,
           model: env.AI_MODEL,
+          identifier,
         });
       },
     });
 
-    return result.toDataStreamResponse({
+    const response = result.toDataStreamResponse({
       headers: {
         "X-Sources": JSON.stringify(embeddingsResponse.sources),
         "X-Roadmap-Id": embeddingsResponse.roadmap_id,
@@ -136,6 +147,10 @@ Always cite which specific sections or documents your answer comes from when pos
         Connection: "keep-alive",
       },
     });
+
+    response.headers.set("Set-Cookie", getUserIdCookieHeader(identifier));
+
+    return response;
   } catch (error) {
     logger.error("Chat API error", error, {
       identifier: getRequestIdentifier(req),

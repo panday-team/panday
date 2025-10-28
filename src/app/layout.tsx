@@ -3,11 +3,12 @@ import "@/styles/globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
+import { UserIdInitializer } from "@/components/user-id-initializer";
 
 export const metadata: Metadata = {
   title: "Panday ",
   description: "Panday",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+  icons: [{ rel: "icon", url: "/favicon.svg" }],
 };
 
 const geist = Geist({
@@ -26,6 +27,7 @@ export default function RootLayout({
     >
       <html lang="en" className={`${geist.variable} dark`}>
         <body className="bg-background text-foreground min-h-dvh antialiased">
+          <UserIdInitializer />
           {children}
         </body>
       </html>
