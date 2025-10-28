@@ -67,10 +67,15 @@ export function NodeInfoPanel({
           </header>
 
           <div className="max-h-[60vh] overflow-y-auto pr-2">
-            <RoadmapChecklist sections={checklists} />
+            {/* <RoadmapChecklist sections={checklists} /> */}
           </div>
         </div>
       </aside>
+    );
+    return (
+      <>
+        <h1>Smash burger</h1>
+      </>
     );
   }
 
