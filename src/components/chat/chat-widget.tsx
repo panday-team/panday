@@ -231,33 +231,38 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
             className="border-t border-gray-200 p-4 dark:border-white/10"
           >
             <div className="relative flex items-center gap-2">
-              <Input
-                type="text"
-                placeholder="Write your message"
-                disabled={isLoading}
-                value={input}
-                onChange={handleInputChange}
-                className="h-10 rounded-3xl border-white/10 bg-white text-sm text-black placeholder:font-extrabold placeholder:text-black/40 focus-visible:ring-0"
-              />
-              <button
-                type="submit"
-                disabled={isLoading || !input.trim()}
-                className="rounded-lg p-2 transition-all hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
-                aria-label="Send message"
+              <div
+                id="input-container"
+                className="flex w-full flex-row rounded-3xl bg-white"
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 18 18"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+                <Input
+                  type="text"
+                  placeholder="Write your message"
+                  disabled={isLoading}
+                  value={input}
+                  onChange={handleInputChange}
+                  className="h-10 rounded-3xl border-white/10 bg-white text-sm text-black placeholder:font-extrabold placeholder:text-black/40 focus-visible:ring-0"
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading || !input.trim()}
+                  className="rounded-lg p-2 transition-all hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
+                  aria-label="Send message"
                 >
-                  <path
-                    d="M15.0205 5.50867L6.46046 1.22867C0.710459 -1.65133 -1.64954 0.70867 1.23046 6.45867L2.10046 8.19867C2.35046 8.70867 2.35046 9.29867 2.10046 9.80867L1.23046 11.5387C-1.64954 17.2887 0.700459 19.6487 6.46046 16.7687L15.0205 12.4887C18.8605 10.5687 18.8605 7.42867 15.0205 5.50867ZM11.7905 9.74867H6.39046C5.98046 9.74867 5.64046 9.40867 5.64046 8.99867C5.64046 8.58867 5.98046 8.24867 6.39046 8.24867H11.7905C12.2005 8.24867 12.5405 8.58867 12.5405 8.99867C12.5405 9.40867 12.2005 9.74867 11.7905 9.74867Z"
-                    fill="#3369FF"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M15.0205 5.50867L6.46046 1.22867C0.710459 -1.65133 -1.64954 0.70867 1.23046 6.45867L2.10046 8.19867C2.35046 8.70867 2.35046 9.29867 2.10046 9.80867L1.23046 11.5387C-1.64954 17.2887 0.700459 19.6487 6.46046 16.7687L15.0205 12.4887C18.8605 10.5687 18.8605 7.42867 15.0205 5.50867ZM11.7905 9.74867H6.39046C5.98046 9.74867 5.64046 9.40867 5.64046 8.99867C5.64046 8.58867 5.98046 8.24867 6.39046 8.24867H11.7905C12.2005 8.24867 12.5405 8.58867 12.5405 8.99867C12.5405 9.40867 12.2005 9.74867 11.7905 9.74867Z"
+                      fill="#3369FF"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
             {selectedNodeId && (
               <p className="mt-2 text-xs text-gray-500 dark:text-white/50">
