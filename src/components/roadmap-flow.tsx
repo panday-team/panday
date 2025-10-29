@@ -286,8 +286,6 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
     ? roadmap.content.get(selectedNodeId)
     : null;
 
-  const selectedNode = nodes.find((node) => node.id === selectedNodeId);
-  const selectedNodeType = selectedNode?.type; // "hub" | "checklist" | "terminal" | "requirement" | "portal" | "checkpoint"
   return (
     <div className="relative h-screen w-full overflow-hidden bg-[#0C1020]">
       <ReactFlow
@@ -319,7 +317,7 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
       </ReactFlow>
 
       {selectedContent && selectedNodeId && (
-        <div className="pointer-events-none absolute top-0 left-0 flex w-full justify-start pt-10 pl-10">
+        <div className="pointer-events-none absolute top-0 left-0 flex w-full justify-start p-4 md:pt-10 md:pr-0 md:pl-10">
           <div className="pointer-events-auto">
             <NodeInfoPanel
               badge={selectedContent.frontmatter.badge ?? "Node"}

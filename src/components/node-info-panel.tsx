@@ -38,21 +38,18 @@ export function NodeInfoPanel({
   nodeStatus = "base",
   onStatusChange,
   className,
-  nodeColour,
   ...props
 }: NodeInfoPanelProps) {
   return (
     <aside
       className={cn(
-        "w-full rounded-3xl border border-white/10 bg-[#2D354B]/95 px-8 pt-8 pb-10 text-[#FFEDDA] md:max-w-md",
+        "w-full rounded-3xl border border-white/10 bg-[#2D354B]/95 px-8 pt-8 pb-10 text-[#FFEDDA] shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur md:max-w-lg",
         className,
       )}
       {...props}
     >
       <div className="flex items-center justify-between gap-4">
-        <span
-          className={`inline-flex items-center gap-2 rounded-full ${nodeColour} px-3 py-1 text-xs font-semibold tracking-wide text-[#1D2740] uppercase`}
-        >
+        <span className="inline-flex items-center gap-2 rounded-full bg-[#76E54A] px-3 py-1 text-xs font-semibold tracking-wide text-[#1D2740] uppercase">
           {badge}
         </span>
         {subtitle ? (
