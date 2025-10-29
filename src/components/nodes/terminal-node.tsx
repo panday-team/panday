@@ -112,7 +112,7 @@ function TerminalNodeComponent({ id, data }: NodeProps<TerminalNodeType>) {
         }}
       />
       <NodeAppendix
-        position="left"
+        position="bottom"
         className="pointer-events-none z-20 rounded-lg border-none bg-[#0B1021]/90 px-3 py-1.5 text-lg leading-tight font-bold text-[#D9DEE7] backdrop-blur-sm"
       >
         {label}

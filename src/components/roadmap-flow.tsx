@@ -23,7 +23,6 @@ import {
   type HubNodeType,
   type ChecklistNodeType,
   type TerminalNodeType,
-  type ChecklistNodeData,
 } from "@/components/nodes";
 import { NodeInfoPanel } from "@/components/node-info-panel";
 import { ChatWidget } from "@/components/chat/chat-widget";
@@ -101,42 +100,7 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
       } as FlowNode;
     });
 
-    // adjust the spread space of the checklist nodes from their hub nodes here
-    const CHECKLIST_SPREAD = 1.25;
-    const nodesById = new Map<string, FlowNode>(
-      builtNodes.map((n) => [n.id, n]),
-    );
-
-    const adjusted = builtNodes.map((node) => {
-      const parentId =
-        node.type === "checklist"
-          ? (node.data as ChecklistNodeData & { parentId?: string })?.parentId
-          : undefined;
-      if (node.type === "checklist" && parentId) {
-        const parent = nodesById.get(parentId);
-        if (parent) {
-          const dx = node.position.x - parent.position.x;
-          const dy = node.position.y - parent.position.y;
-          // If already offset, scale outward slightly
-          if (
-            Number.isFinite(dx) &&
-            Number.isFinite(dy) &&
-            (dx !== 0 || dy !== 0)
-          ) {
-            return {
-              ...node,
-              position: {
-                x: parent.position.x + dx * CHECKLIST_SPREAD,
-                y: parent.position.y + dy * CHECKLIST_SPREAD,
-              },
-            } as FlowNode;
-          }
-        }
-      }
-      return node;
-    });
-
-    return adjusted;
+    return builtNodes;
   }, [roadmap]);
 
   const initialEdges = useMemo<FlowEdge[]>(() => {
@@ -294,7 +258,7 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
     : null;
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-[#0B1021]">
+    <div className="relative h-screen w-full overflow-hidden bg-[#0C1020]">
       <ReactFlow
         nodes={nodes}
         edges={edges}

@@ -84,8 +84,8 @@
     {
       "id": "ace-it-req-highschool",
       "position": {
-        "x": -160,
-        "y": 154
+        "x": 32,
+        "y": -248
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -94,8 +94,8 @@
     {
       "id": "ace-it-benefit-dualcredit",
       "position": {
-        "x": 1,
-        "y": 225
+        "x": 274,
+        "y": 172
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -104,8 +104,8 @@
     {
       "id": "ace-it-resource-youthprograms",
       "position": {
-        "x": 150,
-        "y": 156
+        "x": -210,
+        "y": 172
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -114,8 +114,8 @@
     {
       "id": "direct-entry-req-sponsor",
       "position": {
-        "x": 1144,
-        "y": 218
+        "x": 1232,
+        "y": -248
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -124,8 +124,8 @@
     {
       "id": "direct-entry-benefit-earnings",
       "position": {
-        "x": 1297,
-        "y": 209
+        "x": 1474,
+        "y": 172
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -134,8 +134,8 @@
     {
       "id": "direct-entry-resource-jobsearch",
       "position": {
-        "x": 1393,
-        "y": 118
+        "x": 990,
+        "y": 172
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -144,8 +144,8 @@
     {
       "id": "foundation-req-education",
       "position": {
-        "x": -1401,
-        "y": 97
+        "x": -1168,
+        "y": -248
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -154,8 +154,8 @@
     {
       "id": "foundation-benefit-credits",
       "position": {
-        "x": -1247,
-        "y": 218
+        "x": -926,
+        "y": 172
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -164,8 +164,8 @@
     {
       "id": "foundation-resource-providers",
       "position": {
-        "x": -1035,
-        "y": 122
+        "x": -1410,
+        "y": 172
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -174,8 +174,8 @@
     {
       "id": "level-1-req-foundation",
       "position": {
-        "x": 1037,
-        "y": -854
+        "x": 1232,
+        "y": -1248
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -184,8 +184,8 @@
     {
       "id": "level-1-req-sponsor",
       "position": {
-        "x": 988,
-        "y": -992
+        "x": 1397,
+        "y": -1195
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -194,8 +194,8 @@
     {
       "id": "level-1-req-registration",
       "position": {
-        "x": 1104,
-        "y": -1186
+        "x": 1498,
+        "y": -1055
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -204,8 +204,8 @@
     {
       "id": "level-1-training-theory",
       "position": {
-        "x": 1410,
-        "y": -892
+        "x": 1498,
+        "y": -881
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -214,8 +214,8 @@
     {
       "id": "level-1-training-safety",
       "position": {
-        "x": 1435,
-        "y": -999
+        "x": 1397,
+        "y": -741
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -224,8 +224,8 @@
     {
       "id": "level-1-training-tools",
       "position": {
-        "x": 1403,
-        "y": -1104
+        "x": 1232,
+        "y": -688
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -234,8 +234,8 @@
     {
       "id": "level-1-training-drawings",
       "position": {
-        "x": 1325,
-        "y": -1181
+        "x": 1067,
+        "y": -741
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -244,8 +244,8 @@
     {
       "id": "level-1-resource-outline",
       "position": {
-        "x": 1125,
-        "y": -789
+        "x": 966,
+        "y": -881
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -254,8 +254,8 @@
     {
       "id": "level-1-resource-exam",
       "position": {
-        "x": 1234,
-        "y": -772
+        "x": 966,
+        "y": -1055
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -264,8 +264,8 @@
     {
       "id": "level-1-resource-portal",
       "position": {
-        "x": 1337,
-        "y": -809
+        "x": 1067,
+        "y": -1195
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -274,8 +274,8 @@
     {
       "id": "level-2-req-level1",
       "position": {
-        "x": -207,
-        "y": -1898
+        "x": 32,
+        "y": -2248
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -284,8 +284,8 @@
     {
       "id": "level-2-req-hours",
       "position": {
-        "x": -229,
-        "y": -2006
+        "x": 183,
+        "y": -2204
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -294,8 +294,8 @@
     {
       "id": "level-2-req-exam",
       "position": {
-        "x": -195,
-        "y": -2110
+        "x": 287,
+        "y": -2084
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -304,8 +304,8 @@
     {
       "id": "level-2-req-sponsor",
       "position": {
-        "x": -110,
-        "y": -2190
+        "x": 309,
+        "y": -1928
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -314,8 +314,8 @@
     {
       "id": "level-2-training-theory",
       "position": {
-        "x": 170,
-        "y": -1861
+        "x": 244,
+        "y": -1785
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -324,8 +324,8 @@
     {
       "id": "level-2-training-3phase",
       "position": {
-        "x": 218,
-        "y": -1984
+        "x": 111,
+        "y": -1699
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -334,8 +334,8 @@
     {
       "id": "level-2-training-motors",
       "position": {
-        "x": 184,
-        "y": -2117
+        "x": -47,
+        "y": -1699
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -344,8 +344,8 @@
     {
       "id": "level-2-training-distribution",
       "position": {
-        "x": 59,
-        "y": -2209
+        "x": -180,
+        "y": -1785
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -354,8 +354,8 @@
     {
       "id": "level-2-resource-outline",
       "position": {
-        "x": -135,
-        "y": -1814
+        "x": -245,
+        "y": -1928
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -364,8 +364,8 @@
     {
       "id": "level-2-resource-exam",
       "position": {
-        "x": -32,
-        "y": -1776
+        "x": -223,
+        "y": -2084
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -374,8 +374,8 @@
     {
       "id": "level-2-resource-code",
       "position": {
-        "x": 77,
-        "y": -1791
+        "x": -119,
+        "y": -2204
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -384,8 +384,8 @@
     {
       "id": "level-3-req-level2",
       "position": {
-        "x": -206,
-        "y": -3910
+        "x": 32,
+        "y": -4248
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -394,8 +394,8 @@
     {
       "id": "level-3-req-hours",
       "position": {
-        "x": -224,
-        "y": -4018
+        "x": 183,
+        "y": -4204
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -404,8 +404,8 @@
     {
       "id": "level-3-req-exam",
       "position": {
-        "x": -187,
-        "y": -4122
+        "x": 287,
+        "y": -4084
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -414,8 +414,8 @@
     {
       "id": "level-3-req-sponsor",
       "position": {
-        "x": -88,
-        "y": -4204
+        "x": 309,
+        "y": -3928
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -424,8 +424,8 @@
     {
       "id": "level-3-training-motors",
       "position": {
-        "x": 198,
-        "y": -3900
+        "x": 244,
+        "y": -3785
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -434,8 +434,8 @@
     {
       "id": "level-3-training-transformers",
       "position": {
-        "x": 222,
-        "y": -4016
+        "x": 111,
+        "y": -3699
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -444,8 +444,8 @@
     {
       "id": "level-3-training-industrial",
       "position": {
-        "x": 183,
-        "y": -4126
+        "x": -47,
+        "y": -3699
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -454,8 +454,8 @@
     {
       "id": "level-3-training-troubleshooting",
       "position": {
-        "x": 69,
-        "y": -4210
+        "x": -180,
+        "y": -3785
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -464,8 +464,8 @@
     {
       "id": "level-3-resource-outline",
       "position": {
-        "x": -133,
-        "y": -3822
+        "x": -245,
+        "y": -3928
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -474,8 +474,8 @@
     {
       "id": "level-3-resource-exam",
       "position": {
-        "x": -14,
-        "y": -3779
+        "x": -223,
+        "y": -4084
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -484,8 +484,8 @@
     {
       "id": "level-3-resource-portal",
       "position": {
-        "x": 115,
-        "y": -3811
+        "x": -119,
+        "y": -4204
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -494,8 +494,8 @@
     {
       "id": "level-4-construction-req-level3",
       "position": {
-        "x": -1118,
-        "y": -5927
+        "x": -868,
+        "y": -6248
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -504,8 +504,8 @@
     {
       "id": "level-4-construction-req-hours",
       "position": {
-        "x": -1132,
-        "y": -6036
+        "x": -703,
+        "y": -6195
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -514,8 +514,8 @@
     {
       "id": "level-4-construction-req-exam",
       "position": {
-        "x": -1092,
-        "y": -6138
+        "x": -602,
+        "y": -6055
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -524,8 +524,8 @@
     {
       "id": "level-4-construction-req-specialization",
       "position": {
-        "x": -1006,
-        "y": -6207
+        "x": -602,
+        "y": -5881
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -534,8 +534,8 @@
     {
       "id": "level-4-construction-training-site",
       "position": {
-        "x": -763,
-        "y": -5841
+        "x": -703,
+        "y": -5741
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -544,8 +544,8 @@
     {
       "id": "level-4-construction-training-installations",
       "position": {
-        "x": -692,
-        "y": -6038
+        "x": -868,
+        "y": -5688
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -554,8 +554,8 @@
     {
       "id": "level-4-construction-training-fire",
       "position": {
-        "x": -782,
-        "y": -6185
+        "x": -1033,
+        "y": -5741
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -564,8 +564,8 @@
     {
       "id": "level-4-construction-training-code",
       "position": {
-        "x": -898,
-        "y": -6226
+        "x": -1134,
+        "y": -5881
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -574,8 +574,8 @@
     {
       "id": "level-4-construction-resource-profile",
       "position": {
-        "x": -1053,
-        "y": -5838
+        "x": -1134,
+        "y": -6055
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -584,8 +584,8 @@
     {
       "id": "level-4-construction-resource-exam",
       "position": {
-        "x": -941,
-        "y": -5787
+        "x": -1033,
+        "y": -6195
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -594,8 +594,8 @@
     {
       "id": "level-4-industrial-req-level3",
       "position": {
-        "x": 754,
-        "y": -5848
+        "x": 932,
+        "y": -6248
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -604,8 +604,8 @@
     {
       "id": "level-4-industrial-req-hours",
       "position": {
-        "x": 691,
-        "y": -6044
+        "x": 1097,
+        "y": -6195
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -614,8 +614,8 @@
     {
       "id": "level-4-industrial-req-exam",
       "position": {
-        "x": 781,
-        "y": -6185
+        "x": 1198,
+        "y": -6055
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -624,8 +624,8 @@
     {
       "id": "level-4-industrial-req-specialization",
       "position": {
-        "x": 897,
-        "y": -6226
+        "x": 1198,
+        "y": -5881
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -634,8 +634,8 @@
     {
       "id": "level-4-industrial-training-controls",
       "position": {
-        "x": 1116,
-        "y": -5926
+        "x": 1097,
+        "y": -5741
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -644,8 +644,8 @@
     {
       "id": "level-4-industrial-training-plc",
       "position": {
-        "x": 1131,
-        "y": -6035
+        "x": 932,
+        "y": -5688
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -654,8 +654,8 @@
     {
       "id": "level-4-industrial-training-motors",
       "position": {
-        "x": 1091,
-        "y": -6137
+        "x": 767,
+        "y": -5741
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -664,8 +664,8 @@
     {
       "id": "level-4-industrial-training-maintenance",
       "position": {
-        "x": 1005,
-        "y": -6206
+        "x": 666,
+        "y": -5881
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -674,8 +674,8 @@
     {
       "id": "level-4-industrial-resource-profile",
       "position": {
-        "x": 942,
-        "y": -5788
+        "x": 666,
+        "y": -6055
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -684,8 +684,8 @@
     {
       "id": "level-4-industrial-resource-exam",
       "position": {
-        "x": 1051,
-        "y": -5837
+        "x": 767,
+        "y": -6195
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -694,8 +694,8 @@
     {
       "id": "red-seal-req-levels",
       "position": {
-        "x": -224,
-        "y": -7984
+        "x": 32,
+        "y": -8248
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -704,8 +704,8 @@
     {
       "id": "red-seal-req-hours",
       "position": {
-        "x": -214,
-        "y": -8094
+        "x": 183,
+        "y": -8204
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -714,8 +714,8 @@
     {
       "id": "red-seal-req-exams",
       "position": {
-        "x": -155,
-        "y": -8186
+        "x": 287,
+        "y": -8084
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -724,8 +724,8 @@
     {
       "id": "red-seal-req-experience",
       "position": {
-        "x": -57,
-        "y": -8238
+        "x": 309,
+        "y": -7928
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -734,8 +734,8 @@
     {
       "id": "red-seal-prep-guide",
       "position": {
-        "x": 221,
-        "y": -7987
+        "x": 244,
+        "y": -7785
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -744,8 +744,8 @@
     {
       "id": "red-seal-prep-practice",
       "position": {
-        "x": 211,
-        "y": -8097
+        "x": 111,
+        "y": -7699
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -754,8 +754,8 @@
     {
       "id": "red-seal-prep-code",
       "position": {
-        "x": 150,
-        "y": -8188
+        "x": -47,
+        "y": -7699
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -764,8 +764,8 @@
     {
       "id": "red-seal-prep-schedule",
       "position": {
-        "x": 53,
-        "y": -8239
+        "x": -180,
+        "y": -7785
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -774,8 +774,8 @@
     {
       "id": "red-seal-resource-prep",
       "position": {
-        "x": -181,
-        "y": -7883
+        "x": -245,
+        "y": -7928
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -784,8 +784,8 @@
     {
       "id": "red-seal-resource-exam",
       "position": {
-        "x": -8,
-        "y": -7792
+        "x": -223,
+        "y": -8084
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -794,8 +794,8 @@
     {
       "id": "red-seal-resource-profile",
       "position": {
-        "x": 179,
-        "y": -7884
+        "x": -119,
+        "y": -8204
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",

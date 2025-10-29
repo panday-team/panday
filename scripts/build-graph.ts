@@ -220,63 +220,51 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
 
   validationErrors.push(...validateParentReferences(checklistRefs, allNodeIds));
 
-  // Create subnode simulation nodes with initial positions near parent
+  // Create subnode simulation nodes with circular positioning around parent
   for (const [parentId, subnodes] of subnodesByParent) {
     const parentLayout = nodeLayouts.get(parentId);
     if (!parentLayout) continue;
 
-    const groupedByPosition = new Map<string, SubnodeConfig[]>();
-    for (const subnode of subnodes) {
-      const position = subnode.labelPosition ?? "left";
-      if (!groupedByPosition.has(position)) {
-        groupedByPosition.set(position, []);
-      }
-      groupedByPosition.get(position)!.push(subnode);
-    }
+    // Node dimensions (from component definitions)
+    const hubNodeSize = 128; // h-32 w-32 = 128px
+    const checklistNodeSize = 64; // h-16 w-16 = 64px
 
-    for (const [labelPosition, positionSubnodes] of groupedByPosition) {
-      positionSubnodes.forEach((subnode, index) => {
-        let initialX = parentLayout.position.x;
-        let initialY = parentLayout.position.y;
+    // Calculate center of hub node (React Flow positions are top-left corner)
+    const parentCenterX = parentLayout.position.x + hubNodeSize / 2;
+    const parentCenterY = parentLayout.position.y + hubNodeSize / 2;
 
-        const offset = 250;
-        const spacing = 80;
-        const centerOffset = (positionSubnodes.length - 1) / 2;
+    const radius = 280; // Distance from parent center to subnode centers
+    const totalSubnodes = subnodes.length;
+    const angleStep = (2 * Math.PI) / totalSubnodes; // Divide circle evenly
+    const startAngle = -Math.PI / 2; // Start at top (12 o'clock position)
 
-        switch (labelPosition) {
-          case "left":
-            initialX -= offset;
-            initialY -= (index - centerOffset) * spacing;
-            break;
-          case "right":
-            initialX += offset;
-            initialY -= (index - centerOffset) * spacing;
-            break;
-          case "top":
-            initialX += (index - centerOffset) * spacing;
-            initialY -= offset;
-            break;
-          case "bottom":
-            initialX += (index - centerOffset) * spacing;
-            initialY += offset;
-            break;
-        }
+    subnodes.forEach((subnode, index) => {
+      const angle = startAngle + index * angleStep;
 
-        simNodes.push({
-          id: subnode.id,
-          isMainNode: false,
-          parentId: parentId,
-          labelPosition: labelPosition,
-          x: initialX,
-          y: initialY,
-        });
+      // Calculate position of subnode center on the circle
+      const subnodeCenterX = parentCenterX + radius * Math.cos(angle);
+      const subnodeCenterY = parentCenterY + radius * Math.sin(angle);
 
-        simLinks.push({
-          source: parentId,
-          target: subnode.id,
-        });
+      // Convert from center position to top-left position for React Flow
+      const x = subnodeCenterX - checklistNodeSize / 2;
+      const y = subnodeCenterY - checklistNodeSize / 2;
+
+      simNodes.push({
+        id: subnode.id,
+        isMainNode: false,
+        parentId: parentId,
+        labelPosition: subnode.labelPosition,
+        x: x,
+        y: y,
+        fx: x, // Fix position to prevent physics from moving it
+        fy: y, // Fix position to prevent physics from moving it
       });
-    }
+
+      simLinks.push({
+        source: parentId,
+        target: subnode.id,
+      });
+    });
   }
 
   // Validate all connectsTo targets exist
@@ -320,8 +308,8 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
     .force("collide", forceCollide<SimNode>().radius(55).strength(0.7))
     .stop();
 
-  // Run simulation for fixed iterations
-  const iterations = 300;
+  // Skip simulation iterations - all nodes are fixed at their calculated positions
+  const iterations = 0;
   for (let i = 0; i < iterations; i++) {
     simulation.tick();
   }

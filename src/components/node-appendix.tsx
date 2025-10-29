@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const appendixVariants = cva(
-  "node-appendix absolute inline-flex flex-col items-center rounded-md border-none bg-transparent text-[#FFEDDA] nodrag",
+  "node-appendix absolute inline-flex flex-col items-center justify-center text-center rounded-md border-none bg-transparent text-[#FFEDDA] nodrag min-w-[200px]",
   {
     variants: {
       position: {

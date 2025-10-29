@@ -17,7 +17,7 @@ export type ChecklistNodeType = Node<ChecklistNodeData, "checklist">;
  * Features Obsidian-inspired physics-based floating animation
  */
 function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
-  const { label, labelPosition = "bottom" } = data;
+  const { label } = data;
   const hiddenHandleClass =
     "pointer-events-none opacity-0 h-3 w-3 bg-transparent border-transparent";
 
@@ -117,7 +117,7 @@ function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
           className="nodrag relative flex h-16 w-16 cursor-pointer items-center justify-center rounded-full border-none bg-transparent shadow-none outline-none hover:ring-0 focus-visible:ring-0"
         >
           <NodeAppendix
-            position={labelPosition}
+            position="bottom"
             className="pointer-events-none border-none bg-transparent text-sm leading-tight font-medium text-[#D9DEE7]"
           >
             {label}
