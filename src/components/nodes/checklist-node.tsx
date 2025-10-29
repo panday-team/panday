@@ -141,7 +141,9 @@ function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
             position="bottom"
             className="pointer-events-none border-none bg-transparent text-sm leading-tight font-medium text-gray-900 dark:text-[#D9DEE7]"
           >
-            <p className="hidden group-hover:inline">{label}</p>
+            <p className={isSelected ? "inline" : "hidden group-hover:inline"}>
+              {label}
+            </p>
           </NodeAppendix>
 
           {/* Outer glow with independent pulsing animation */}
