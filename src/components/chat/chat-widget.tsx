@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { MessageCircle, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import Image from "next/image";
 
 interface ChatWidgetProps {
   selectedNodeId?: string | null;
@@ -80,9 +81,9 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
   };
 
   return (
-    <div className="fixed right-6 bottom-6 z-40 flex flex-col items-end gap-3">
+    <div className="fixed bottom-6 left-6 z-40 flex flex-col items-start gap-3">
       {isExpanded && (
-        <div className="flex max-h-[70vh] w-96 flex-col rounded-2xl border border-white/10 bg-[#2D354B]/95 shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur">
+        <div className="flex max-h-[70vh] w-96 flex-col rounded-2xl border border-white/10 bg-[#98B3F9]/95 shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur">
           <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
             <h3 className="font-semibold text-white">Assistant</h3>
             <div className="flex items-center gap-2">
@@ -118,7 +119,20 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
                     }`}
                   >
                     <div className="mb-1.5 text-xs font-semibold tracking-wide uppercase opacity-60">
-                      {message.role === "user" ? "You" : "AI"}
+                      {message.role === "user" ? (
+                        "You"
+                      ) : (
+                        <span className="inline-flex items-center gap-2 normal-case">
+                          <Image
+                            src="/ai-profile-pic.svg"
+                            alt="Panday"
+                            className="opacity-80"
+                            width={50}
+                            height={50}
+                          />
+                          <span className="sr-only">AI</span>
+                        </span>
+                      )}
                     </div>
                     <div className="prose prose-invert prose-sm max-w-none">
                       <ReactMarkdown
@@ -253,14 +267,16 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
 
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`rounded-full p-4 shadow-lg transition-all ${
-          isExpanded
-            ? "bg-white/10 text-white hover:bg-white/20"
-            : "bg-[#76E54A] text-[#1D2740] hover:bg-[#76E54A]/90"
-        }`}
+        className={``}
         aria-label={isExpanded ? "Collapse chat" : "Open chat"}
       >
-        <MessageCircle size={24} />
+        <Image
+          src="/ai-chat-button.svg"
+          alt="AI chat"
+          className="cursor-grab"
+          width={250}
+          height={250}
+        />
       </button>
     </div>
   );
