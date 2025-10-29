@@ -2,8 +2,6 @@
 
 import type { ComponentPropsWithoutRef } from "react";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
-import type { Node } from "@xyflow/react";
 
 type ResourceLink = {
   label: string;
@@ -35,8 +33,6 @@ export function NodeInfoPanel({
   nodeColour,
   ...props
 }: NodeInfoPanelProps) {
-  useEffect(() => {}, []);
-
   return (
     <aside
       className={cn(
