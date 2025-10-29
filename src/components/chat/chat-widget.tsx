@@ -81,7 +81,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
   };
 
   return (
-    <div className="fixed bottom-6 left-6 z-40 flex flex-col items-start gap-3">
+    <div className="fixed right-6 bottom-6 z-40 flex flex-col items-end gap-3">
       {isExpanded && (
         <div className="flex max-h-[70vh] w-96 flex-col rounded-2xl border border-gray-200 bg-white shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur dark:border-white/10 dark:bg-[#98B3F9]/95">
           <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-white/10">
