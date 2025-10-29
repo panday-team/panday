@@ -1,3 +1,5 @@
+"use client";
+
 import type { ComponentPropsWithoutRef } from "react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,6 +38,7 @@ export function NodeInfoPanel({
   nodeStatus = "base",
   onStatusChange,
   className,
+  nodeColour,
   ...props
 }: NodeInfoPanelProps) {
   return (
@@ -47,7 +50,9 @@ export function NodeInfoPanel({
       {...props}
     >
       <div className="flex items-center justify-between gap-4">
-        <span className="inline-flex items-center gap-2 rounded-full bg-[#76E54A] px-3 py-1 text-xs font-semibold tracking-wide text-[#1D2740] uppercase">
+        <span
+          className={`inline-flex items-center gap-2 rounded-full ${nodeColour} px-3 py-1 text-xs font-semibold tracking-wide text-[#1D2740] uppercase`}
+        >
           {badge}
         </span>
         {subtitle ? (

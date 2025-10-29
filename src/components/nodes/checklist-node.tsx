@@ -133,13 +133,13 @@ function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
         <BaseNode
           id={id}
           aria-label={label}
-          className="nodrag relative flex h-16 w-16 cursor-pointer items-center justify-center rounded-full border-none bg-transparent shadow-none outline-none hover:ring-0 focus-visible:ring-0"
+          className="group nodrag relative flex h-16 w-16 cursor-pointer items-center justify-center rounded-full border-none bg-transparent shadow-none outline-none hover:ring-0 focus-visible:ring-0"
         >
           <NodeAppendix
             position="bottom"
             className="pointer-events-none border-none bg-transparent text-sm leading-tight font-medium text-[#D9DEE7]"
           >
-            {label}
+            <p className="hidden group-hover:inline">{label}</p>
           </NodeAppendix>
 
           {/* Outer glow with independent pulsing animation */}

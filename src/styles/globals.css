@@ -133,6 +133,8 @@
     0px 4px 16px -4px hsl(0 0% 0% / 0.08), 0px 8px 10px -5px hsl(0 0% 0% / 0.08);
   --shadow-2xl: 0px 4px 16px -4px hsl(0 0% 0% / 0.2);
   --tracking-normal: normal;
+  --purple-nood: #8a38f5;
+  --yelloo-nood: #ffd000;
 }
 
 .dark {

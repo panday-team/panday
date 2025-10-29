@@ -69,3 +69,4 @@ services/embeddings-api/venv/
 dist/
 build/
 *.egg
+public/real--mascot/

@@ -286,6 +286,8 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
     ? roadmap.content.get(selectedNodeId)
     : null;
 
+  const selectedNode = nodes.find((node) => node.id === selectedNodeId);
+  const selectedNodeType = selectedNode?.type; // "hub" | "checklist" | "terminal" | "requirement" | "portal" | "checkpoint"
   return (
     <div className="relative h-screen w-full overflow-hidden bg-[#0C1020]">
       <ReactFlow
