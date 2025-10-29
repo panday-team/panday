@@ -83,11 +83,17 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
   return (
     <div className="fixed bottom-6 left-6 z-40 flex flex-col items-start gap-3">
       {isExpanded && (
+<<<<<<< HEAD
         <div className="flex max-h-[70vh] w-96 flex-col rounded-2xl border border-gray-200 bg-white shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur dark:border-white/10 dark:bg-[#98B3F9]/95">
           <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-white/10">
             <h3 className="font-semibold text-gray-900 dark:text-white">
               Assistant
             </h3>
+=======
+        <div className="flex max-h-[70vh] w-96 flex-col rounded-2xl border border-white/10 bg-[#98B3F9]/95 shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur">
+          <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+            <h3 className="font-semibold text-white">Assistant</h3>
+>>>>>>> c764eb7 (add: profile picture for ai chat)
             <div className="flex items-center gap-2">
               {messages.length > 0 && (
                 <button
@@ -273,6 +279,9 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
         aria-label={isExpanded ? "Collapse chat" : "Open chat"}
       >
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> c764eb7 (add: profile picture for ai chat)
         <Image
           src="/ai-chat-button.svg"
           alt="AI chat"
@@ -280,9 +289,12 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
           width={250}
           height={250}
         />
+<<<<<<< HEAD
 =======
         <img src="/ai-chat-button.svg" alt="AI chat" className="cursor-grab" />
 >>>>>>> 34e10ea (refactor: using logo for chat button and moved to left side)
+=======
+>>>>>>> c764eb7 (add: profile picture for ai chat)
       </button>
     </div>
   );
