@@ -7,6 +7,8 @@ import { motion } from "motion/react";
 export type ChecklistNodeData = {
   label: string;
   labelPosition?: "top" | "bottom" | "left" | "right";
+  /** Optional hex/rgb color to tint the node */
+  color?: string;
 };
 
 export type ChecklistNodeType = Node<ChecklistNodeData, "checklist">;
@@ -17,7 +19,7 @@ export type ChecklistNodeType = Node<ChecklistNodeData, "checklist">;
  * Features Obsidian-inspired physics-based floating animation
  */
 function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
-  const { label, labelPosition = "bottom" } = data;
+  const { label, labelPosition = "bottom", color } = data;
   const hiddenHandleClass =
     "pointer-events-none opacity-0 h-3 w-3 bg-transparent border-transparent";
 
@@ -142,7 +144,8 @@ function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
           {/* Main purple circle */}
           <span
             aria-hidden
-            className="pointer-events-none absolute h-16 w-16 rounded-full bg-[#9F7AEA]"
+            className="pointer-events-none absolute h-16 w-16 rounded-full"
+            style={{ backgroundColor: color ?? "#9F7AEA" }}
           />
 
           {/* White border ring */}

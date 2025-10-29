@@ -1,5 +1,9 @@
+"use client";
+
 import type { ComponentPropsWithoutRef } from "react";
 import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
+import type { Node } from "@xyflow/react";
 
 type ResourceLink = {
   label: string;
@@ -15,6 +19,7 @@ export interface NodeInfoPanelProps extends ComponentPropsWithoutRef<"aside"> {
   benefits?: string[];
   outcomes?: string[];
   resources?: ResourceLink[];
+  nodeColour: string;
 }
 
 export function NodeInfoPanel({
@@ -27,8 +32,11 @@ export function NodeInfoPanel({
   outcomes,
   resources,
   className,
+  nodeColour,
   ...props
 }: NodeInfoPanelProps) {
+  useEffect(() => {}, []);
+
   return (
     <aside
       className={cn(
@@ -38,7 +46,9 @@ export function NodeInfoPanel({
       {...props}
     >
       <div className="flex items-center justify-between gap-4">
-        <span className="inline-flex items-center gap-2 rounded-full bg-[#76E54A] px-3 py-1 text-xs font-semibold tracking-wide text-[#1D2740] uppercase">
+        <span
+          className={`inline-flex items-center gap-2 rounded-full ${nodeColour} px-3 py-1 text-xs font-semibold tracking-wide text-[#1D2740] uppercase`}
+        >
           {badge}
         </span>
         {subtitle ? (
