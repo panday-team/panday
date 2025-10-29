@@ -2,6 +2,7 @@
 
 import type { ComponentPropsWithoutRef } from "react";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type ResourceLink = {
   label: string;
@@ -17,7 +18,10 @@ export interface NodeInfoPanelProps extends ComponentPropsWithoutRef<"aside"> {
   benefits?: string[];
   outcomes?: string[];
   resources?: ResourceLink[];
-  nodeColour: string;
+  nodeType?: string;
+  nodeId?: string;
+  nodeStatus?: "base" | "in-progress" | "completed";
+  onStatusChange?: (status: "base" | "in-progress" | "completed") => void;
 }
 
 export function NodeInfoPanel({
@@ -29,6 +33,10 @@ export function NodeInfoPanel({
   benefits,
   outcomes,
   resources,
+  nodeType,
+  nodeId: _nodeId,
+  nodeStatus = "base",
+  onStatusChange,
   className,
   nodeColour,
   ...props
@@ -36,7 +44,7 @@ export function NodeInfoPanel({
   return (
     <aside
       className={cn(
-        "w-full rounded-3xl border border-white/10 bg-[#2D354B]/95 px-8 pt-8 pb-10 text-[#FFEDDA] shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur md:w-md md:max-w-[33vw]",
+        "w-full rounded-3xl border border-white/10 bg-[#2D354B]/95 px-8 pt-8 pb-10 text-[#FFEDDA] md:max-w-md",
         className,
       )}
       {...props}
@@ -72,6 +80,31 @@ export function NodeInfoPanel({
         ) : null}
         {outcomes?.length ? (
           <Section title="Final Outcome" items={outcomes} />
+        ) : null}
+
+        {nodeType === "checklist" && onStatusChange ? (
+          <section className="flex flex-row items-center gap-8">
+            <label className="flex cursor-pointer items-center gap-2">
+              <span className="text-sm text-white/90">Completed</span>
+              <Checkbox
+                checked={nodeStatus === "completed"}
+                onCheckedChange={(checked) => {
+                  onStatusChange(checked ? "completed" : "base");
+                }}
+                className="border-2 border-white/60 bg-white/10 data-[state=checked]:border-white data-[state=checked]:bg-[#61FF05] data-[state=checked]:text-white"
+              />
+            </label>
+            <label className="flex cursor-pointer items-center gap-2">
+              <span className="text-sm text-white/90">Save for Later</span>
+              <Checkbox
+                checked={nodeStatus === "in-progress"}
+                onCheckedChange={(checked) => {
+                  onStatusChange(checked ? "in-progress" : "base");
+                }}
+                className="border-2 border-white/60 bg-white/10 data-[state=checked]:border-white data-[state=checked]:bg-[#61FF05] data-[state=checked]:text-white"
+              />
+            </label>
+          </section>
         ) : null}
 
         {resources?.length ? (

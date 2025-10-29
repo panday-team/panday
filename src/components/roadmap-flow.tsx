@@ -32,6 +32,11 @@ import {
   calculateChildPosition,
   createChildAnimation,
 } from "@/lib/child-position-utils";
+import {
+  type NodeStatus,
+  getAllNodeStatuses,
+  setNodeStatus,
+} from "@/lib/node-status";
 
 type FlowNode = HubNodeType | ChecklistNodeType | TerminalNodeType;
 type FlowEdge = Edge;
@@ -71,6 +76,12 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const animationsRef = useRef<Map<string, () => void>>(new Map());
   const isDraggingRef = useRef<string | null>(null);
+  const [nodeStatuses, setNodeStatuses] = useState<Record<string, NodeStatus>>(
+    () => {
+      if (typeof window === "undefined") return {};
+      return getAllNodeStatuses(roadmap.metadata.id);
+    },
+  );
 
   const initialNodes = useMemo<FlowNode[]>(() => {
     //build nodes from graph/content
@@ -93,6 +104,7 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
           labelPosition: frontmatter.labelPosition,
           showLabelDot: frontmatter.showLabelDot,
           parentId: graphNode.parentId,
+          status: nodeStatuses[graphNode.id] ?? "base",
         },
         sourcePosition: stringToPosition(graphNode.sourcePosition),
         targetPosition: stringToPosition(graphNode.targetPosition),
@@ -101,7 +113,7 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
     });
 
     return builtNodes;
-  }, [roadmap]);
+  }, [roadmap, nodeStatuses]);
 
   const initialEdges = useMemo<FlowEdge[]>(() => {
     return roadmap.graph.edges
@@ -253,6 +265,23 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
     setSelectedNodeId(null);
   }, []);
 
+  const handleStatusChange = useCallback(
+    (nodeId: string, status: NodeStatus) => {
+      setNodeStatus(roadmap.metadata.id, nodeId, status);
+      setNodeStatuses((prev) => ({ ...prev, [nodeId]: status }));
+
+      // Update the node data
+      setNodes((currentNodes) =>
+        currentNodes.map((node) =>
+          node.id === nodeId
+            ? { ...node, data: { ...node.data, status } }
+            : node,
+        ),
+      );
+    },
+    [roadmap.metadata.id, setNodes],
+  );
+
   const selectedContent = selectedNodeId
     ? roadmap.content.get(selectedNodeId)
     : null;
@@ -289,7 +318,7 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
         />
       </ReactFlow>
 
-      {selectedContent && (
+      {selectedContent && selectedNodeId && (
         <div className="pointer-events-none absolute top-0 left-0 flex w-full justify-start pt-10 pl-10">
           <div className="pointer-events-auto">
             <NodeInfoPanel
@@ -307,7 +336,12 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
               benefits={selectedContent.benefits}
               outcomes={selectedContent.outcomes}
               resources={selectedContent.resources}
-              nodeColour={`${selectedNodeType === "hub" ? "bg-[var(--yelloo-nood)]" : "bg-[var(--purple-nood)]"}`}
+              nodeType={selectedContent.frontmatter.type}
+              nodeId={selectedNodeId}
+              nodeStatus={nodeStatuses[selectedNodeId] ?? "base"}
+              onStatusChange={(status) =>
+                handleStatusChange(selectedNodeId, status)
+              }
             />
           </div>
         </div>
