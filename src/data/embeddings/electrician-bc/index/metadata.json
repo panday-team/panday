@@ -1,18 +1,48 @@
 {
   "model": "text-embedding-3-small",
   "roadmapId": "electrician-bc",
-  "generatedAt": "2025-10-27T18:03:27.670984+00:00",
-  "documentCount": 144,
+  "generatedAt": "2025-10-29T01:27:41.844573+00:00",
+  "documentCount": 286,
   "files": {
     "electrician-foundation-program.md": {
       "hash": "88097d9142d7bc4a188bb4c0ec28c41682d9a05e2a4dcd6eb708779c36f0163b",
       "size": 57044,
-      "lastModified": "2025-10-23T18:22:30.029895+00:00"
+      "lastModified": "2025-10-27T18:03:52.995691+00:00"
     },
     "construction-electrician-program-outline-september-2022-harmonized.pdf": {
       "hash": "1a8d32b85302574b0f6f72f845eea3b09bfca6a5e6cbad28d1c5a9317ce3e4b7",
       "size": 2923737,
       "lastModified": "2025-10-27T17:29:03.968843+00:00"
+    },
+    "electrician-common-core-level-1-exam-breakdown-dec-2022.pdf": {
+      "hash": "a491e981c2c89e6bfc1e640d3871290b7441dcf12184d1665297e3269370342f",
+      "size": 96298,
+      "lastModified": "2025-10-29T01:25:09.015188+00:00"
+    },
+    "electrician-common-core-level-2-exam-breakdown-dec-2022.pdf": {
+      "hash": "1584254fc2ed32e904ec9160225ae3aabfd0836805b00f91d8a926869a994865",
+      "size": 127502,
+      "lastModified": "2025-10-29T01:25:29.177485+00:00"
+    },
+    "electrician-common-core-level-3-exam-breakdown-july-2023.pdf": {
+      "hash": "3a2cb33e28f6c2cf1eb8e0169c0d4f8c839d2eeb59ca8852ff068cef5adc6730",
+      "size": 123349,
+      "lastModified": "2025-10-29T01:25:51.333609+00:00"
+    },
+    "red-seal-occupational-standard.pdf": {
+      "hash": "fc4375fd811c8da51083522df1d56437746224e33b7faa87fa267de905ee88fb",
+      "size": 5245887,
+      "lastModified": "2025-10-29T01:26:01.024663+00:00"
+    },
+    "red-seal-self-assessment.pdf": {
+      "hash": "1ccac2c70c6cd6226c9c4a55c794817fb9f355c0e9a0df3962581e8023228349",
+      "size": 716346,
+      "lastModified": "2025-10-29T01:26:21.426792+00:00"
+    },
+    "trade-profile.pdf": {
+      "hash": "0060cee5ee827485f8e1516c6a6bd934b174c026292ab2608a093c5369926cc2",
+      "size": 606506,
+      "lastModified": "2025-10-29T01:26:14.225737+00:00"
     }
   }
 }
