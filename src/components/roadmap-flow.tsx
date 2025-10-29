@@ -77,11 +77,13 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
   const animationsRef = useRef<Map<string, () => void>>(new Map());
   const isDraggingRef = useRef<string | null>(null);
   const [nodeStatuses, setNodeStatuses] = useState<Record<string, NodeStatus>>(
-    () => {
-      if (typeof window === "undefined") return {};
-      return getAllNodeStatuses(roadmap.metadata.id);
-    },
+    {},
   );
+
+  // Load statuses only on client side after mount to avoid hydration mismatch
+  useEffect(() => {
+    setNodeStatuses(getAllNodeStatuses(roadmap.metadata.id));
+  }, [roadmap.metadata.id]);
 
   const initialNodes = useMemo<FlowNode[]>(() => {
     //build nodes from graph/content
@@ -143,6 +145,19 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges] = useEdgesState(initialEdges);
+
+  // Update nodes when statuses change
+  useEffect(() => {
+    setNodes((currentNodes) =>
+      currentNodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          status: nodeStatuses[node.id] ?? "base",
+        },
+      })),
+    );
+  }, [nodeStatuses, setNodes]);
 
   const childOffsets = useMemo(
     () => calculateChildOffsets(initialNodes),
@@ -257,13 +272,27 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: FlowNodeType) => {
       setSelectedNodeId(node.id);
+      // Update nodes to set isSelected flag
+      setNodes((currentNodes) =>
+        currentNodes.map((n) => ({
+          ...n,
+          data: { ...n.data, isSelected: n.id === node.id },
+        })),
+      );
     },
-    [],
+    [setNodes],
   );
 
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null);
-  }, []);
+    // Clear isSelected flag from all nodes
+    setNodes((currentNodes) =>
+      currentNodes.map((n) => ({
+        ...n,
+        data: { ...n.data, isSelected: false },
+      })),
+    );
+  }, [setNodes]);
 
   const handleStatusChange = useCallback(
     (nodeId: string, status: NodeStatus) => {

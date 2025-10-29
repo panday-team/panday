@@ -2,12 +2,14 @@ import { memo, useMemo } from "react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { BaseNode } from "@/components/base-node";
 import { NodeAppendix } from "@/components/node-appendix";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
+import Image from "next/image";
 
 export type ChecklistNodeData = {
   label: string;
   labelPosition?: "top" | "bottom" | "left" | "right";
   status?: "base" | "in-progress" | "completed";
+  isSelected?: boolean;
 };
 
 export type ChecklistNodeType = Node<ChecklistNodeData, "checklist">;
@@ -18,7 +20,7 @@ export type ChecklistNodeType = Node<ChecklistNodeData, "checklist">;
  * Features Obsidian-inspired physics-based floating animation
  */
 function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
-  const { label, status = "base" } = data;
+  const { label, status = "base", isSelected } = data;
   const hiddenHandleClass =
     "pointer-events-none opacity-0 h-3 w-3 bg-transparent border-transparent";
 
@@ -187,6 +189,48 @@ function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
               delay: animationParams.phaseOffset * 1.8,
             }}
           />
+
+          {/* Mascot - only shown when node is selected */}
+          <AnimatePresence mode="wait">
+            {isSelected && (
+              <motion.div
+                key={`mascot-${id}`}
+                initial={{ scale: 0, opacity: 0, rotate: -180 }}
+                animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                exit={{ scale: 0, opacity: 0, rotate: 180 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 200,
+                  damping: 20,
+                }}
+                className="pointer-events-none absolute z-50"
+                style={{
+                  width: 80,
+                  height: 80,
+                }}
+              >
+                <motion.div
+                  animate={{
+                    y: [0, -8, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <Image
+                    src="/mascot.webp"
+                    alt="Panday Mascot"
+                    width={80}
+                    height={80}
+                    className="h-full w-full object-contain drop-shadow-2xl"
+                    priority
+                  />
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <Handle
             id="left-source"

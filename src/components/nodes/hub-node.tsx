@@ -1,6 +1,7 @@
 import { memo, useMemo } from "react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
+import Image from "next/image";
 
 import { BaseNode } from "@/components/base-node";
 import { NodeAppendix } from "@/components/node-appendix";
@@ -9,12 +10,13 @@ export type HubNodeData = {
   label: string;
   glow?: boolean;
   status?: "base" | "in-progress" | "completed";
+  isSelected?: boolean;
 };
 
 export type HubNodeType = Node<HubNodeData, "hub">;
 
 function HubNodeComponent({ id, data }: NodeProps<HubNodeType>) {
-  const { label, glow } = data;
+  const { label, glow, isSelected } = data;
   const hiddenHandleClass =
     "pointer-events-none opacity-0 h-3 w-3 bg-transparent border-transparent";
 
@@ -112,6 +114,49 @@ function HubNodeComponent({ id, data }: NodeProps<HubNodeType>) {
           delay: animationParams.phaseOffset * 2,
         }}
       />
+
+      {/* Mascot - only shown when node is selected */}
+      <AnimatePresence mode="wait">
+        {isSelected && (
+          <motion.div
+            key={`mascot-${id}`}
+            initial={{ scale: 0, opacity: 0, rotate: -180 }}
+            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+            exit={{ scale: 0, opacity: 0, rotate: 180 }}
+            transition={{
+              type: "spring",
+              stiffness: 200,
+              damping: 20,
+            }}
+            className="pointer-events-none absolute z-50"
+            style={{
+              width: 160,
+              height: 160,
+            }}
+          >
+            <motion.div
+              animate={{
+                y: [0, -8, 0],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              <Image
+                src="/mascot.webp"
+                alt="Panday Mascot"
+                width={160}
+                height={160}
+                className="h-full w-full object-contain drop-shadow-2xl"
+                priority
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <NodeAppendix
         position="bottom"
         className="pointer-events-none z-20 rounded-lg border-none bg-[#0B1021]/90 px-3 py-1.5 text-lg leading-tight font-bold text-[#D9DEE7] backdrop-blur-sm"

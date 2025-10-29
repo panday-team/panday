@@ -9,6 +9,7 @@ export type TerminalNodeData = {
   label: string;
   glow?: boolean;
   status?: "base" | "in-progress" | "completed";
+  isSelected?: boolean;
 };
 
 export type TerminalNodeType = Node<TerminalNodeData, "terminal">;
