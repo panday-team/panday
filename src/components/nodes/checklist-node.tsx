@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 export type ChecklistNodeData = {
   label: string;
   labelPosition?: "top" | "bottom" | "left" | "right";
+  status?: "base" | "in-progress" | "completed";
 };
 
 export type ChecklistNodeType = Node<ChecklistNodeData, "checklist">;
@@ -17,9 +18,27 @@ export type ChecklistNodeType = Node<ChecklistNodeData, "checklist">;
  * Features Obsidian-inspired physics-based floating animation
  */
 function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
-  const { label } = data;
+  const { label, status = "base" } = data;
   const hiddenHandleClass =
     "pointer-events-none opacity-0 h-3 w-3 bg-transparent border-transparent";
+
+  // Determine colors based on status
+  const colors = {
+    base: {
+      main: "#9F7AEA",
+      glow: "#9F7AEA",
+    },
+    "in-progress": {
+      main: "#BB1913",
+      glow: "#BB1913",
+    },
+    completed: {
+      main: "#61FF05",
+      glow: "#61FF05",
+    },
+  };
+
+  const currentColor = colors[status];
 
   // Generate unique animation parameters per node for organic, non-synchronized movement
   const animationParams = useMemo(() => {
@@ -126,7 +145,8 @@ function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
           {/* Outer glow with independent pulsing animation */}
           <motion.span
             aria-hidden
-            className="pointer-events-none absolute h-[90px] w-[90px] rounded-full bg-[#9F7AEA]/[0.18]"
+            className="pointer-events-none absolute h-[90px] w-[90px] rounded-full"
+            style={{ backgroundColor: `${currentColor.glow}2E` }}
             animate={{
               scale: [1, animationParams.glowScale, 1],
               opacity: [0.18, 0.25, 0.18],
@@ -139,10 +159,11 @@ function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
             }}
           />
 
-          {/* Main purple circle */}
+          {/* Main circle with dynamic color based on status */}
           <span
             aria-hidden
-            className="pointer-events-none absolute h-16 w-16 rounded-full bg-[#9F7AEA]"
+            className="pointer-events-none absolute h-16 w-16 rounded-full"
+            style={{ backgroundColor: currentColor.main }}
           />
 
           {/* White border ring */}

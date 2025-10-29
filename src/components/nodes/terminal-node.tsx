@@ -8,6 +8,7 @@ import { NodeAppendix } from "@/components/node-appendix";
 export type TerminalNodeData = {
   label: string;
   glow?: boolean;
+  status?: "base" | "in-progress" | "completed";
 };
 
 export type TerminalNodeType = Node<TerminalNodeData, "terminal">;

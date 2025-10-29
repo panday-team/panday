@@ -8,6 +8,7 @@ import { NodeAppendix } from "@/components/node-appendix";
 export type HubNodeData = {
   label: string;
   glow?: boolean;
+  status?: "base" | "in-progress" | "completed";
 };
 
 export type HubNodeType = Node<HubNodeData, "hub">;
