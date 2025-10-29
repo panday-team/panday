@@ -27,7 +27,7 @@ export default function ChatInput() {
         className={
           !messages.length
             ? ""
-            : "animate-in fade-in zoom-in-95 slide-in-from-top-4 flex max-h-96 flex-col overflow-y-auto rounded-md bg-white p-3 text-black duration-500"
+            : "animate-in fade-in zoom-in-95 slide-in-from-top-4 flex max-h-96 flex-col overflow-y-auto rounded-md bg-white p-3 text-gray-900 duration-500 dark:bg-gray-800 dark:text-white"
         }
       >
         {messages.map((message) => (
@@ -47,7 +47,7 @@ export default function ChatInput() {
         ))}
       </div>
       <form onSubmit={handleSubmit}>
-        <div className="rounded-md bg-white">
+        <div className="rounded-md bg-white dark:bg-gray-800">
           <div>
             <Input
               type="text"
@@ -55,7 +55,7 @@ export default function ChatInput() {
               disabled={isLoading}
               value={input}
               onChange={handleInputChange}
-              className="p-8 text-black focus-visible:ring-0"
+              className="p-8 text-gray-900 focus-visible:ring-0 dark:text-white"
             />
           </div>
           <div className="flex justify-end">
