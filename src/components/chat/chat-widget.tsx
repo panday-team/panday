@@ -81,7 +81,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
   };
 
   return (
-    <div className="fixed right-6 bottom-6 z-40 flex flex-col items-end gap-3">
+    <div className="fixed bottom-6 left-6 z-40 flex flex-col items-start gap-3">
       {isExpanded && (
         <div className="flex max-h-[70vh] w-96 flex-col rounded-2xl border border-gray-200 bg-white shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur dark:border-white/10 dark:bg-[#98B3F9]/95">
           <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-white/10">
@@ -92,7 +92,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
               {messages.length > 0 && (
                 <button
                   onClick={handleClearChat}
-                  className="rounded px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
+                  className="rounded px-3 py-1.5 text-xs font-medium text-black transition-colors hover:bg-white/10 hover:text-white"
                   aria-label="Clear chat history"
                 >
                   Clear chat
@@ -100,7 +100,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
               )}
               <button
                 onClick={() => setIsExpanded(false)}
-                className="rounded p-1.5 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
+                className="rounded p-1.5 text-black transition-colors hover:bg-white/10 hover:text-white"
                 aria-label="Collapse chat"
               >
                 <X size={20} />
@@ -116,15 +116,18 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
                     key={message.id}
                     className={`animate-in fade-in slide-in-from-bottom-2 rounded-xl px-4 py-3 duration-300 ${
                       message.role === "user"
-                        ? "ml-8 bg-[#76E54A]/20 text-[#76E54A] dark:bg-[#76E54A]/10"
-                        : "mr-8 bg-gray-100 text-gray-900 dark:bg-white/5 dark:text-white/90"
+                        ? "ml-8 bg-[#8BBC81] text-white"
+                        : "mr-8 bg-[#4A728A] text-white/90"
                     }`}
                   >
                     <div className="mb-1.5 text-xs font-semibold tracking-wide uppercase opacity-60">
                       {message.role === "user" ? (
                         "You"
                       ) : (
-                        <span className="inline-flex items-center gap-2 normal-case">
+                        <>
+                          <span className="inline-flex items-center gap-2 normal-case">
+                            <span className="sr-only">AI</span>
+                          </span>
                           <Image
                             src="/ai-profile-pic.svg"
                             alt="Panday"
@@ -132,8 +135,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
                             width={50}
                             height={50}
                           />
-                          <span className="sr-only">AI</span>
-                        </span>
+                        </>
                       )}
                     </div>
                     <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -216,7 +218,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
               </div>
             ) : (
               <div className="flex h-full items-center justify-center p-6">
-                <p className="text-center text-sm text-gray-500 dark:text-white/50">
+                <p className="text-center text-sm text-black">
                   Start a conversation about your roadmap journey
                 </p>
               </div>
@@ -229,34 +231,38 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
             className="border-t border-gray-200 p-4 dark:border-white/10"
           >
             <div className="relative flex items-center gap-2">
-              <Input
-                type="text"
-                placeholder="Ask something..."
-                disabled={isLoading}
-                value={input}
-                onChange={handleInputChange}
-                className="h-10 rounded-lg border-gray-200 bg-gray-50 px-4 text-sm text-gray-900 placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-[#76E54A]/50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-white/40"
-              />
-              <button
-                type="submit"
-                disabled={isLoading || !input.trim()}
-                className="rounded-lg p-2 transition-all hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-white/10"
-                aria-label="Send message"
+              <div
+                id="input-container"
+                className="flex w-full flex-row rounded-3xl bg-white"
               >
-                <svg
-                  width="20"
-                  height="18"
-                  viewBox="0 0 25 22"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+                <Input
+                  type="text"
+                  placeholder="Write your message"
+                  disabled={isLoading}
+                  value={input}
+                  onChange={handleInputChange}
+                  className="h-10 rounded-3xl border-white/10 bg-white text-sm text-black placeholder:font-extrabold placeholder:text-black/40 focus-visible:ring-0"
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading || !input.trim()}
+                  className="rounded-lg p-2 transition-all hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
+                  aria-label="Send message"
                 >
-                  <ellipse cx="12.5" cy="11" rx="12.5" ry="11" fill="#0E3087" />
-                  <path
-                    d="M8.14857 7.68333L12.44 9.47222L8.14286 8.91667L8.14857 7.68333ZM12.4343 12.5278L8.14286 14.3167V13.0833L12.4343 12.5278ZM7.00571 6L7 9.88889L15.5714 11L7 12.1111L7.00571 16L19 11L7.00571 6Z"
-                    fill="#F1A660"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M15.0205 5.50867L6.46046 1.22867C0.710459 -1.65133 -1.64954 0.70867 1.23046 6.45867L2.10046 8.19867C2.35046 8.70867 2.35046 9.29867 2.10046 9.80867L1.23046 11.5387C-1.64954 17.2887 0.700459 19.6487 6.46046 16.7687L15.0205 12.4887C18.8605 10.5687 18.8605 7.42867 15.0205 5.50867ZM11.7905 9.74867H6.39046C5.98046 9.74867 5.64046 9.40867 5.64046 8.99867C5.64046 8.58867 5.98046 8.24867 6.39046 8.24867H11.7905C12.2005 8.24867 12.5405 8.58867 12.5405 8.99867C12.5405 9.40867 12.2005 9.74867 11.7905 9.74867Z"
+                      fill="#3369FF"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
             {selectedNodeId && (
               <p className="mt-2 text-xs text-gray-500 dark:text-white/50">
@@ -266,7 +272,6 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
           </form>
         </div>
       )}
-
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={``}
