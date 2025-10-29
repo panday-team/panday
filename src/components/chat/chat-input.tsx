@@ -3,6 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { useChat } from "@ai-sdk/react";
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 
 export default function ChatInput() {
   const { messages, input, handleInputChange, handleSubmit, isLoading } =
@@ -34,7 +35,13 @@ export default function ChatInput() {
             key={message.id}
             className="animate-in fade-in slide-in-from-bottom-2 duration-800"
           >
-            <strong>{message.role === "user" ? "You: " : "AI: "}</strong>
+            <strong>
+              {message.role === "user" ? (
+                "You: "
+              ) : (
+                <Image src="/2.webp" width={10} height={10} alt="AI" />
+              )}
+            </strong>
             {message.content}
           </div>
         ))}
