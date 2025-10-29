@@ -26,6 +26,7 @@ import {
 } from "@/components/nodes";
 import { NodeInfoPanel } from "@/components/node-info-panel";
 import { ChatWidget } from "@/components/chat/chat-widget";
+import { ThemeToggle } from "@/components/theme-toggle";
 import type { Roadmap } from "@/data/types/roadmap";
 import {
   calculateChildOffsets,
@@ -316,7 +317,7 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
     : null;
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-[#0C1020]">
+    <div className="relative h-screen w-full overflow-hidden bg-[#EDF2F6] dark:bg-[#0C1020]">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -373,6 +374,10 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
           </div>
         </div>
       )}
+
+      <div className="pointer-events-auto absolute top-4 right-4 md:top-10 md:right-10">
+        <ThemeToggle />
+      </div>
 
       <ChatWidget selectedNodeId={selectedNodeId ?? undefined} />
     </div>

@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { type Metadata } from "next";
 import { Inria_Sans } from "next/font/google";
 import { UserIdInitializer } from "@/components/user-id-initializer";
+import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
   title: "Panday ",
@@ -27,10 +28,17 @@ export default function RootLayout({
       signInFallbackRedirectUrl="/"
       signUpFallbackRedirectUrl="/"
     >
-      <html lang="en" className={`${inriaSans.variable} dark`}>
+      <html lang="en" className={inriaSans.variable} suppressHydrationWarning>
         <body className="bg-background text-foreground min-h-dvh antialiased">
-          <UserIdInitializer />
-          {children}
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <UserIdInitializer />
+            {children}
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

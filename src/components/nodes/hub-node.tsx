@@ -48,7 +48,7 @@ function HubNodeComponent({ id, data }: NodeProps<HubNodeType>) {
       {glow ? (
         <motion.span
           aria-hidden
-          className="pointer-events-none absolute z-0 h-[250px] w-[250px] rounded-full border-[12px] border-[#FFD84D]/30"
+          className="pointer-events-none absolute z-0 h-[250px] w-[250px] rounded-full border-[12px] border-[#FE5000]/30"
           animate={{
             scale: [1, 1.1, 1],
             opacity: [0.3, 0.5, 0.3],
@@ -65,7 +65,7 @@ function HubNodeComponent({ id, data }: NodeProps<HubNodeType>) {
       {/* Outer glow with subtle breathing animation */}
       <motion.span
         aria-hidden
-        className="pointer-events-none absolute z-10 h-[180px] w-[180px] rounded-full bg-[#FFD84D]/[0.18]"
+        className="pointer-events-none absolute z-10 h-[180px] w-[180px] rounded-full bg-[#FE5000]/[0.18]"
         animate={{
           scale: [1, 1.05, 1],
           opacity: [0.18, 0.25, 0.18],
@@ -78,10 +78,10 @@ function HubNodeComponent({ id, data }: NodeProps<HubNodeType>) {
         }}
       />
 
-      {/* Main yellow circle */}
+      {/* Main orange circle */}
       <span
         aria-hidden
-        className="pointer-events-none absolute z-10 h-32 w-32 rounded-full bg-[#FFD84D]"
+        className="pointer-events-none absolute z-10 h-32 w-32 rounded-full bg-[#FE5000]"
       />
 
       {/* White border ring with subtle pulse */}
@@ -159,7 +159,7 @@ function HubNodeComponent({ id, data }: NodeProps<HubNodeType>) {
 
       <NodeAppendix
         position="bottom"
-        className="pointer-events-none z-20 rounded-lg border-none bg-[#0B1021]/90 px-3 py-1.5 text-lg leading-tight font-bold text-[#D9DEE7] backdrop-blur-sm"
+        className="pointer-events-none z-20 rounded-lg border-none bg-white/95 px-3 py-1.5 text-lg leading-tight font-bold text-gray-900 backdrop-blur-sm dark:bg-[#0B1021]/90 dark:text-[#D9DEE7]"
       >
         {label}
       </NodeAppendix>

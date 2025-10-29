@@ -27,16 +27,16 @@ function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
   // Determine colors based on status
   const colors = {
     base: {
-      main: "#9F7AEA",
-      glow: "#9F7AEA",
+      main: "#0077CC",
+      glow: "#0077CC",
     },
     "in-progress": {
-      main: "#BB1913",
-      glow: "#BB1913",
+      main: "#C91D39",
+      glow: "#C91D39",
     },
     completed: {
-      main: "#61FF05",
-      glow: "#61FF05",
+      main: "#00A36C",
+      glow: "#00A36C",
     },
   };
 
@@ -139,7 +139,7 @@ function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
         >
           <NodeAppendix
             position="bottom"
-            className="pointer-events-none border-none bg-transparent text-sm leading-tight font-medium text-[#D9DEE7]"
+            className="pointer-events-none border-none bg-transparent text-sm leading-tight font-medium text-gray-900 dark:text-[#D9DEE7]"
           >
             <p className="hidden group-hover:inline">{label}</p>
           </NodeAppendix>
@@ -209,25 +209,14 @@ function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
                   height: 80,
                 }}
               >
-                <motion.div
-                  animate={{
-                    y: [0, -8, 0],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <Image
-                    src="/mascot.webp"
-                    alt="Panday Mascot"
-                    width={80}
-                    height={80}
-                    className="h-full w-full object-contain drop-shadow-2xl"
-                    priority
-                  />
-                </motion.div>
+                <Image
+                  src="/mascot.webp"
+                  alt="Panday Mascot"
+                  width={160}
+                  height={160}
+                  className="h-full w-full object-contain drop-shadow-2xl"
+                  priority
+                />
               </motion.div>
             )}
           </AnimatePresence>
