@@ -307,6 +307,7 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
               benefits={selectedContent.benefits}
               outcomes={selectedContent.outcomes}
               resources={selectedContent.resources}
+              nodeColour={`${selectedNodeType === "hub" ? "bg-[var(--yelloo-nood)]" : "bg-[var(--purple-nood)]"}`}
             />
           </div>
         </div>
