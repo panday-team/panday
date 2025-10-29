@@ -44,7 +44,7 @@ export function NodeInfoPanel({
   return (
     <aside
       className={cn(
-        "w-full rounded-3xl border border-white/10 bg-[#2D354B]/95 px-8 pt-8 pb-10 text-[#FFEDDA] shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur md:max-w-lg",
+        "w-full rounded-3xl border border-white/10 bg-[#98B3F9]/95 px-8 pt-8 pb-10 text-black shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur md:max-w-lg",
         className,
       )}
       {...props}
@@ -54,17 +54,17 @@ export function NodeInfoPanel({
           {badge}
         </span>
         {subtitle ? (
-          <span className="text-xs font-medium text-white/60">{subtitle}</span>
+          <span className="text-xs font-medium text-black/60">{subtitle}</span>
         ) : null}
       </div>
 
       <div className="mt-6 space-y-5">
         <header>
-          <h1 className="font-sans text-3xl leading-tight text-white">
+          <h1 className="font-sans text-3xl leading-tight text-black">
             {title}
           </h1>
           {description ? (
-            <p className="mt-2 text-sm leading-relaxed text-white/75">
+            <p className="mt-2 text-sm leading-relaxed text-black">
               {description}
             </p>
           ) : null}
@@ -83,7 +83,7 @@ export function NodeInfoPanel({
         {nodeType === "checklist" && onStatusChange ? (
           <section className="flex flex-row items-center gap-8">
             <label className="flex cursor-pointer items-center gap-2">
-              <span className="text-sm text-white/90">Completed</span>
+              <span className="text-sm text-black/90">Completed</span>
               <Checkbox
                 checked={nodeStatus === "completed"}
                 onCheckedChange={(checked) => {
@@ -93,7 +93,7 @@ export function NodeInfoPanel({
               />
             </label>
             <label className="flex cursor-pointer items-center gap-2">
-              <span className="text-sm text-white/90">Save for Later</span>
+              <span className="text-sm text-black/90">Save for Later</span>
               <Checkbox
                 checked={nodeStatus === "in-progress"}
                 onCheckedChange={(checked) => {
