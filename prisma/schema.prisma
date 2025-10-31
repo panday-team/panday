@@ -32,3 +32,17 @@ model Document {
 
   @@index([name])
 }
+
+model UserProfile {
+  id                    Int       @id @default(autoincrement())
+  clerkUserId           String    @unique
+  trade                 String
+  currentLevel          String
+  entryPath             String
+  residencyStatus       String
+  onboardingCompletedAt DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([clerkUserId])
+}
