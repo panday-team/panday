@@ -26,7 +26,11 @@ import {
 } from "@/components/nodes";
 import { NodeInfoPanel } from "@/components/node-info-panel";
 import { ChatWidget } from "@/components/chat/chat-widget";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Settings, Home } from "lucide-react";
+import Link from "next/link";
 import type { Roadmap } from "@/data/types/roadmap";
 import {
   calculateChildOffsets,
@@ -38,6 +42,13 @@ import {
   getAllNodeStatuses,
   setNodeStatus,
 } from "@/lib/node-status";
+import {
+  type UserProfile,
+  getCompletedLevels,
+  getIrrelevantPaths,
+  getCurrentLevelNodeId,
+  LEVEL_METADATA,
+} from "@/lib/profile-types";
 
 type FlowNode = HubNodeType | ChecklistNodeType | TerminalNodeType;
 type FlowEdge = Edge;
@@ -60,6 +71,7 @@ const arrowMarker = {
 
 interface RoadmapFlowProps {
   roadmap: Roadmap;
+  userProfile: UserProfile | null;
 }
 
 function stringToPosition(pos?: string): Position | undefined {
@@ -73,7 +85,7 @@ function stringToPosition(pos?: string): Position | undefined {
   return posMap[pos.toLowerCase()];
 }
 
-export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
+export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const animationsRef = useRef<Map<string, () => void>>(new Map());
   const isDraggingRef = useRef<string | null>(null);
@@ -87,6 +99,17 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
   }, [roadmap.metadata.id]);
 
   const initialNodes = useMemo<FlowNode[]>(() => {
+    // Get personalization data from user profile
+    const completedLevelIds = userProfile
+      ? getCompletedLevels(userProfile.currentLevel)
+      : [];
+    const irrelevantPathIds = userProfile
+      ? getIrrelevantPaths(userProfile.entryPath)
+      : [];
+    const currentLevelNodeId = userProfile
+      ? getCurrentLevelNodeId(userProfile.currentLevel)
+      : null;
+
     //build nodes from graph/content
     const builtNodes: FlowNode[] = roadmap.graph.nodes.map((graphNode) => {
       const content = roadmap.content.get(graphNode.id);
@@ -97,26 +120,40 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
       const { frontmatter } = content;
       const isMainNode = !graphNode.parentId;
 
+      // Determine if this node should be auto-completed based on user profile
+      const isCompletedByProfile = completedLevelIds.includes(graphNode.id);
+      const isCurrentLevel = currentLevelNodeId === graphNode.id;
+      const isDimmed = irrelevantPathIds.includes(graphNode.id);
+
+      // Prioritize user-set status over profile-based status
+      let nodeStatus: NodeStatus = nodeStatuses[graphNode.id] ?? "base";
+      if (!nodeStatuses[graphNode.id] && isCompletedByProfile) {
+        nodeStatus = "completed";
+      }
+
       return {
         id: graphNode.id,
         type: frontmatter.type,
         position: graphNode.position,
         data: {
           label: frontmatter.title,
-          glow: frontmatter.glow,
+          glow: frontmatter.glow ?? isCurrentLevel,
           labelPosition: frontmatter.labelPosition,
           showLabelDot: frontmatter.showLabelDot,
           parentId: graphNode.parentId,
-          status: nodeStatuses[graphNode.id] ?? "base",
+          status: nodeStatus,
+          isCurrentLevel,
+          isDimmed,
         },
         sourcePosition: stringToPosition(graphNode.sourcePosition),
         targetPosition: stringToPosition(graphNode.targetPosition),
         draggable: isMainNode,
+        style: isDimmed ? { opacity: 0.3 } : undefined,
       } as FlowNode;
     });
 
     return builtNodes;
-  }, [roadmap, nodeStatuses]);
+  }, [roadmap, nodeStatuses, userProfile]);
 
   const initialEdges = useMemo<FlowEdge[]>(() => {
     return roadmap.graph.edges
@@ -346,6 +383,42 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
         />
       </ReactFlow>
 
+      {userProfile && (
+        <div className="pointer-events-none absolute top-0 right-0 flex w-full justify-end p-4 md:pt-10 md:pr-10 md:pl-0">
+          <div className="pointer-events-auto">
+            <Card className="bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="default" className="bg-teal-500/20 text-teal-700 ring-teal-500/30 dark:text-teal-300">
+                      {LEVEL_METADATA[userProfile.currentLevel].shortLabel}
+                    </Badge>
+                    <span className="text-sm font-medium">
+                      Welcome back!
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {LEVEL_METADATA[userProfile.currentLevel].label}
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  <Link href="/">
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <Home className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href="/profile">
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
       {selectedContent && selectedNodeId && (
         <div className="pointer-events-none absolute top-0 left-0 flex w-full justify-start p-4 md:pt-10 md:pr-0 md:pl-10">
           <div className="pointer-events-auto">
@@ -374,10 +447,6 @@ export function RoadmapFlow({ roadmap }: RoadmapFlowProps) {
           </div>
         </div>
       )}
-
-      <div className="pointer-events-auto absolute top-4 right-4 md:top-10 md:right-10">
-        <ThemeToggle />
-      </div>
 
       <ChatWidget selectedNodeId={selectedNodeId ?? undefined} />
     </div>

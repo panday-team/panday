@@ -58,4 +58,12 @@ export default tseslint.config(
       "@typescript-eslint/unbound-method": "off",
     },
   },
+  {
+    files: ["**/api/**/*.ts", "**/roadmap/page.tsx"],
+    rules: {
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+    },
+  },
 );

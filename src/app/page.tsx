@@ -1,10 +1,11 @@
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { AuthControls } from "@/components/AuthControls";
+import { ThemeToggle } from "@/components/theme-toggle";
 import Link from "next/link";
 
 export default function LandingPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4">
+    <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
       <div className="flex flex-col items-center gap-8 text-center">
         <div className="flex flex-col gap-4">
           <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
@@ -33,6 +34,10 @@ export default function LandingPage() {
             </div>
           </SignedIn>
         </div>
+      </div>
+
+      <div className="absolute top-4 right-4 md:top-10 md:right-10">
+        <ThemeToggle />
       </div>
     </div>
   );
