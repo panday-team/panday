@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { roadmapCache } from "@/lib/roadmap-cache";
@@ -45,18 +44,6 @@ export default async function RoadmapPage() {
   return (
     <ErrorBoundary>
       <RoadmapFlow roadmap={roadmap} userProfile={userProfile} />
-=======
-import { roadmapCache } from "@/lib/roadmap-cache";
-import { RoadmapFlow } from "@/components/roadmap-flow";
-import { ErrorBoundary } from "@/components/error-boundary";
-
-export default async function RoadmapPage() {
-  const roadmap = await roadmapCache.get("electrician-bc");
-
-  return (
-    <ErrorBoundary>
-      <RoadmapFlow roadmap={roadmap} />
->>>>>>> 089acaa (changed roadmap to be a protected route & added simple homepage)
     </ErrorBoundary>
   );
 }
