@@ -52,6 +52,12 @@
 - **Rendering Flow**: `app/page.tsx` (server) → `roadmapCache.get()` → `ErrorBoundary` → `RoadmapFlow` (client) → React Flow visualization
 - **Node Types**: `hub` (yellow `#FFD84D`, main path nodes), `terminal` (purple `purple-500`, final goal - Red Seal certification), `checklist` (teal, subnodes) — fully implemented in `src/components/nodes/`. Types `requirement`, `portal`, `checkpoint` are registered as aliases to `hub` but not used in current electrician roadmap.
 - **Animations**: Framer Motion integration in `BaseNode` component provides smooth scale/opacity transitions on load and 1.05x scale on hover
+- **Personalized Viewport**: Initial viewport dynamically centers on user's current level via `src/lib/viewport-utils.ts`
+  - Data-driven approach reads node positions from `graph.json` (no hardcoded positions)
+  - Maps `userProfile.currentLevel` → node ID → graph position → viewport coordinates
+  - Automatically works for all roadmaps without code changes
+  - Unauthenticated users see default overview position
+  - Calculation in `RoadmapFlow` component uses `useMemo` for performance
 - **Content Sections**: Each markdown file can have: Eligibility, Benefits, Final Outcome, Resources
 - **Testing**: Comprehensive test suite in `src/lib/__tests__/roadmap-loader.test.ts` (15 tests covering all core functions)
 - **Adding Content**: Create markdown file in `content/` with frontmatter, run `bun run roadmap:build` - no manual `graph.json` editing needed
@@ -177,6 +183,28 @@
 - PRs should link issues, summarize changes, list verification commands, and include UI captures for user-facing work
 - Request review for updates to Prisma schema or server logic
 - `docs/SETUP.md` tracks the git branching rules (protected `origin/main`, no deletion/force push, 1 required review, rebase after `git stash push -u`) and the Docker helpers exposed as `bun run services:start|stop|status` (wrapping `./scripts/dev-services.sh`).
+
+## User Profile & Onboarding
+
+- **Database Schema**: `UserProfile` model in `prisma/schema.prisma` tracks user progress and preferences
+  - Fields: `clerkUserId`, `trade`, `currentLevel`, `entryPath`, `residencyStatus`, `onboardingCompletedAt`
+  - `onboardingCompletedAt` timestamp determines if user has completed onboarding (NULL = not completed)
+- **Onboarding Flow**: Multi-step wizard at `/onboarding` (`src/app/onboarding/page.tsx`)
+  - 4 steps: Trade selection → Current level → Entry path → Residency status
+  - Submits to `/api/profile` POST endpoint which upserts profile and sets `onboardingCompletedAt`
+  - Components: `TradeSelector`, `LevelSelector`, `PathSelector`, `ResidencySelector`, `ProgressIndicator`
+- **Profile API**: `/api/profile` route (`src/app/api/profile/route.ts`)
+  - GET: Fetch user's profile
+  - POST: Create/update profile (upsert) - sets `onboardingCompletedAt` on completion
+  - PATCH: Update specific profile fields
+  - All routes protected by Clerk auth, validated with Zod schemas
+- **Access Control**: Roadmap page (`src/app/roadmap/page.tsx`) checks `onboardingCompletedAt`
+  - If NULL or profile doesn't exist → redirect to `/onboarding`
+  - Ensures users complete onboarding before accessing personalized roadmap
+- **Profile Types**: Comprehensive type definitions in `src/lib/profile-types.ts`
+  - Enums for trades, levels, entry paths, residency status with metadata
+  - Helper functions: `getCompletedLevels()`, `getIrrelevantPaths()`, `getCurrentLevelNodeId()`
+  - Maps user profile data to roadmap personalization (viewport, node states, dimmed paths)
 
 ## Need-to-Know Extras
 

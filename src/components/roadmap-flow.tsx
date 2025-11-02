@@ -49,6 +49,7 @@ import {
   getCurrentLevelNodeId,
   LEVEL_METADATA,
 } from "@/lib/profile-types";
+import { calculateViewportForNode } from "@/lib/viewport-utils";
 
 type FlowNode = HubNodeType | ChecklistNodeType | TerminalNodeType;
 type FlowEdge = Edge;
@@ -97,6 +98,15 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
   useEffect(() => {
     setNodeStatuses(getAllNodeStatuses(roadmap.metadata.id));
   }, [roadmap.metadata.id]);
+
+  // Calculate initial viewport based on user's current level
+  const initialViewport = useMemo(() => {
+    const currentNodeId = userProfile
+      ? getCurrentLevelNodeId(userProfile.currentLevel)
+      : null;
+
+    return calculateViewportForNode(currentNodeId, roadmap.graph.nodes);
+  }, [userProfile, roadmap.graph.nodes]);
 
   const initialNodes = useMemo<FlowNode[]>(() => {
     // Get personalization data from user profile
@@ -360,7 +370,7 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
         edges={edges}
         nodeTypes={nodeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
-        defaultViewport={{ x: 850, y: 400, zoom: 0.8 }}
+        defaultViewport={initialViewport}
         minZoom={0.2}
         maxZoom={3.0}
         panOnScroll
@@ -386,18 +396,19 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
       {userProfile && (
         <div className="pointer-events-none absolute top-0 right-0 flex w-full justify-end p-4 md:pt-10 md:pr-10 md:pl-0">
           <div className="pointer-events-auto">
-            <Card className="bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+            <Card className="bg-background/95 supports-[backdrop-filter]:bg-background/80 p-4 backdrop-blur">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <Badge variant="default" className="bg-teal-500/20 text-teal-700 ring-teal-500/30 dark:text-teal-300">
+                    <Badge
+                      variant="default"
+                      className="bg-teal-500/20 text-teal-700 ring-teal-500/30 dark:text-teal-300"
+                    >
                       {LEVEL_METADATA[userProfile.currentLevel].shortLabel}
                     </Badge>
-                    <span className="text-sm font-medium">
-                      Welcome back!
-                    </span>
+                    <span className="text-sm font-medium">Welcome back!</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     {LEVEL_METADATA[userProfile.currentLevel].label}
                   </p>
                 </div>
