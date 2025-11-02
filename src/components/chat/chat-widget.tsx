@@ -7,6 +7,7 @@ import { X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Image from "next/image";
+import { ChatButton } from "./chat-button";
 
 interface ChatWidgetProps {
   selectedNodeId?: string | null;
@@ -272,19 +273,10 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
           </form>
         </div>
       )}
-      <button
+      <ChatButton
+        isExpanded={isExpanded}
         onClick={() => setIsExpanded(!isExpanded)}
-        className={``}
-        aria-label={isExpanded ? "Collapse chat" : "Open chat"}
-      >
-        <Image
-          src="/ai-chat-button.svg"
-          alt="AI chat"
-          className="cursor-grab"
-          width={250}
-          height={250}
-        />
-      </button>
+      />
     </div>
   );
 }

@@ -1,14 +1,21 @@
 services:
   postgres:
-    image: neondatabase/neon_local:latest
-    container_name: neon_local
+    image: pgvector/pgvector:pg17
+    container_name: panday_postgres
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     environment:
-      NEON_API_KEY: ${NEON_API_KEY}
-      NEON_PROJECT_ID: ${NEON_PROJECT_ID}
-      DRIVER: serverless
+      POSTGRES_USER: neon
+      POSTGRES_PASSWORD: npg
+      POSTGRES_DB: neondb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neon -d neondb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:8.2.1
