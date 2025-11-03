@@ -38,7 +38,7 @@ model UserProfile {
   clerkUserId           String    @unique
   trade                 String
   currentLevel          String
-  entryPath             String
+  specialization        String    @default("undecided")
   residencyStatus       String
   onboardingCompletedAt DateTime?
   createdAt             DateTime  @default(now())

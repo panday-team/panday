@@ -23,14 +23,14 @@ export const APPRENTICESHIP_LEVELS = {
 export type ApprenticeshipLevel =
   (typeof APPRENTICESHIP_LEVELS)[keyof typeof APPRENTICESHIP_LEVELS];
 
-export const ENTRY_PATHS = {
-  FOUNDATION: "foundation",
-  ACE_IT: "ace-it",
-  DIRECT_ENTRY: "direct-entry",
-  EXPLORING: "exploring",
+export const ELECTRICIAN_SPECIALIZATION = {
+  CONSTRUCTION: "construction",
+  INDUSTRIAL: "industrial",
+  UNDECIDED: "undecided",
 } as const;
 
-export type EntryPath = (typeof ENTRY_PATHS)[keyof typeof ENTRY_PATHS];
+export type ElectricianSpecialization =
+  (typeof ELECTRICIAN_SPECIALIZATION)[keyof typeof ELECTRICIAN_SPECIALIZATION];
 
 export const RESIDENCY_STATUS = {
   CITIZEN: "citizen",
@@ -46,7 +46,7 @@ export interface UserProfile {
   clerkUserId: string;
   trade: Trade;
   currentLevel: ApprenticeshipLevel;
-  entryPath: EntryPath;
+  specialization: ElectricianSpecialization;
   residencyStatus: ResidencyStatus;
   onboardingCompletedAt: Date | null;
   createdAt: Date;
@@ -56,14 +56,14 @@ export interface UserProfile {
 export interface CreateUserProfileInput {
   trade: Trade;
   currentLevel: ApprenticeshipLevel;
-  entryPath: EntryPath;
+  specialization: ElectricianSpecialization;
   residencyStatus: ResidencyStatus;
 }
 
 export interface UpdateUserProfileInput {
   trade?: Trade;
   currentLevel?: ApprenticeshipLevel;
-  entryPath?: EntryPath;
+  specialization?: ElectricianSpecialization;
   residencyStatus?: ResidencyStatus;
 }
 
@@ -136,27 +136,28 @@ export const LEVEL_METADATA: Record<
 };
 
 /**
- * Entry path metadata for UI display
+ * Electrician specialization metadata for UI display
  */
-export const ENTRY_PATH_METADATA: Record<
-  EntryPath,
-  { label: string; description: string }
+export const SPECIALIZATION_METADATA: Record<
+  ElectricianSpecialization,
+  { label: string; description: string; redSealCode: string }
 > = {
-  [ENTRY_PATHS.FOUNDATION]: {
-    label: "Foundation Program",
-    description: "16-week pre-apprenticeship program before Level 1",
+  [ELECTRICIAN_SPECIALIZATION.CONSTRUCTION]: {
+    label: "Construction Electrician",
+    description:
+      "Install and maintain electrical systems in residential, commercial, and institutional buildings (309A - 3 year program)",
+    redSealCode: "309A",
   },
-  [ENTRY_PATHS.ACE_IT]: {
-    label: "ACE-IT Program",
-    description: "Accelerated program combining high school and apprenticeship",
+  [ELECTRICIAN_SPECIALIZATION.INDUSTRIAL]: {
+    label: "Industrial Electrician",
+    description:
+      "Work with high-voltage equipment and electrical controls in industrial facilities like factories and plants (442A - 4 year program)",
+    redSealCode: "442A",
   },
-  [ENTRY_PATHS.DIRECT_ENTRY]: {
-    label: "Direct Entry",
-    description: "Start directly at Level 1 with employer sponsorship",
-  },
-  [ENTRY_PATHS.EXPLORING]: {
-    label: "Still Deciding",
-    description: "Exploring different entry paths",
+  [ELECTRICIAN_SPECIALIZATION.UNDECIDED]: {
+    label: "Undecided",
+    description: "Still exploring which specialization to pursue",
+    redSealCode: "N/A",
   },
 };
 
@@ -207,17 +208,28 @@ export function getCompletedLevels(
 }
 
 /**
- * Get roadmap node IDs that should be dimmed based on entry path
+ * Get roadmap node IDs that should be dimmed based on specialization choice
  */
-export function getIrrelevantPaths(entryPath: EntryPath): string[] {
-  const pathMap: Record<EntryPath, string[]> = {
-    [ENTRY_PATHS.FOUNDATION]: ["ace-it", "direct-entry"],
-    [ENTRY_PATHS.ACE_IT]: ["foundation-program", "direct-entry"],
-    [ENTRY_PATHS.DIRECT_ENTRY]: ["foundation-program", "ace-it"],
-    [ENTRY_PATHS.EXPLORING]: [], // Show all paths
+export function getIrrelevantNodes(
+  specialization: ElectricianSpecialization,
+): string[] {
+  const specializationMap: Record<ElectricianSpecialization, string[]> = {
+    [ELECTRICIAN_SPECIALIZATION.CONSTRUCTION]: [
+      "level-4-industrial",
+      "level-4-industrial-req-1",
+      "level-4-industrial-req-2",
+      "level-4-industrial-req-3",
+    ],
+    [ELECTRICIAN_SPECIALIZATION.INDUSTRIAL]: [
+      "level-4-construction",
+      "level-4-construction-req-1",
+      "level-4-construction-req-2",
+      "level-4-construction-req-3",
+    ],
+    [ELECTRICIAN_SPECIALIZATION.UNDECIDED]: [], // Show all paths
   };
 
-  return pathMap[entryPath] ?? [];
+  return specializationMap[specialization] ?? [];
 }
 
 /**
@@ -225,14 +237,27 @@ export function getIrrelevantPaths(entryPath: EntryPath): string[] {
  */
 export function getCurrentLevelNodeId(
   currentLevel: ApprenticeshipLevel,
+  specialization?: ElectricianSpecialization,
 ): string | null {
+  // For Level 4, use specialization to determine which node
+  if (currentLevel === APPRENTICESHIP_LEVELS.LEVEL_4 && specialization) {
+    if (specialization === ELECTRICIAN_SPECIALIZATION.INDUSTRIAL) {
+      return "level-4-industrial";
+    }
+    if (specialization === ELECTRICIAN_SPECIALIZATION.CONSTRUCTION) {
+      return "level-4-construction";
+    }
+    // For undecided, default to construction
+    return "level-4-construction";
+  }
+
   const levelNodeMap: Record<ApprenticeshipLevel, string | null> = {
     [APPRENTICESHIP_LEVELS.NOT_STARTED]: null,
     [APPRENTICESHIP_LEVELS.FOUNDATION]: "foundation-program",
     [APPRENTICESHIP_LEVELS.LEVEL_1]: "level-1",
     [APPRENTICESHIP_LEVELS.LEVEL_2]: "level-2",
     [APPRENTICESHIP_LEVELS.LEVEL_3]: "level-3",
-    [APPRENTICESHIP_LEVELS.LEVEL_4]: "level-4-construction", // Default to construction
+    [APPRENTICESHIP_LEVELS.LEVEL_4]: "level-4-construction", // Default fallback
     [APPRENTICESHIP_LEVELS.RED_SEAL]: "red-seal-certification",
   };
 

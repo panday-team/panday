@@ -5,7 +5,7 @@ import { db as prisma } from "@/server/db";
 import {
   TRADES,
   APPRENTICESHIP_LEVELS,
-  ENTRY_PATHS,
+  ELECTRICIAN_SPECIALIZATION,
   RESIDENCY_STATUS,
 } from "@/lib/profile-types";
 import { createLogger } from "@/lib/logger";
@@ -24,11 +24,10 @@ const createProfileSchema = z.object({
     APPRENTICESHIP_LEVELS.LEVEL_4,
     APPRENTICESHIP_LEVELS.RED_SEAL,
   ]),
-  entryPath: z.enum([
-    ENTRY_PATHS.FOUNDATION,
-    ENTRY_PATHS.ACE_IT,
-    ENTRY_PATHS.DIRECT_ENTRY,
-    ENTRY_PATHS.EXPLORING,
+  specialization: z.enum([
+    ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
+    ELECTRICIAN_SPECIALIZATION.INDUSTRIAL,
+    ELECTRICIAN_SPECIALIZATION.UNDECIDED,
   ]),
   residencyStatus: z.enum([
     RESIDENCY_STATUS.CITIZEN,

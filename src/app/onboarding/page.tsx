@@ -5,16 +5,16 @@ import { useRouter } from "next/navigation";
 import {
   type Trade,
   type ApprenticeshipLevel,
-  type EntryPath,
+  type ElectricianSpecialization,
   type ResidencyStatus,
   TRADE_METADATA,
   LEVEL_METADATA,
-  ENTRY_PATH_METADATA,
+  SPECIALIZATION_METADATA,
   RESIDENCY_STATUS_METADATA,
 } from "@/lib/profile-types";
 import { TradeSelector } from "@/components/onboarding/trade-selector";
 import { LevelSelector } from "@/components/onboarding/level-selector";
-import { PathSelector } from "@/components/onboarding/path-selector";
+import { SpecializationSelector } from "@/components/onboarding/specialization-selector";
 import { ResidencySelector } from "@/components/onboarding/residency-selector";
 import { ProgressIndicator } from "@/components/onboarding/progress-indicator";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ import { createLogger } from "@/lib/logger";
 
 const onboardingLogger = createLogger({ context: "onboarding" });
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 3;
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -36,7 +36,8 @@ export default function OnboardingPage() {
   const [selectedLevel, setSelectedLevel] = useState<ApprenticeshipLevel | null>(
     null,
   );
-  const [selectedPath, setSelectedPath] = useState<EntryPath | null>(null);
+  const [selectedSpecialization, setSelectedSpecialization] =
+    useState<ElectricianSpecialization | null>(null);
   const [selectedResidency, setSelectedResidency] =
     useState<ResidencyStatus | null>(null);
 
@@ -47,9 +48,7 @@ export default function OnboardingPage() {
       case 2:
         return selectedLevel !== null;
       case 3:
-        return selectedPath !== null;
-      case 4:
-        return selectedResidency !== null;
+        return selectedSpecialization !== null && selectedResidency !== null;
       default:
         return false;
     }
@@ -68,7 +67,12 @@ export default function OnboardingPage() {
   };
 
   const handleSubmit = async () => {
-    if (!selectedTrade || !selectedLevel || !selectedPath || !selectedResidency) {
+    if (
+      !selectedTrade ||
+      !selectedLevel ||
+      !selectedSpecialization ||
+      !selectedResidency
+    ) {
       return;
     }
 
@@ -81,7 +85,7 @@ export default function OnboardingPage() {
         body: JSON.stringify({
           trade: selectedTrade,
           currentLevel: selectedLevel,
-          entryPath: selectedPath,
+          specialization: selectedSpecialization,
           residencyStatus: selectedResidency,
         }),
       });
@@ -126,61 +130,69 @@ export default function OnboardingPage() {
             />
           )}
 
-          {currentStep === 3 && (
-            <PathSelector
-              selectedPath={selectedPath}
-              onSelectPath={setSelectedPath}
-            />
-          )}
+          {currentStep === 3 &&
+            (selectedSpecialization === null || selectedResidency === null) && (
+              <div className="space-y-8">
+                <SpecializationSelector
+                  selectedSpecialization={selectedSpecialization}
+                  onSelectSpecialization={setSelectedSpecialization}
+                />
 
-          {currentStep === 4 && selectedResidency === null && (
-            <ResidencySelector
-              selectedStatus={selectedResidency}
-              onSelectStatus={setSelectedResidency}
-            />
-          )}
-
-          {currentStep === 4 && selectedResidency !== null && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <CheckCircle2 className="mx-auto h-12 w-12 text-teal-500" />
-                <h2 className="mt-4 text-2xl font-bold">
-                  Review Your Information
-                </h2>
-                <p className="mt-2 text-muted-foreground">
-                  Make sure everything looks correct before continuing
-                </p>
+                {selectedSpecialization !== null && (
+                  <div className="border-t border-border pt-8">
+                    <ResidencySelector
+                      selectedStatus={selectedResidency}
+                      onSelectStatus={setSelectedResidency}
+                    />
+                  </div>
+                )}
               </div>
+            )}
 
-              <div className="space-y-4 rounded-lg bg-muted/50 p-6">
-                <div className="flex justify-between border-b border-border pb-3">
-                  <span className="font-medium">Trade:</span>
-                  <span className="text-muted-foreground">
-                    {selectedTrade && TRADE_METADATA[selectedTrade].label}
-                  </span>
+          {currentStep === 3 &&
+            selectedSpecialization !== null &&
+            selectedResidency !== null && (
+              <div className="space-y-6">
+                <div className="text-center">
+                  <CheckCircle2 className="mx-auto h-12 w-12 text-teal-500" />
+                  <h2 className="mt-4 text-2xl font-bold">
+                    Review Your Information
+                  </h2>
+                  <p className="mt-2 text-muted-foreground">
+                    Make sure everything looks correct before continuing
+                  </p>
                 </div>
-                <div className="flex justify-between border-b border-border pb-3">
-                  <span className="font-medium">Current Level:</span>
-                  <span className="text-muted-foreground">
-                    {selectedLevel && LEVEL_METADATA[selectedLevel].label}
-                  </span>
-                </div>
-                <div className="flex justify-between border-b border-border pb-3">
-                  <span className="font-medium">Entry Path:</span>
-                  <span className="text-muted-foreground">
-                    {selectedPath && ENTRY_PATH_METADATA[selectedPath].label}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Residency Status:</span>
-                  <span className="text-muted-foreground">
-                    {selectedResidency &&
-                      RESIDENCY_STATUS_METADATA[selectedResidency].label}
-                  </span>
+
+                <div className="space-y-4 rounded-lg bg-muted/50 p-6">
+                  <div className="flex justify-between border-b border-border pb-3">
+                    <span className="font-medium">Trade:</span>
+                    <span className="text-muted-foreground">
+                      {selectedTrade && TRADE_METADATA[selectedTrade].label}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-b border-border pb-3">
+                    <span className="font-medium">Current Level:</span>
+                    <span className="text-muted-foreground">
+                      {selectedLevel && LEVEL_METADATA[selectedLevel].label}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-b border-border pb-3">
+                    <span className="font-medium">Specialization:</span>
+                    <span className="text-muted-foreground">
+                      {selectedSpecialization &&
+                        SPECIALIZATION_METADATA[selectedSpecialization].label}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Residency Status:</span>
+                    <span className="text-muted-foreground">
+                      {selectedResidency &&
+                        RESIDENCY_STATUS_METADATA[selectedResidency].label}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
         </Card>
 
         <div className="flex justify-between">
@@ -193,7 +205,9 @@ export default function OnboardingPage() {
             Back
           </Button>
 
-          {currentStep < TOTAL_STEPS || selectedResidency === null ? (
+          {currentStep < TOTAL_STEPS ||
+          selectedSpecialization === null ||
+          selectedResidency === null ? (
             <Button onClick={handleNext} disabled={!canProceed()}>
               Next
               <ArrowRight className="ml-2 h-4 w-4" />

@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import {
   type Trade,
   type ApprenticeshipLevel,
-  type EntryPath,
+  type ElectricianSpecialization,
   type ResidencyStatus,
   TRADE_METADATA,
   LEVEL_METADATA,
-  ENTRY_PATH_METADATA,
+  SPECIALIZATION_METADATA,
   RESIDENCY_STATUS_METADATA,
 } from "@/lib/profile-types";
 import { Card } from "@/components/ui/card";
@@ -23,7 +23,7 @@ interface UserProfileData {
   clerkUserId: string;
   trade: Trade;
   currentLevel: ApprenticeshipLevel;
-  entryPath: EntryPath;
+  specialization: ElectricianSpecialization;
   residencyStatus: ResidencyStatus;
   onboardingCompletedAt: string | null;
   createdAt: string;
@@ -157,14 +157,18 @@ export default function ProfilePage() {
 
               <div className="flex justify-between border-b border-border pb-3">
                 <span className="font-medium text-muted-foreground">
-                  Entry Path:
+                  Specialization:
                 </span>
                 <div className="text-right">
                   <div className="font-medium">
-                    {ENTRY_PATH_METADATA[profile.entryPath].label}
+                    {SPECIALIZATION_METADATA[profile.specialization].label}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {ENTRY_PATH_METADATA[profile.entryPath].description}
+                    Red Seal{" "}
+                    {SPECIALIZATION_METADATA[profile.specialization].redSealCode}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {SPECIALIZATION_METADATA[profile.specialization].description}
                   </div>
                 </div>
               </div>

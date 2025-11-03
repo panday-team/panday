@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
   APPRENTICESHIP_LEVELS,
-  ENTRY_PATHS,
+  ELECTRICIAN_SPECIALIZATION,
   RESIDENCY_STATUS,
   getCompletedLevels,
-  getIrrelevantPaths,
+  getIrrelevantNodes,
   getCurrentLevelNodeId,
   isEligibleForApprenticeship,
 } from "../profile-types";
@@ -72,24 +72,31 @@ describe("profile-types utilities", () => {
     });
   });
 
-  describe("getIrrelevantPaths", () => {
-    it("should return ace-it and direct-entry for FOUNDATION path", () => {
-      const result = getIrrelevantPaths(ENTRY_PATHS.FOUNDATION);
-      expect(result).toEqual(["ace-it", "direct-entry"]);
+  describe("getIrrelevantNodes", () => {
+    it("should return industrial nodes for CONSTRUCTION specialization", () => {
+      const result = getIrrelevantNodes(
+        ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
+      );
+      expect(result).toEqual([
+        "level-4-industrial",
+        "level-4-industrial-req-1",
+        "level-4-industrial-req-2",
+        "level-4-industrial-req-3",
+      ]);
     });
 
-    it("should return foundation-program and direct-entry for ACE_IT path", () => {
-      const result = getIrrelevantPaths(ENTRY_PATHS.ACE_IT);
-      expect(result).toEqual(["foundation-program", "direct-entry"]);
+    it("should return construction nodes for INDUSTRIAL specialization", () => {
+      const result = getIrrelevantNodes(ELECTRICIAN_SPECIALIZATION.INDUSTRIAL);
+      expect(result).toEqual([
+        "level-4-construction",
+        "level-4-construction-req-1",
+        "level-4-construction-req-2",
+        "level-4-construction-req-3",
+      ]);
     });
 
-    it("should return foundation-program and ace-it for DIRECT_ENTRY path", () => {
-      const result = getIrrelevantPaths(ENTRY_PATHS.DIRECT_ENTRY);
-      expect(result).toEqual(["foundation-program", "ace-it"]);
-    });
-
-    it("should return empty array for EXPLORING path", () => {
-      const result = getIrrelevantPaths(ENTRY_PATHS.EXPLORING);
+    it("should return empty array for UNDECIDED specialization", () => {
+      const result = getIrrelevantNodes(ELECTRICIAN_SPECIALIZATION.UNDECIDED);
       expect(result).toEqual([]);
     });
   });
@@ -122,6 +129,30 @@ describe("profile-types utilities", () => {
 
     it("should return level-4-construction for LEVEL_4 (defaults to construction)", () => {
       const result = getCurrentLevelNodeId(APPRENTICESHIP_LEVELS.LEVEL_4);
+      expect(result).toBe("level-4-construction");
+    });
+
+    it("should return level-4-construction for LEVEL_4 with CONSTRUCTION specialization", () => {
+      const result = getCurrentLevelNodeId(
+        APPRENTICESHIP_LEVELS.LEVEL_4,
+        ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
+      );
+      expect(result).toBe("level-4-construction");
+    });
+
+    it("should return level-4-industrial for LEVEL_4 with INDUSTRIAL specialization", () => {
+      const result = getCurrentLevelNodeId(
+        APPRENTICESHIP_LEVELS.LEVEL_4,
+        ELECTRICIAN_SPECIALIZATION.INDUSTRIAL,
+      );
+      expect(result).toBe("level-4-industrial");
+    });
+
+    it("should return level-4-construction for LEVEL_4 with UNDECIDED specialization", () => {
+      const result = getCurrentLevelNodeId(
+        APPRENTICESHIP_LEVELS.LEVEL_4,
+        ELECTRICIAN_SPECIALIZATION.UNDECIDED,
+      );
       expect(result).toBe("level-4-construction");
     });
 

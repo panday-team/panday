@@ -8,7 +8,7 @@ import type {
   UserProfile,
   Trade,
   ApprenticeshipLevel,
-  EntryPath,
+  ElectricianSpecialization,
   ResidencyStatus,
 } from "@/lib/profile-types";
 
@@ -33,7 +33,7 @@ export default async function RoadmapPage() {
       clerkUserId: dbProfile.clerkUserId,
       trade: dbProfile.trade as Trade,
       currentLevel: dbProfile.currentLevel as ApprenticeshipLevel,
-      entryPath: dbProfile.entryPath as EntryPath,
+      specialization: dbProfile.specialization as ElectricianSpecialization,
       residencyStatus: dbProfile.residencyStatus as ResidencyStatus,
       onboardingCompletedAt: dbProfile.onboardingCompletedAt,
       createdAt: dbProfile.createdAt,

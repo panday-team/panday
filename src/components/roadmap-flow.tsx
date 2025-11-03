@@ -45,7 +45,7 @@ import {
 import {
   type UserProfile,
   getCompletedLevels,
-  getIrrelevantPaths,
+  getIrrelevantNodes,
   getCurrentLevelNodeId,
   LEVEL_METADATA,
 } from "@/lib/profile-types";
@@ -113,11 +113,14 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
     const completedLevelIds = userProfile
       ? getCompletedLevels(userProfile.currentLevel)
       : [];
-    const irrelevantPathIds = userProfile
-      ? getIrrelevantPaths(userProfile.entryPath)
+    const irrelevantNodeIds = userProfile
+      ? getIrrelevantNodes(userProfile.specialization)
       : [];
     const currentLevelNodeId = userProfile
-      ? getCurrentLevelNodeId(userProfile.currentLevel)
+      ? getCurrentLevelNodeId(
+          userProfile.currentLevel,
+          userProfile.specialization,
+        )
       : null;
 
     //build nodes from graph/content
@@ -133,7 +136,7 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
       // Determine if this node should be auto-completed based on user profile
       const isCompletedByProfile = completedLevelIds.includes(graphNode.id);
       const isCurrentLevel = currentLevelNodeId === graphNode.id;
-      const isDimmed = irrelevantPathIds.includes(graphNode.id);
+      const isDimmed = irrelevantNodeIds.includes(graphNode.id);
 
       // Prioritize user-set status over profile-based status
       let nodeStatus: NodeStatus = nodeStatuses[graphNode.id] ?? "base";
