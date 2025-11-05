@@ -50,6 +50,8 @@ import {
   LEVEL_METADATA,
 } from "@/lib/profile-types";
 import { calculateViewportForNode } from "@/lib/viewport-utils";
+import { ProfileCard } from "@/components/profile-card";
+
 
 type FlowNode = HubNodeType | ChecklistNodeType | TerminalNodeType;
 type FlowEdge = Edge;
@@ -399,39 +401,11 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
       {userProfile && (
         <div className="pointer-events-none absolute top-0 right-0 flex w-full justify-end p-4 md:pt-10 md:pr-10 md:pl-0">
           <div className="pointer-events-auto">
-            <Card className="bg-background/95 supports-[backdrop-filter]:bg-background/80 p-4 backdrop-blur">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant="default"
-                      className="bg-teal-500/20 text-teal-700 ring-teal-500/30 dark:text-teal-300"
-                    >
-                      {LEVEL_METADATA[userProfile.currentLevel].shortLabel}
-                    </Badge>
-                    <span className="text-sm font-medium">Welcome back!</span>
-                  </div>
-                  <p className="text-muted-foreground text-xs">
-                    {LEVEL_METADATA[userProfile.currentLevel].label}
-                  </p>
-                </div>
-                <div className="flex gap-1">
-                  <Link href="/">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Home className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link href="/profile">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </Card>
+            <ProfileCard userProfile={userProfile} />
           </div>
         </div>
       )}
+
 
       {selectedContent && selectedNodeId && (
         <div className="pointer-events-none absolute top-0 left-0 flex w-full justify-start p-4 md:pt-10 md:pr-0 md:pl-10">
