@@ -24,12 +24,20 @@ export default function LandingPage() {
           <SignedIn>
             <div className="flex flex-col items-center gap-4">
               <p className="text-muted-foreground">You&apos;re signed in!</p>
-              <Link
-                href="/roadmap"
-                className="rounded-md bg-teal-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-teal-400"
-              >
-                View Roadmap
-              </Link>
+              <div className="flex gap-3">
+                <Link
+                  href="/roadmap"
+                  className="rounded-md bg-teal-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-teal-400"
+                >
+                  View Roadmap
+                </Link>
+                <Link
+                  href="/profile"
+                  className="rounded-md border border-teal-500 px-6 py-3 text-sm font-semibold text-teal-500 shadow-sm transition hover:bg-teal-500 hover:text-slate-950"
+                >
+                  Profile Settings
+                </Link>
+              </div>
               <AuthControls />
             </div>
           </SignedIn>
