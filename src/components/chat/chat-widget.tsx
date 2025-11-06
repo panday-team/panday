@@ -230,7 +230,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
                 {isLoading && (
                   <div className="mr-8 animate-pulse rounded-xl bg-gray-100 px-4 py-3 text-gray-900 dark:bg-white/5 dark:text-white/90">
                     <div className="mb-1.5 text-xs font-semibold tracking-wide uppercase opacity-60">
-                      AI
+                      AI <ChatLoading />
                     </div>
                     <ChatLoading />
                   </div>
