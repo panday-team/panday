@@ -34,15 +34,30 @@ model Document {
 }
 
 model UserProfile {
-  id                    Int       @id @default(autoincrement())
-  clerkUserId           String    @unique
+  id                    Int            @id @default(autoincrement())
+  clerkUserId           String         @unique
   trade                 String
   currentLevel          String
-  specialization        String    @default("undecided")
+  specialization        String         @default("undecided")
   residencyStatus       String
   onboardingCompletedAt DateTime?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  nodeProgress          NodeProgress[]
 
   @@index([clerkUserId])
+}
+
+model NodeProgress {
+  id          Int         @id @default(autoincrement())
+  userId      String
+  user        UserProfile @relation(fields: [userId], references: [clerkUserId], onDelete: Cascade)
+  roadmapId   String
+  nodeId      String
+  status      String // "base" | "in-progress" | "completed"
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([userId, roadmapId, nodeId])
+  @@index([userId, roadmapId])
 }
