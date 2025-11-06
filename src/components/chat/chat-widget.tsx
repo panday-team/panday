@@ -8,6 +8,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Image from "next/image";
 import { ChatButton } from "./chat-button";
+import ChatLoading from "./chat-loading";
 
 interface ChatWidgetProps {
   selectedNodeId?: string | null;
@@ -19,6 +20,10 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+  const didMountRef = useRef(false);
 
   const {
     messages,
@@ -70,11 +75,21 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
   }, [messages, isHydrated]);
 
   useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop =
-        chatContainerRef.current.scrollHeight;
-    }
-  }, [messages]);
+    if (!isExpanded) didMountRef.current = false;
+  }, [isExpanded]);
+
+  useEffect(() => {
+    if (!isExpanded) return;
+    const behavior: ScrollBehavior = didMountRef.current ? "smooth" : "auto";
+    endRef.current?.scrollIntoView({ behavior, block: "end" });
+    didMountRef.current = true;
+  }, [messages, isExpanded]);
+
+  useEffect(() => {
+    if (!isExpanded) return;
+    const el = containerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages.length, isExpanded]);
 
   const handleClearChat = () => {
     setMessages([]);
@@ -109,7 +124,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div ref={containerRef} className="flex-1 overflow-y-auto">
             {messages.length > 0 ? (
               <div className="space-y-3 p-6">
                 {messages.map((message) => (
@@ -199,7 +214,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
                 {isLoading && (
                   <div className="mr-8 animate-pulse rounded-xl bg-gray-100 px-4 py-3 text-gray-900 dark:bg-white/5 dark:text-white/90">
                     <div className="mb-1.5 text-xs font-semibold tracking-wide uppercase opacity-60">
-                      AI
+                      AI <ChatLoading />
                     </div>
                     <div className="flex items-center gap-1.5 text-xs">
                       <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-gray-600 [animation-delay:-0.3s] dark:bg-white/60"></span>
@@ -216,6 +231,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
                     <div className="text-xs">{error.message}</div>
                   </div>
                 )}
+                <div ref={endRef} />
               </div>
             ) : (
               <div className="flex h-full items-center justify-center p-6">
