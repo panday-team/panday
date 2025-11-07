@@ -8,6 +8,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Image from "next/image";
 import { ChatButton } from "./chat-button";
+import ChatLoading from "./chat-loading";
+import Typewriter from "./typewriter";
 
 interface ChatWidgetProps {
   selectedNodeId?: string | null;
@@ -19,6 +21,10 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+  const didMountRef = useRef(false);
 
   const {
     messages,
@@ -70,15 +76,36 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
   }, [messages, isHydrated]);
 
   useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop =
-        chatContainerRef.current.scrollHeight;
-    }
-  }, [messages]);
+    if (!isExpanded) didMountRef.current = false;
+  }, [isExpanded]);
+
+  useEffect(() => {
+    if (!isExpanded) return;
+    const behavior: ScrollBehavior = didMountRef.current ? "smooth" : "auto";
+    endRef.current?.scrollIntoView({ behavior, block: "end" });
+    didMountRef.current = true;
+  }, [messages, isExpanded]);
+
+  useEffect(() => {
+    if (!isExpanded) return;
+    const el = containerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages.length, isExpanded]);
 
   const handleClearChat = () => {
     setMessages([]);
     localStorage.removeItem(STORAGE_KEY);
+  };
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    // Prevent optimistic loading for empty/whitespace-only messages
+    if (!input.trim()) {
+      e.preventDefault();
+      return;
+    }
+    // Optimistically show loading immediately upon submit
+    setIsLoading(true);
+    handleSubmit(e);
   };
 
   return (
@@ -109,10 +136,10 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div ref={containerRef} className="flex-1 overflow-y-auto">
             {messages.length > 0 ? (
               <div className="space-y-3 p-6">
-                {messages.map((message) => (
+                {messages.map((message, index) => (
                   <div
                     key={message.id}
                     className={`animate-in fade-in slide-in-from-bottom-2 rounded-xl px-4 py-3 duration-300 ${
@@ -140,59 +167,63 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
                       )}
                     </div>
                     <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          p: ({ children }) => (
-                            <p className="mb-2 text-xs leading-relaxed last:mb-0">
-                              {children}
-                            </p>
-                          ),
-                          ul: ({ children }) => (
-                            <ul className="mb-2 list-disc space-y-0.5 pl-5 text-xs">
-                              {children}
-                            </ul>
-                          ),
-                          ol: ({ children }) => (
-                            <ol className="mb-2 list-decimal space-y-0.5 pl-5 text-xs">
-                              {children}
-                            </ol>
-                          ),
-                          li: ({ children }) => (
-                            <li className="leading-relaxed">{children}</li>
-                          ),
-                          strong: ({ children }) => (
-                            <strong className="font-semibold text-gray-900 dark:text-white">
-                              {children}
-                            </strong>
-                          ),
-                          em: ({ children }) => (
-                            <em className="italic">{children}</em>
-                          ),
-                          code: ({ children }) => (
-                            <code className="rounded bg-gray-200 px-1 py-0.5 font-mono text-xs dark:bg-white/10">
-                              {children}
-                            </code>
-                          ),
-                          pre: ({ children }) => (
-                            <pre className="my-2 overflow-x-auto rounded-lg bg-gray-200 p-2 text-xs dark:bg-white/10">
-                              {children}
-                            </pre>
-                          ),
-                          a: ({ children, href }) => (
-                            <a
-                              href={href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[#76E54A] underline underline-offset-2 hover:text-[#76E54A]/80"
-                            >
-                              {children}
-                            </a>
-                          ),
-                        }}
-                      >
-                        {message.content}
-                      </ReactMarkdown>
+                      {message.role === "user" ? (
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            p: ({ children }) => (
+                              <p className="mb-2 text-xs leading-relaxed last:mb-0">
+                                {children}
+                              </p>
+                            ),
+                            ul: ({ children }) => (
+                              <ul className="mb-2 list-disc space-y-0.5 pl-5 text-xs">
+                                {children}
+                              </ul>
+                            ),
+                            ol: ({ children }) => (
+                              <ol className="mb-2 list-decimal space-y-0.5 pl-5 text-xs">
+                                {children}
+                              </ol>
+                            ),
+                            li: ({ children }) => (
+                              <li className="leading-relaxed">{children}</li>
+                            ),
+                            strong: ({ children }) => (
+                              <strong className="font-semibold text-gray-900 dark:text-white">
+                                {children}
+                              </strong>
+                            ),
+                            em: ({ children }) => (
+                              <em className="italic">{children}</em>
+                            ),
+                            code: ({ children }) => (
+                              <code className="rounded bg-gray-200 px-1 py-0.5 font-mono text-xs dark:bg-white/10">
+                                {children}
+                              </code>
+                            ),
+                            pre: ({ children }) => (
+                              <pre className="my-2 overflow-x-auto rounded-lg bg-gray-200 p-2 text-xs dark:bg-white/10">
+                                {children}
+                              </pre>
+                            ),
+                            a: ({ children, href }) => (
+                              <a
+                                href={href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#76E54A] underline underline-offset-2 hover:text-[#76E54A]/80"
+                              >
+                                {children}
+                              </a>
+                            ),
+                          }}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
+                      ) : (
+                        <Typewriter content={message.content} />
+                      )}
                     </div>
                   </div>
                 ))}
@@ -201,11 +232,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
                     <div className="mb-1.5 text-xs font-semibold tracking-wide uppercase opacity-60">
                       AI
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs">
-                      <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-gray-600 [animation-delay:-0.3s] dark:bg-white/60"></span>
-                      <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-gray-600 [animation-delay:-0.15s] dark:bg-white/60"></span>
-                      <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-gray-600 dark:bg-white/60"></span>
-                    </div>
+                    <ChatLoading />
                   </div>
                 )}
                 {error && (
@@ -216,6 +243,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
                     <div className="text-xs">{error.message}</div>
                   </div>
                 )}
+                <div ref={endRef} />
               </div>
             ) : (
               <div className="flex h-full items-center justify-center p-6">
@@ -228,7 +256,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
           </div>
 
           <form
-            onSubmit={handleSubmit}
+            onSubmit={onSubmit}
             className="border-t border-gray-200 p-4 dark:border-white/10"
           >
             <div className="relative flex items-center gap-2">

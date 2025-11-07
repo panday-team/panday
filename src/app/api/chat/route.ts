@@ -13,6 +13,8 @@ import {
   getCookieName,
 } from "@/lib/user-identifier";
 
+import { auth } from "@clerk/nextjs/server";
+
 const ChatMessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]),
   content: z.string().min(1).max(10000),
@@ -53,12 +55,13 @@ function getRequestIdentifier(req: NextRequest): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieName = getCookieName();
-    const identifier =
-      req.cookies.get(cookieName)?.value ?? (await generateUserIdAsync());
+    const { userId, isAuthenticated } = await auth();
+    if (!isAuthenticated) throw new Error("user not logged in");
 
     const { success, limit, reset, remaining } =
-      await chatRateLimit.limit(identifier);
+      await chatRateLimit.limit(userId);
+
+    logger.debug(`User ID: ${userId}`);
 
     if (!success) {
       return Response.json(
@@ -141,7 +144,7 @@ Always cite which specific sections or documents your answer comes from when pos
         logger.info("Chat completion finished", {
           provider: env.AI_PROVIDER,
           model: env.AI_MODEL,
-          identifier,
+          userId,
         });
       },
     });
@@ -159,7 +162,8 @@ Always cite which specific sections or documents your answer comes from when pos
       },
     });
 
-    response.headers.set("Set-Cookie", getUserIdCookieHeader(identifier));
+    // for debugging
+    response.headers.set("X-User-Id", userId);
 
     return response;
   } catch (error) {
