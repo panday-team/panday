@@ -39,7 +39,7 @@ import {
 } from "@/lib/child-position-utils";
 import {
   type NodeStatus,
-  getAllNodeStatuses,
+  fetchNodeStatuses,
   setNodeStatus,
 } from "@/lib/node-status";
 import {
@@ -96,9 +96,9 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
     {},
   );
 
-  // Load statuses only on client side after mount to avoid hydration mismatch
+  // Load statuses from database on mount, with localStorage fallback
   useEffect(() => {
-    setNodeStatuses(getAllNodeStatuses(roadmap.metadata.id));
+    void fetchNodeStatuses(roadmap.metadata.id).then(setNodeStatuses);
   }, [roadmap.metadata.id]);
 
   // Calculate initial viewport based on user's current level
@@ -349,7 +349,8 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
 
   const handleStatusChange = useCallback(
     (nodeId: string, status: NodeStatus) => {
-      setNodeStatus(roadmap.metadata.id, nodeId, status);
+      // Update localStorage immediately (returns void, database update happens in background)
+      void setNodeStatus(roadmap.metadata.id, nodeId, status);
       setNodeStatuses((prev) => ({ ...prev, [nodeId]: status }));
 
       // Update the node data
