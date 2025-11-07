@@ -226,7 +226,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
                 {isLoading && (
                   <div className="mr-8 animate-pulse rounded-xl bg-gray-100 px-4 py-3 text-gray-900 dark:bg-white/5 dark:text-white/90">
                     <div className="mb-1.5 text-xs font-semibold tracking-wide uppercase opacity-60">
-                      AI
+                      AI <ChatLoading />
                     </div>
                     <div className="flex items-center gap-1.5 text-xs">
                       <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-gray-600 [animation-delay:-0.3s] dark:bg-white/60"></span>
