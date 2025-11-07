@@ -105,13 +105,37 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "No user message found" }, { status: 400 });
     }
 
-    const embeddingsResponse = await queryEmbeddings({
-      query: lastUserMessage.content,
-      roadmap_id: validatedBody.roadmap_id,
-      top_k: validatedBody.top_k ?? 5,
-    });
+    // Create a custom streaming response with status updates
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          // Send initial status update
+          const statusUpdate1 = {
+            type: "status",
+            message: "Retrieving Augmented info",
+          };
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(statusUpdate1)}\n\n`),
+          );
 
-    const systemPrompt = `You are a helpful career guidance assistant for skilled trades in British Columbia, Canada.
+          // Query embeddings
+          const embeddingsResponse = await queryEmbeddings({
+            query: lastUserMessage.content,
+            roadmap_id: validatedBody.roadmap_id,
+            top_k: validatedBody.top_k ?? 5,
+          });
+
+          // Send second status update
+          const statusUpdate2 = {
+            type: "status",
+            message: "Generating response",
+          };
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(statusUpdate2)}\n\n`),
+          );
+
+          const systemPrompt = `You are a helpful career guidance assistant for skilled trades in British Columbia, Canada.
 
 You have access to the following relevant information from the career roadmap database:
 
@@ -121,27 +145,66 @@ Use this information to answer the user's question accurately. If the informatio
 
 Always cite which specific sections or documents your answer comes from when possible.`;
 
-    const result = streamText({
-      model: getAIModel(),
-      system: systemPrompt,
-      messages: validatedBody.messages.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      })),
-      maxTokens: 1024,
-      onFinish: async () => {
-        logger.info("Chat completion finished", {
-          provider: env.AI_PROVIDER,
-          model: env.AI_MODEL,
-          userId,
-        });
+          // start the AI response stream
+          const result = streamText({
+            model: getAIModel(),
+            system: systemPrompt,
+            messages: validatedBody.messages.map((msg) => ({
+              role: msg.role,
+              content: msg.content,
+            })),
+            maxTokens: 1024,
+            onFinish: async () => {
+              logger.info("Chat completion finished", {
+                provider: env.AI_PROVIDER,
+                model: env.AI_MODEL,
+                userId,
+              });
+            },
+          });
+
+          // send metadata before streaming starts
+          const metadataUpdate = {
+            type: "metadata",
+            sources: embeddingsResponse.sources,
+            roadmapId: embeddingsResponse.roadmap_id,
+          };
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(metadataUpdate)}\n\n`),
+          );
+
+          // stream the AI response
+          const reader = result.toDataStream().getReader();
+
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              controller.enqueue(value);
+            }
+          } finally {
+            reader.releaseLock();
+          }
+
+          controller.close();
+        } catch (error) {
+          const errorUpdate = {
+            type: "error",
+            message:
+              error instanceof Error
+                ? error.message
+                : "An unexpected error occurred",
+          };
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(errorUpdate)}\n\n`),
+          );
+          controller.close();
+        }
       },
     });
 
-    const response = result.toDataStreamResponse({
+    const response = new Response(stream, {
       headers: {
-        "X-Sources": JSON.stringify(embeddingsResponse.sources),
-        "X-Roadmap-Id": embeddingsResponse.roadmap_id,
         "X-RateLimit-Limit": limit.toString(),
         "X-RateLimit-Remaining": remaining.toString(),
         "X-RateLimit-Reset": reset.toString(),
