@@ -80,28 +80,47 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
 
               buffer += decoder.decode(value, { stream: true });
               const lines = buffer.split("\n");
-              buffer = lines.pop() || "";
+              buffer = lines.pop() ?? "";
 
               for (const line of lines) {
                 if (line.startsWith("data: ")) {
                   const data = line.slice(6);
 
                   try {
-                    const parsed = JSON.parse(data);
+                    const parsed: unknown = JSON.parse(data);
 
                     // Handle our custom status updates
-                    if (parsed.type === "status") {
+                    if (
+                      typeof parsed === "object" &&
+                      parsed !== null &&
+                      "type" in parsed &&
+                      parsed.type === "status" &&
+                      "message" in parsed &&
+                      typeof parsed.message === "string"
+                    ) {
                       setStatusMessage(parsed.message);
                       continue; // Don't pass to AI SDK
                     }
 
-                    if (parsed.type === "metadata") {
+                    if (
+                      typeof parsed === "object" &&
+                      parsed !== null &&
+                      "type" in parsed &&
+                      parsed.type === "metadata"
+                    ) {
                       // Handle metadata (sources, roadmap_id) if needed
                       console.log("Received metadata:", parsed);
                       continue; // Don't pass to AI SDK
                     }
 
-                    if (parsed.type === "error") {
+                    if (
+                      typeof parsed === "object" &&
+                      parsed !== null &&
+                      "type" in parsed &&
+                      parsed.type === "error" &&
+                      "message" in parsed &&
+                      typeof parsed.message === "string"
+                    ) {
                       console.error("Stream error:", parsed.message);
                       setStatusMessage(null);
                       setIsLoading(false);
