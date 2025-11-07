@@ -58,7 +58,11 @@
     "motion": "^12.23.24",
     "next": "^15.2.3",
     "next-themes": "^0.4.6",
+<<<<<<< HEAD
     "pgvector": "^0.2.1",
+=======
+    "panday": ".",
+>>>>>>> 9e92c9e (add: typewriter effect to chatbot)
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
