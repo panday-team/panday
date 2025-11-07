@@ -96,6 +96,17 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
     localStorage.removeItem(STORAGE_KEY);
   };
 
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    // Prevent optimistic loading for empty/whitespace-only messages
+    if (!input.trim()) {
+      e.preventDefault();
+      return;
+    }
+    // Optimistically show loading immediately upon submit
+    setIsLoading(true);
+    handleSubmit(e);
+  };
+
   return (
     <div className="fixed right-6 bottom-6 z-40 flex flex-col items-end gap-3">
       {isExpanded && (
@@ -127,6 +138,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
           <div ref={containerRef} className="flex-1 overflow-y-auto">
             {messages.length > 0 ? (
               <div className="space-y-3 p-6">
+                {isLoading && <ChatLoading />}
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -214,7 +226,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
                 {isLoading && (
                   <div className="mr-8 animate-pulse rounded-xl bg-gray-100 px-4 py-3 text-gray-900 dark:bg-white/5 dark:text-white/90">
                     <div className="mb-1.5 text-xs font-semibold tracking-wide uppercase opacity-60">
-                      AI <ChatLoading />
+                      AI
                     </div>
                     <div className="flex items-center gap-1.5 text-xs">
                       <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-gray-600 [animation-delay:-0.3s] dark:bg-white/60"></span>
@@ -244,7 +256,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
           </div>
 
           <form
-            onSubmit={handleSubmit}
+            onSubmit={onSubmit}
             className="border-t border-gray-200 p-4 dark:border-white/10"
           >
             <div className="relative flex items-center gap-2">
