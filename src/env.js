@@ -30,6 +30,7 @@ export const env = createEnv({
     ANTHROPIC_API_KEY: z.string().optional(),
     OPENAI_API_KEY: z.string(),
     GOOGLE_API_KEY: z.string().optional(),
+    EMBEDDINGS_BACKEND: z.enum(["json", "postgres"]).default("json"),
   },
 
   /**
@@ -63,6 +64,7 @@ export const env = createEnv({
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
+    EMBEDDINGS_BACKEND: process.env.EMBEDDINGS_BACKEND,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
   },

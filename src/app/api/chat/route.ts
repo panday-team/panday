@@ -3,7 +3,7 @@ import { streamText, type LanguageModel } from "ai";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
-import { queryEmbeddings } from "@/lib/embeddings-service";
+import { queryEmbeddings, getActiveBackend } from "@/lib/embeddings-hybrid";
 import { logger } from "@/lib/logger";
 import { chatRateLimit } from "@/lib/rate-limit";
 import { env } from "@/env";
@@ -105,37 +105,44 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "No user message found" }, { status: 400 });
     }
 
-    // Create a custom streaming response with status updates
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          // Send initial status update
-          const statusUpdate1 = {
-            type: "status",
-            message: "Retrieving Augmented info",
-          };
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(statusUpdate1)}\n\n`),
-          );
 
-          // Query embeddings
-          const embeddingsResponse = await queryEmbeddings({
-            query: lastUserMessage.content,
-            roadmap_id: validatedBody.roadmap_id,
-            top_k: validatedBody.top_k ?? 5,
-          });
-
-          // Send second status update
-          const statusUpdate2 = {
-            type: "status",
-            message: "Generating response",
-          };
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(statusUpdate2)}\n\n`),
-          );
-
-          const systemPrompt = `You are a helpful career guidance assistant for skilled trades in British Columbia, Canada.
+// Create a custom streaming response with status updates
+const encoder = new TextEncoder();
+const stream = new ReadableStream({
+  async start(controller) {
+    try {
+      const activeBackend = getActiveBackend();
+logger.info("Using embeddings backend", {
+  backend: activeBackend,
+  roadmapId: validatedBody.roadmap_id,
+});
+      // Send initial status update
+      const statusUpdate1 = {
+        type: "status",
+        message: "Retrieving Augmented info",
+      };
+      controller.enqueue(
+        encoder.encode(`data: ${JSON.stringify(statusUpdate1)}\n\n`),
+      );
+      // Query embeddings
+      const embeddingsResponse = await queryEmbeddings({
+        query: lastUserMessage.content,
+        roadmap_id: validatedBody.roadmap_id,
+        top_k: validatedBody.top_k ?? 5,
+      });
+      logger.info("Retrieved embeddings successfully", {
+        backend: activeBackend,
+        sourcesCount: embeddingsResponse.sources.length,
+      });
+      // Send second status update
+      const statusUpdate2 = {
+        type: "status",
+        message: "Generating response",
+      };
+      controller.enqueue(
+        encoder.encode(`data: ${JSON.stringify(statusUpdate2)}\n\n`),
+      );
+      const systemPrompt = `You are a helpful career guidance assistant for skilled trades in British Columbia, Canada.
 
 You have access to the following relevant information from the career roadmap database:
 

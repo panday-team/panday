@@ -61,7 +61,7 @@
 - **Content Sections**: Each markdown file can have: Eligibility, Benefits, Final Outcome, Resources
 - **Testing**: Comprehensive test suite in `src/lib/__tests__/roadmap-loader.test.ts` (15 tests covering all core functions)
 - **Adding Content**: Create markdown file in `content/` with frontmatter, run `bun run roadmap:build` - no manual `graph.json` editing needed
-- **Future-Ready**: Structure supports RAG integration with embeddings stored in `src/data/embeddings/`
+- **RAG Integration**: Content is indexed for semantic search via embeddings system (see Embeddings System section for details)
 - **Documentation**: See `docs/ROADMAP_SYSTEM.md` for complete guide on architecture, data format, and adding new roadmaps
 
 ## Getting Started
@@ -113,6 +113,10 @@
 ## Database & Configuration
 
 - Use Prisma schema at `prisma/schema.prisma`; rerun `bun run db:generate` after edits
+- **pgvector Extension**: Local Postgres (Docker) and production (Neon) have pgvector enabled for vector similarity search
+  - Extension provides `vector(N)` data type and distance operators (`<=>` for cosine, `<->` for L2)
+  - Used by `EmbeddingDocument` model for storing 1536-dimensional embeddings
+  - HNSW index on embedding column enables fast approximate nearest neighbor search
 - Local Postgres defaults come from `POSTGRES_PORT` (default host port 5432) and Prisma auto-builds the DSN; override with `LOCAL_DATABASE_URL` only if you need custom creds
 - `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, and Upstash secrets are only required when `PRODUCTION=true`
 - Restart dev server after schema or environment changes
@@ -121,14 +125,58 @@
 ## Chat API & RAG System
 
 - **Endpoint**: `/api/chat` - RAG-powered chat using embeddings + AI
-- **Flow**: User query → Embeddings API (LlamaIndex) → Google Gemini (system prompt + context) → Streamed response
+- **Flow**: User query → Hybrid Embeddings Backend (JSON or Postgres) → AI Provider (system prompt + context) → Streamed response
 - **Security**:
   - Rate limiting: 10 requests/minute per IP via `@upstash/ratelimit` (Redis-backed sliding window)
   - Input validation: Zod schema enforces max 50 messages, 10k chars per message
   - Timeout: 30s AbortController timeout on embeddings API calls
   - ⚠️ No authentication yet (MVP-acceptable) - add Clerk protection before public launch
-- **Implementation**: `src/app/api/chat/route.ts`, `src/lib/embeddings-client.ts`, `src/lib/rate-limit.ts`
+- **Implementation**: `src/app/api/chat/route.ts`, `src/lib/embeddings-hybrid.ts`, `src/lib/embeddings-postgres.ts`, `src/lib/rate-limit.ts`
 - **Testing**: See `src/app/api/chat/__tests__/route.test.ts` and `src/lib/__tests__/embeddings-client.test.ts`
+
+## Embeddings System
+
+- **Hybrid Backend Architecture**: Environment-based routing between JSON and Postgres storage via `EMBEDDINGS_BACKEND` env var
+  - **JSON Backend** (`embeddings-service.ts`): File-based storage in `src/data/embeddings/` - backward compatible, suitable for small datasets
+  - **Postgres Backend** (`embeddings-postgres.ts`): Database storage with pgvector similarity search - scalable for 50+ roadmaps and user-specific indexes
+  - **Hybrid Router** (`embeddings-hybrid.ts`): Routes queries to active backend, automatic fallback from Postgres to JSON on error
+  - Default: `json` for backward compatibility; set `EMBEDDINGS_BACKEND=postgres` to enable database storage
+
+- **Postgres Vector Storage**:
+  - **Tables**: `embedding_indexes` (version management) + `embedding_documents` (vector storage with pgvector)
+  - **Schema**: `EmbeddingDocument` stores 1536-dim vectors from OpenAI text-embedding-3-small model
+  - **Indexing**: HNSW index on vector column (m=16, ef_construction=64) for fast cosine similarity search
+  - **Multi-tenant**: Supports global roadmap indexes and user-specific indexes via `userId` field
+  - **Version Management**: Blue-green deployment with `isActive` flag, multiple versions per roadmap/user
+  - **Incremental Updates**: Hash-based change detection for regenerating only modified embeddings (planned)
+
+- **Generation Pipeline** (`scripts/embeddings/generate.py`):
+  - **LlamaIndex Integration**: Uses LlamaIndex for document loading, chunking, and embedding generation
+  - **Flags**: `--use-postgres` for database storage, `--user-id` for multi-tenant indexes
+  - **4-Step Process**: Create index → Persist metadata → Copy to Prisma tables → Update counts
+  - **Data Copying**: Copies embeddings from LlamaIndex temp table to Prisma schema for hybrid backend compatibility
+  - **Testing**: Run `scripts/embeddings/test-postgres-embeddings.sh` to verify data integrity
+
+- **Query Service** (`embeddings-postgres.ts`):
+  - **OpenAI Embeddings**: Generates query embeddings using text-embedding-3-small model
+  - **pgvector Search**: Raw SQL query using `<=>` cosine distance operator for similarity search
+  - **Caching**: 5-minute in-memory TTL cache for query results (roadmapId + userId + query key)
+  - **Active Index Lookup**: Queries `embedding_indexes` for active version before vector search
+  - **Score Normalization**: Converts cosine distance [0,2] to similarity score [0,1] for consistent API
+
+- **Migration from JSON to Postgres**:
+  1. Ensure `DATABASE_URL` is configured with pgvector-enabled Postgres (Docker or Neon)
+  2. Run `bun run db:migrate` to create embeddings tables
+  3. Generate embeddings: `bun run embeddings:generate electrician-bc --use-postgres`
+  4. Verify: `scripts/embeddings/test-postgres-embeddings.sh`
+  5. Switch backend: Set `EMBEDDINGS_BACKEND=postgres` in `.env`
+  6. Test chat API to confirm vector search works
+
+- **Key Files**:
+  - Generation: `scripts/embeddings/generate.py`, `scripts/embeddings/requirements.txt`
+  - TypeScript: `src/lib/embeddings-hybrid.ts`, `src/lib/embeddings-postgres.ts`, `src/lib/embeddings-service.ts` (JSON)
+  - Schema: `prisma/schema.prisma` (EmbeddingDocument, EmbeddingIndex models)
+  - Testing: `scripts/embeddings/test-postgres-embeddings.sh`
 
 ## Logging & Observability
 
