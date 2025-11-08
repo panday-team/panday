@@ -326,7 +326,10 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
                           {message.content}
                         </ReactMarkdown>
                       ) : (
-                        <Typewriter content={message.content} />
+                        <Typewriter
+                          content={message.content}
+                          scrollContainerRef={containerRef}
+                        />
                       )}
                     </div>
                   </div>

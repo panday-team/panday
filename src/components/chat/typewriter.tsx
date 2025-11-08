@@ -6,9 +6,13 @@ import remarkGfm from "remark-gfm";
 
 interface TypewriterProps {
   content: string;
+  scrollContainerRef: React.RefObject<HTMLDivElement | null>;
 }
 
-const Typewriter = memo(function Typewriter({ content }: TypewriterProps) {
+const Typewriter = memo(function Typewriter({
+  content,
+  scrollContainerRef,
+}: TypewriterProps) {
   const [displayedContent, setDisplayedContent] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -17,11 +21,15 @@ const Typewriter = memo(function Typewriter({ content }: TypewriterProps) {
       const timeout = setTimeout(() => {
         setDisplayedContent((prev) => prev + content[currentIndex]);
         setCurrentIndex((prev) => prev + 1);
-      }, 10); // Adjust typing speed here
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop =
+            scrollContainerRef.current.scrollHeight;
+        }
+      }, 5); // Adjust typing speed here
 
       return () => clearTimeout(timeout);
     }
-  }, [currentIndex, content]);
+  }, [currentIndex, content, scrollContainerRef]);
 
   return (
     <ReactMarkdown
