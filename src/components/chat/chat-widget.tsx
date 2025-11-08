@@ -20,6 +20,7 @@ const STORAGE_KEY = "panday_chat_messages";
 export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -39,14 +40,116 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
     onError: (error) => {
       console.error("Chat error:", error);
       setIsLoading(false);
+      setStatusMessage(null);
     },
     onResponse: (response) => {
       console.log("Chat response received:", response.status);
       setIsLoading(true);
+      setStatusMessage(null); // Clear status once response starts
     },
     onFinish: (message) => {
       console.log("Message finished:", message);
       setIsLoading(false);
+      setStatusMessage(null);
+    },
+    body: {
+      roadmap_id: selectedNodeId,
+    },
+    // Handle custom data from the stream
+    fetch: async (url, options) => {
+      const response = await fetch(url, options);
+
+      if (!response.body) {
+        throw new Error("No response body");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      // Create a new stream that processes our custom events
+      const customStream = new ReadableStream({
+        start(controller) {
+          let buffer = "";
+
+          function pump(): Promise<void> {
+            return reader.read().then(({ done, value }) => {
+              if (done) {
+                controller.close();
+                return;
+              }
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() ?? "";
+
+              for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                  const data = line.slice(6);
+
+                  try {
+                    const parsed: unknown = JSON.parse(data);
+
+                    // Handle our custom status updates
+                    if (
+                      typeof parsed === "object" &&
+                      parsed !== null &&
+                      "type" in parsed &&
+                      parsed.type === "status" &&
+                      "message" in parsed &&
+                      typeof parsed.message === "string"
+                    ) {
+                      setStatusMessage(parsed.message);
+                      continue; // Don't pass to AI SDK
+                    }
+
+                    if (
+                      typeof parsed === "object" &&
+                      parsed !== null &&
+                      "type" in parsed &&
+                      parsed.type === "metadata"
+                    ) {
+                      // Handle metadata (sources, roadmap_id) if needed
+                      console.log("Received metadata:", parsed);
+                      continue; // Don't pass to AI SDK
+                    }
+
+                    if (
+                      typeof parsed === "object" &&
+                      parsed !== null &&
+                      "type" in parsed &&
+                      parsed.type === "error" &&
+                      "message" in parsed &&
+                      typeof parsed.message === "string"
+                    ) {
+                      console.error("Stream error:", parsed.message);
+                      setStatusMessage(null);
+                      setIsLoading(false);
+                      continue; // Don't pass to AI SDK
+                    }
+                  } catch (e) {
+                    // If it's not JSON, it's probably AI SDK data
+                    // Fall through to pass it along
+                  }
+                }
+
+                // Pass through other data to AI SDK
+                controller.enqueue(new TextEncoder().encode(line + "\n"));
+              }
+
+              return pump();
+            });
+          }
+
+          return pump();
+        },
+      });
+
+      // Return a new response with our processed stream
+      return new Response(customStream, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      });
     },
   });
 
@@ -105,6 +208,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
     }
     // Optimistically show loading immediately upon submit
     setIsLoading(true);
+    setStatusMessage("Processing request...");
     handleSubmit(e);
   };
 
@@ -227,12 +331,21 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
                     </div>
                   </div>
                 ))}
-                {isLoading && (
+                {(isLoading || statusMessage) && (
                   <div className="mr-8 animate-pulse rounded-xl bg-gray-100 px-4 py-3 text-gray-900 dark:bg-white/5 dark:text-white/90">
                     <div className="mb-1.5 text-xs font-semibold tracking-wide uppercase opacity-60">
                       AI
                     </div>
-                    <ChatLoading />
+                    {statusMessage ? (
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-500"></div>
+                        <span className="text-xs text-gray-600 dark:text-white/70">
+                          {statusMessage}
+                        </span>
+                      </div>
+                    ) : (
+                      <ChatLoading />
+                    )}
                   </div>
                 )}
                 {error && (
