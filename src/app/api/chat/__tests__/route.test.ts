@@ -2,8 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "../route";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/embeddings-service", () => ({
+vi.mock("@/lib/embeddings-hybrid", () => ({
   queryEmbeddings: vi.fn(),
+  getActiveBackend: vi.fn(() => "json"),
 }));
 
 vi.mock("@ai-sdk/google", () => ({
@@ -73,7 +74,7 @@ describe("Chat API Route", () => {
     });
 
     it("should query embeddings with provided parameters", async () => {
-      const { queryEmbeddings } = await import("@/lib/embeddings-service");
+      const { queryEmbeddings } = await import("@/lib/embeddings-hybrid");
       const { streamText } = await import("ai");
 
       vi.mocked(queryEmbeddings).mockResolvedValueOnce({
@@ -114,7 +115,7 @@ describe("Chat API Route", () => {
     });
 
     it("should use default top_k value when not provided", async () => {
-      const { queryEmbeddings } = await import("@/lib/embeddings-service");
+      const { queryEmbeddings } = await import("@/lib/embeddings-hybrid");
       const { streamText } = await import("ai");
 
       vi.mocked(queryEmbeddings).mockResolvedValueOnce({
@@ -145,7 +146,7 @@ describe("Chat API Route", () => {
     });
 
     it("should handle embeddings API errors", async () => {
-      const { queryEmbeddings } = await import("@/lib/embeddings-service");
+      const { queryEmbeddings } = await import("@/lib/embeddings-hybrid");
 
       vi.mocked(queryEmbeddings).mockRejectedValueOnce(
         new Error("Failed to query embeddings: Embeddings service unavailable"),
@@ -166,7 +167,7 @@ describe("Chat API Route", () => {
     });
 
     it("should handle AI provider errors", async () => {
-      const { queryEmbeddings } = await import("@/lib/embeddings-service");
+      const { queryEmbeddings } = await import("@/lib/embeddings-hybrid");
       const { streamText } = await import("ai");
 
       vi.mocked(queryEmbeddings).mockResolvedValueOnce({
@@ -195,7 +196,7 @@ describe("Chat API Route", () => {
     });
 
     it("should call streamText with proper parameters", async () => {
-      const { queryEmbeddings } = await import("@/lib/embeddings-service");
+      const { queryEmbeddings } = await import("@/lib/embeddings-hybrid");
       const { streamText } = await import("ai");
 
       const mockSources = [
@@ -245,7 +246,7 @@ describe("Chat API Route", () => {
     });
 
     it("should build system prompt with context", async () => {
-      const { queryEmbeddings } = await import("@/lib/embeddings-service");
+      const { queryEmbeddings } = await import("@/lib/embeddings-hybrid");
       const { streamText } = await import("ai");
 
       vi.mocked(queryEmbeddings).mockResolvedValueOnce({

@@ -33,6 +33,51 @@ model Document {
   @@index([name])
 }
 
+/// Stores individual embedded document chunks for RAG retrieval
+model EmbeddingDocument {
+  id        String                     @id @default(cuid())
+  roadmapId String // e.g., "electrician-bc"
+  nodeId    String? // null for general roadmap content, set for specific nodes
+  userId    String? // null for global index, set for user-specific personalized content
+  content   String @db.Text // The text that was embedded
+  embedding Unsupported("vector(1536)") // OpenAI text-embedding-3-small (1536 dimensions)
+  metadata  Json? // Additional metadata: source file, section type, etc.
+  hash      String? // Content hash for incremental updates
+  version   Int                        @default(1)
+  createdAt DateTime                   @default(now())
+  updatedAt DateTime                   @updatedAt
+
+  index   EmbeddingIndex @relation(fields: [indexId], references: [id], onDelete: Cascade)
+  indexId String
+
+  @@index([roadmapId, userId])
+  @@index([nodeId])
+  @@index([indexId])
+  @@index([hash])
+  @@map("embedding_documents")
+}
+
+/// Tracks embedding index versions and metadata for each roadmap/user combination
+model EmbeddingIndex {
+  id            String   @id @default(cuid())
+  roadmapId     String
+  userId        String? // null for global roadmap index, set for user-specific
+  version       Int      @default(1)
+  modelName     String   @default("text-embedding-3-small")
+  dimensions    Int      @default(1536)
+  documentCount Int      @default(0)
+  isActive      Boolean  @default(true) // Allow multiple versions, mark active one
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  documents EmbeddingDocument[]
+
+  @@unique([roadmapId, userId, version])
+  @@index([roadmapId, isActive])
+  @@index([userId])
+  @@map("embedding_indexes")
+}
+
 model UserProfile {
   id                    Int            @id @default(autoincrement())
   clerkUserId           String         @unique

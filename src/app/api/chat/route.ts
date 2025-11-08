@@ -3,7 +3,7 @@ import { streamText, type LanguageModel } from "ai";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
-import { queryEmbeddings } from "@/lib/embeddings-service";
+import { queryEmbeddings, getActiveBackend } from "@/lib/embeddings-hybrid";
 import { logger } from "@/lib/logger";
 import { chatRateLimit } from "@/lib/rate-limit";
 import { env } from "@/env";
@@ -105,10 +105,21 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "No user message found" }, { status: 400 });
     }
 
+    const activeBackend = getActiveBackend();
+    logger.info("Using embeddings backend", {
+      backend: activeBackend,
+      roadmapId: validatedBody.roadmap_id,
+    });
+
     const embeddingsResponse = await queryEmbeddings({
       query: lastUserMessage.content,
       roadmap_id: validatedBody.roadmap_id,
       top_k: validatedBody.top_k ?? 5,
+    });
+
+    logger.info("Retrieved embeddings successfully", {
+      backend: activeBackend,
+      sourcesCount: embeddingsResponse.sources.length,
     });
 
     const systemPrompt = `You are a helpful career guidance assistant for skilled trades in British Columbia, Canada.
