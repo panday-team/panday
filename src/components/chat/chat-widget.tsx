@@ -13,11 +13,22 @@ import Typewriter from "./typewriter";
 
 interface ChatWidgetProps {
   selectedNodeId?: string | null;
+  roadmapId?: string;
+  userProfile?: {
+    trade?: string;
+    currentLevel?: string;
+    specialization?: string;
+    residencyStatus?: string;
+  };
 }
 
 const STORAGE_KEY = "panday_chat_messages";
 
-export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
+export function ChatWidget({
+  selectedNodeId,
+  roadmapId,
+  userProfile,
+}: ChatWidgetProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -26,6 +37,10 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const didMountRef = useRef(false);
+
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
+    null,
+  );
 
   const {
     messages,
@@ -51,9 +66,12 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
       console.log("Message finished:", message);
       setIsLoading(false);
       setStatusMessage(null);
+      setStreamingMessageId(null);
     },
     body: {
-      roadmap_id: selectedNodeId,
+      roadmap_id: roadmapId,
+      selected_node_id: selectedNodeId ?? undefined,
+      user_profile: userProfile,
     },
     // Handle custom data from the stream
     fetch: async (url, options) => {
@@ -126,7 +144,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
                       setIsLoading(false);
                       continue; // Don't pass to AI SDK
                     }
-                  } catch (e) {
+                  } catch {
                     // If it's not JSON, it's probably AI SDK data
                     // Fall through to pass it along
                   }
@@ -209,6 +227,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
     // Optimistically show loading immediately upon submit
     setIsLoading(true);
     setStatusMessage("Processing request...");
+    setStreamingMessageId("streaming");
     handleSubmit(e);
   };
 
@@ -243,7 +262,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
           <div ref={containerRef} className="flex-1 overflow-y-auto">
             {messages.length > 0 ? (
               <div className="space-y-3 p-6">
-                {messages.map((message, index) => (
+                {messages.map((message, _index) => (
                   <div
                     key={message.id}
                     className={`animate-in fade-in slide-in-from-bottom-2 rounded-xl px-4 py-3 duration-300 ${
@@ -325,11 +344,67 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
                         >
                           {message.content}
                         </ReactMarkdown>
-                      ) : (
+                      ) : streamingMessageId === message.id ? (
                         <Typewriter
                           content={message.content}
                           scrollContainerRef={containerRef}
                         />
+                      ) : (
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              p: ({ children }) => (
+                                <p className="mb-2 text-xs leading-relaxed last:mb-0">
+                                  {children}
+                                </p>
+                              ),
+                              ul: ({ children }) => (
+                                <ul className="mb-2 list-disc space-y-0.5 pl-5 text-xs">
+                                  {children}
+                                </ul>
+                              ),
+                              ol: ({ children }) => (
+                                <ol className="mb-2 list-decimal space-y-0.5 pl-5 text-xs">
+                                  {children}
+                                </ol>
+                              ),
+                              li: ({ children }) => (
+                                <li className="leading-relaxed">{children}</li>
+                              ),
+                              strong: ({ children }) => (
+                                <strong className="font-semibold text-gray-900 dark:text-white">
+                                  {children}
+                                </strong>
+                              ),
+                              em: ({ children }) => (
+                                <em className="italic">{children}</em>
+                              ),
+                              code: ({ children }) => (
+                                <code className="rounded bg-gray-200 px-1 py-0.5 font-mono text-xs dark:bg-white/10">
+                                  {children}
+                                </code>
+                              ),
+                              pre: ({ children }) => (
+                                <pre className="my-2 overflow-x-auto rounded-lg bg-gray-200 p-2 text-xs dark:bg-white/10">
+                                  {children}
+                                </pre>
+                              ),
+                              a: ({ children, href }) => (
+                                <a
+                                  href={href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[#76E54A] underline underline-offset-2 hover:text-[#76E54A]/80"
+                                >
+                                  {children}
+                                </a>
+                              ),
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
                       )}
                     </div>
                   </div>

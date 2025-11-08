@@ -7,11 +7,8 @@ import { queryEmbeddings, getActiveBackend } from "@/lib/embeddings-hybrid";
 import { logger } from "@/lib/logger";
 import { chatRateLimit } from "@/lib/rate-limit";
 import { env } from "@/env";
-import {
-  generateUserIdAsync,
-  getUserIdCookieHeader,
-  getCookieName,
-} from "@/lib/user-identifier";
+import { getCookieName } from "@/lib/user-identifier";
+import { loadNodeContent } from "@/lib/roadmap-loader";
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -23,6 +20,15 @@ const ChatMessageSchema = z.object({
 const ChatRequestSchema = z.object({
   messages: z.array(ChatMessageSchema).min(1).max(50),
   roadmap_id: z.string().optional(),
+  selected_node_id: z.string().optional(),
+  user_profile: z
+    .object({
+      trade: z.string().optional(),
+      currentLevel: z.string().optional(),
+      specialization: z.string().optional(),
+      residencyStatus: z.string().optional(),
+    })
+    .optional(),
   top_k: z.number().int().min(1).max(20).optional(),
 });
 
@@ -141,13 +147,60 @@ export async function POST(req: NextRequest) {
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify(statusUpdate2)}\n\n`),
           );
+          // Build user context string
+          let userContext = "";
+          if (validatedBody.user_profile) {
+            const { trade, currentLevel, specialization, residencyStatus } =
+              validatedBody.user_profile;
+            const contextParts = [];
+
+            if (trade) contextParts.push(`Trade: ${trade}`);
+            if (currentLevel)
+              contextParts.push(`Current Level: ${currentLevel}`);
+            if (specialization)
+              contextParts.push(`Specialization: ${specialization}`);
+            if (residencyStatus)
+              contextParts.push(`Residency Status: ${residencyStatus}`);
+
+            if (contextParts.length > 0) {
+              userContext = `User Profile:\n${contextParts.join("\n")}\n\n`;
+            }
+          }
+
+          // Build node context string
+          let nodeContext = "";
+          if (validatedBody.selected_node_id && validatedBody.roadmap_id) {
+            try {
+              const nodeContent = await loadNodeContent(
+                validatedBody.roadmap_id,
+                validatedBody.selected_node_id,
+              );
+              if (nodeContent) {
+                nodeContext = `Current Step Information:\nTitle: ${nodeContent.frontmatter.title}\n${
+                  nodeContent.content
+                    .split("\n")
+                    .find(
+                      (line) => line.startsWith("#") === false && line.trim(),
+                    )
+                    ?.trim() ?? ""
+                }\n\n`;
+              }
+            } catch (error) {
+              logger.warn("Failed to load node content for context", {
+                error: error as Error,
+                nodeId: validatedBody.selected_node_id,
+                roadmapId: validatedBody.roadmap_id,
+              });
+            }
+          }
+
           const systemPrompt = `You are a helpful career guidance assistant for skilled trades in British Columbia, Canada.
 
-You have access to the following relevant information from the career roadmap database:
+${userContext}${nodeContext}You have access to the following relevant information from the career roadmap database:
 
 ${embeddingsResponse.context}
 
-Use this information to answer the user's question accurately. If the information doesn't contain a direct answer, say so honestly and provide general guidance based on what you know about skilled trades in BC.
+Use this information to provide personalized guidance based on the user's current situation and the step they're asking about. If the information doesn't contain a direct answer, say so honestly and provide general guidance based on what you know about skilled trades in BC.
 
 Always cite which specific sections or documents your answer comes from when possible.`;
 
