@@ -200,9 +200,19 @@ ${userContext}${nodeContext}You have access to the following relevant informatio
 
 ${embeddingsResponse.context}
 
-Use this information to provide personalized guidance based on the user's current situation and the step they're asking about. If the information doesn't contain a direct answer, say so honestly and provide general guidance based on what you know about skilled trades in BC.
+CRITICAL INSTRUCTIONS:
+1. ONLY use information from the provided context above. Do not use any external knowledge or make assumptions.
+2. If the context does not contain sufficient information to answer the user's question, explicitly state: "I don't have enough information in the provided sources to answer this question."
+3. Cite your sources using the format [Source: Title] when referencing specific information.
+4. When multiple sources are relevant, cite each one appropriately.
+5. Do not provide general guidance or advice that is not directly supported by the provided context.
+6. Be precise and accurate - if you're not certain about information from the context, acknowledge the limitation.
 
-Always cite which specific sections or documents your answer comes from when possible.`;
+Example citation format:
+- "According to the Foundation Program [Source: Electrician Foundation], students receive 375 work-based training hours."
+- "The requirements include [Source: Level 1] completion of technical training."
+
+Provide personalized guidance based strictly on the user's current situation and the step they're asking about, using only the information provided in the context.`;
 
           // start the AI response stream
           const result = streamText({

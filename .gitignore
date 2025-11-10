@@ -70,3 +70,6 @@ dist/
 build/
 *.egg
 /public/real--mascot.png
+
+# Embeddings PDFs (served from src/data/embeddings)
+/public/embeddings/
