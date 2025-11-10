@@ -7,6 +7,7 @@ import type {
   QueryResponse,
   SourceDocument,
 } from "./embeddings-service";
+import { generateNodeUrl, extractNodeInfo } from "./url-utils";
 
 const DEFAULT_ROADMAP_ID = "electrician-bc";
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -144,6 +145,7 @@ function buildSourceDocument(
     distance: number;
   },
   index: number,
+  roadmapId: string,
 ): SourceDocument {
   const textSnippet =
     result.content.length > 200
@@ -155,11 +157,22 @@ function buildSourceDocument(
   // We normalize to [0, 1] where 1 is most similar
   const score = Math.max(0, 1 - result.distance / 2);
 
+  // Extract node information for URL generation
+  const nodeInfo = extractNodeInfo(result.metadata);
+  const nodeId = result.nodeId ?? nodeInfo.nodeId ?? `unknown-${index}`;
+
   return {
-    node_id: result.nodeId ?? `unknown-${index}`,
-    title: (result.metadata.title as string | undefined) ?? "Unknown",
+    node_id: nodeId,
+    title: nodeInfo.title ?? "Unknown",
     score,
     text_snippet: textSnippet,
+    url: generateNodeUrl({
+      roadmapId,
+      nodeId,
+      nodeType: nodeInfo.nodeType,
+    }),
+    node_type: nodeInfo.nodeType,
+    roadmap_id: roadmapId,
   };
 }
 
@@ -222,7 +235,7 @@ export async function queryEmbeddings(
 
     for (let i = 0; i < results.length; i++) {
       const result = results[i]!;
-      const source = buildSourceDocument(result, i);
+      const source = buildSourceDocument(result, i, roadmapId);
 
       sources.push(source);
       contextParts.push(`[${source.title}]\n${result.content}\n`);

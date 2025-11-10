@@ -2,6 +2,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "../route";
 import { NextRequest } from "next/server";
 
+// Mock Clerk auth before importing route
+vi.mock("@clerk/nextjs/server", () => ({
+  auth: vi.fn(() =>
+    Promise.resolve({
+      userId: "test-user-id",
+      sessionId: "test-session-id",
+      isAuthenticated: true,
+    }),
+  ),
+}));
+
 vi.mock("@/lib/embeddings-hybrid", () => ({
   queryEmbeddings: vi.fn(),
   getActiveBackend: vi.fn(() => "json"),
@@ -160,10 +171,17 @@ describe("Chat API Route", () => {
       });
 
       const response = await POST(request);
-      const data = await response.json();
 
-      expect(response.status).toBe(500);
-      expect(data.error).toContain("Embeddings service unavailable");
+      // Errors in the streaming flow are sent as stream data, not JSON error responses
+      expect(response.status).toBe(200); // Streaming response starts with 200
+      expect(response.headers.get("content-type")).toContain(
+        "text/event-stream",
+      );
+
+      // Read the stream to verify error message
+      const text = await response.text();
+      expect(text).toContain("error");
+      expect(text).toContain("Embeddings service unavailable");
     });
 
     it("should handle AI provider errors", async () => {
@@ -189,10 +207,17 @@ describe("Chat API Route", () => {
       });
 
       const response = await POST(request);
-      const data = await response.json();
 
-      expect(response.status).toBe(500);
-      expect(data.error).toBe("AI provider error");
+      // Errors in the streaming flow are sent as stream data, not JSON error responses
+      expect(response.status).toBe(200); // Streaming response starts with 200
+      expect(response.headers.get("content-type")).toContain(
+        "text/event-stream",
+      );
+
+      // Read the stream to verify error message
+      const text = await response.text();
+      expect(text).toContain("error");
+      expect(text).toContain("AI provider error");
     });
 
     it("should call streamText with proper parameters", async () => {

@@ -7,12 +7,16 @@ import {
 import path from "path";
 import { env } from "@/env";
 import { logger } from "@/lib/logger";
+import { generateNodeUrl, extractNodeInfo } from "./url-utils";
 
 export interface SourceDocument {
   node_id: string;
   title: string;
   score: number;
   text_snippet: string;
+  url?: string;
+  node_type?: string;
+  roadmap_id?: string;
 }
 
 export interface QueryResponse {
@@ -73,21 +77,34 @@ async function loadIndex(roadmapId: string): Promise<VectorStoreIndex> {
   return index;
 }
 
-function buildSourceDocument(nodeWithScore: {
-  node: { metadata: Record<string, unknown>; text?: string };
-  score?: number;
-}): SourceDocument {
+function buildSourceDocument(
+  nodeWithScore: {
+    node: { metadata: Record<string, unknown>; text?: string };
+    score?: number;
+  },
+  roadmapId: string,
+): SourceDocument {
   const node = nodeWithScore.node;
   const metadata = node.metadata;
   const nodeText = ("text" in node ? node.text : "")!;
   const textSnippet =
     nodeText.length > 200 ? nodeText.substring(0, 200) + "..." : nodeText;
 
+  // Extract node information for URL generation
+  const nodeInfo = extractNodeInfo(metadata);
+
   return {
-    node_id: (metadata.node_id as string | undefined) ?? "unknown",
-    title: (metadata.title as string | undefined) ?? "Unknown",
+    node_id: nodeInfo.nodeId,
+    title: nodeInfo.title ?? "Unknown",
     score: nodeWithScore.score ?? 0,
     text_snippet: textSnippet,
+    url: generateNodeUrl({
+      roadmapId,
+      nodeId: nodeInfo.nodeId,
+      nodeType: nodeInfo.nodeType,
+    }),
+    node_type: nodeInfo.nodeType,
+    roadmap_id: roadmapId,
   };
 }
 
@@ -120,7 +137,7 @@ export async function queryEmbeddings(
   const contextParts: string[] = [];
 
   for (const nodeWithScore of nodes) {
-    const source = buildSourceDocument(nodeWithScore);
+    const source = buildSourceDocument(nodeWithScore, roadmapId);
     const nodeText =
       "text" in nodeWithScore.node ? (nodeWithScore.node.text as string) : "";
 

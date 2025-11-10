@@ -3,13 +3,14 @@
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Input } from "@/components/ui/input";
-import { X } from "lucide-react";
+import { X, ExternalLink, FileText } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Image from "next/image";
 import { ChatButton } from "./chat-button";
 import ChatLoading from "./chat-loading";
 import Typewriter from "./typewriter";
+import type { SourceDocument } from "@/lib/embeddings-service";
 
 interface ChatWidgetProps {
   selectedNodeId?: string | null;
@@ -33,6 +34,7 @@ export function ChatWidget({
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [sources, setSources] = useState<SourceDocument[]>([]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -126,8 +128,14 @@ export function ChatWidget({
                       "type" in parsed &&
                       parsed.type === "metadata"
                     ) {
-                      // Handle metadata (sources, roadmap_id) if needed
+                      // Handle metadata (sources, roadmap_id)
                       console.log("Received metadata:", parsed);
+                      if (
+                        "sources" in parsed &&
+                        Array.isArray(parsed.sources)
+                      ) {
+                        setSources(parsed.sources as SourceDocument[]);
+                      }
                       continue; // Don't pass to AI SDK
                     }
 
@@ -224,12 +232,54 @@ export function ChatWidget({
       e.preventDefault();
       return;
     }
+    // Clear sources for new message
+    setSources([]);
     // Optimistically show loading immediately upon submit
     setIsLoading(true);
     setStatusMessage("Processing request...");
     setStreamingMessageId("streaming");
     handleSubmit(e);
   };
+
+  // Sources component to display citations
+  function SourcesDisplay({ sources }: { sources: SourceDocument[] }) {
+    if (sources.length === 0) return null;
+
+    return (
+      <div className="mt-3 border-t border-white/20 pt-3">
+        <div className="mb-2 flex items-center gap-2">
+          <FileText size={14} className="opacity-70" />
+          <span className="text-xs font-medium opacity-90">Sources</span>
+        </div>
+        <div className="space-y-1">
+          {sources.map((source, index) => (
+            <div
+              key={index}
+              className="group flex items-center justify-between"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs opacity-80">{source.title}</p>
+                <p className="text-xs opacity-60">
+                  Relevance: {Math.round(source.score * 100)}%
+                </p>
+              </div>
+              {source.url && (
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 rounded p-1 transition-colors hover:bg-white/10"
+                  title="View source"
+                >
+                  <ExternalLink size={12} className="opacity-70" />
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed right-6 bottom-6 z-40 flex flex-col items-end gap-3">
@@ -350,61 +400,70 @@ export function ChatWidget({
                           scrollContainerRef={containerRef}
                         />
                       ) : (
-                        <div className="prose prose-sm dark:prose-invert max-w-none">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={{
-                              p: ({ children }) => (
-                                <p className="mb-2 text-xs leading-relaxed last:mb-0">
-                                  {children}
-                                </p>
-                              ),
-                              ul: ({ children }) => (
-                                <ul className="mb-2 list-disc space-y-0.5 pl-5 text-xs">
-                                  {children}
-                                </ul>
-                              ),
-                              ol: ({ children }) => (
-                                <ol className="mb-2 list-decimal space-y-0.5 pl-5 text-xs">
-                                  {children}
-                                </ol>
-                              ),
-                              li: ({ children }) => (
-                                <li className="leading-relaxed">{children}</li>
-                              ),
-                              strong: ({ children }) => (
-                                <strong className="font-semibold text-gray-900 dark:text-white">
-                                  {children}
-                                </strong>
-                              ),
-                              em: ({ children }) => (
-                                <em className="italic">{children}</em>
-                              ),
-                              code: ({ children }) => (
-                                <code className="rounded bg-gray-200 px-1 py-0.5 font-mono text-xs dark:bg-white/10">
-                                  {children}
-                                </code>
-                              ),
-                              pre: ({ children }) => (
-                                <pre className="my-2 overflow-x-auto rounded-lg bg-gray-200 p-2 text-xs dark:bg-white/10">
-                                  {children}
-                                </pre>
-                              ),
-                              a: ({ children, href }) => (
-                                <a
-                                  href={href}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[#76E54A] underline underline-offset-2 hover:text-[#76E54A]/80"
-                                >
-                                  {children}
-                                </a>
-                              ),
-                            }}
-                          >
-                            {message.content}
-                          </ReactMarkdown>
-                        </div>
+                        <>
+                          <div className="prose prose-sm dark:prose-invert max-w-none">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                p: ({ children }) => (
+                                  <p className="mb-2 text-xs leading-relaxed last:mb-0">
+                                    {children}
+                                  </p>
+                                ),
+                                ul: ({ children }) => (
+                                  <ul className="mb-2 list-disc space-y-0.5 pl-5 text-xs">
+                                    {children}
+                                  </ul>
+                                ),
+                                ol: ({ children }) => (
+                                  <ol className="mb-2 list-decimal space-y-0.5 pl-5 text-xs">
+                                    {children}
+                                  </ol>
+                                ),
+                                li: ({ children }) => (
+                                  <li className="leading-relaxed">
+                                    {children}
+                                  </li>
+                                ),
+                                strong: ({ children }) => (
+                                  <strong className="font-semibold text-gray-900 dark:text-white">
+                                    {children}
+                                  </strong>
+                                ),
+                                em: ({ children }) => (
+                                  <em className="italic">{children}</em>
+                                ),
+                                code: ({ children }) => (
+                                  <code className="rounded bg-gray-200 px-1 py-0.5 font-mono text-xs dark:bg-white/10">
+                                    {children}
+                                  </code>
+                                ),
+                                pre: ({ children }) => (
+                                  <pre className="my-2 overflow-x-auto rounded-lg bg-gray-200 p-2 text-xs dark:bg-white/10">
+                                    {children}
+                                  </pre>
+                                ),
+                                a: ({ children, href }) => (
+                                  <a
+                                    href={href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[#76E54A] underline underline-offset-2 hover:text-[#76E54A]/80"
+                                  >
+                                    {children}
+                                  </a>
+                                ),
+                              }}
+                            >
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
+                          {/* Show sources for the latest assistant message */}
+                          {message.id === messages[messages.length - 1]?.id &&
+                            sources.length > 0 && (
+                              <SourcesDisplay sources={sources} />
+                            )}
+                        </>
                       )}
                     </div>
                   </div>
