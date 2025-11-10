@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Input } from "@/components/ui/input";
-import { X, ExternalLink, FileText } from "lucide-react";
+import { X, ExternalLink, FileText, ArrowDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Image from "next/image";
@@ -35,6 +35,7 @@ export function ChatWidget({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
   const [sources, setSources] = useState<SourceDocument[]>([]);
+  const [showScrollButton, setShowScrollButton] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -208,22 +209,35 @@ export function ChatWidget({
     if (!isExpanded) didMountRef.current = false;
   }, [isExpanded]);
 
+  // Track scroll position to show/hide scroll-to-bottom button
   useEffect(() => {
-    if (!isExpanded) return;
-    const behavior: ScrollBehavior = didMountRef.current ? "smooth" : "auto";
-    endRef.current?.scrollIntoView({ behavior, block: "end" });
-    didMountRef.current = true;
-  }, [messages, isExpanded]);
+    const container = containerRef.current;
+    if (!container) return;
 
-  useEffect(() => {
-    if (!isExpanded) return;
-    const el = containerRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages.length, isExpanded]);
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      // Show button if user has scrolled up more than 100px from bottom
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      setShowScrollButton(!isNearBottom);
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [isExpanded]);
 
   const handleClearChat = () => {
     setMessages([]);
     localStorage.removeItem(STORAGE_KEY);
+  };
+
+  const scrollToBottom = () => {
+    const container = containerRef.current;
+    if (container) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: "smooth",
+      });
+    }
   };
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -243,7 +257,20 @@ export function ChatWidget({
 
   // Sources component to display citations
   function SourcesDisplay({ sources }: { sources: SourceDocument[] }) {
-    if (sources.length === 0) return null;
+    // Filter for high relevance (>70%) and remove duplicates
+    const RELEVANCE_THRESHOLD = 0.7;
+    const filteredSources = sources
+      .filter((source) => source.score > RELEVANCE_THRESHOLD)
+      .reduce((acc: SourceDocument[], current) => {
+        // Remove duplicates based on title
+        const isDuplicate = acc.some((item) => item.title === current.title);
+        if (!isDuplicate) {
+          acc.push(current);
+        }
+        return acc;
+      }, []);
+
+    if (filteredSources.length === 0) return null;
 
     return (
       <div className="mt-3 border-t border-white/20 pt-3">
@@ -252,7 +279,7 @@ export function ChatWidget({
           <span className="text-xs font-medium opacity-90">Sources</span>
         </div>
         <div className="space-y-1">
-          {sources.map((source, index) => (
+          {filteredSources.map((source, index) => (
             <div
               key={index}
               className="group flex items-center justify-between"
@@ -309,7 +336,7 @@ export function ChatWidget({
             </div>
           </div>
 
-          <div ref={containerRef} className="flex-1 overflow-y-auto">
+          <div ref={containerRef} className="relative flex-1 overflow-y-auto">
             {messages.length > 0 ? (
               <div className="space-y-3 p-6">
                 {messages.map((message, _index) => (
@@ -504,6 +531,18 @@ export function ChatWidget({
             )}
             <div ref={chatContainerRef} />
           </div>
+
+          {showScrollButton && messages.length > 0 && (
+            <div className="flex justify-center bg-transparent py-2">
+              <button
+                onClick={scrollToBottom}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5A829A] text-white shadow-lg transition-all hover:cursor-pointer hover:bg-[#6A92AA] hover:shadow-xl"
+                aria-label="Scroll to bottom"
+              >
+                <ArrowDown size={16} />
+              </button>
+            </div>
+          )}
 
           <form
             onSubmit={onSubmit}

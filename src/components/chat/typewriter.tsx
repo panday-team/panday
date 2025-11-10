@@ -21,10 +21,6 @@ const Typewriter = memo(function Typewriter({
       const timeout = setTimeout(() => {
         setDisplayedContent((prev) => prev + content[currentIndex]);
         setCurrentIndex((prev) => prev + 1);
-        if (scrollContainerRef.current) {
-          scrollContainerRef.current.scrollTop =
-            scrollContainerRef.current.scrollHeight;
-        }
       }, 5); // Adjust typing speed here
 
       return () => clearTimeout(timeout);

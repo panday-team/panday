@@ -93,16 +93,29 @@ function buildSourceDocument(
   // Extract node information for URL generation
   const nodeInfo = extractNodeInfo(metadata);
 
+  // Generate URL based on file type
+  let url: string | undefined;
+  const fileName = metadata.file_name as string | undefined;
+  const fileType = metadata.file_type as string | undefined;
+
+  if (fileName && fileType === "pdf") {
+    // Link to PDF in embeddings directory
+    url = `/embeddings/${roadmapId}/${fileName}`;
+  } else if (fileName && fileType === "markdown") {
+    // Link to roadmap node for markdown files
+    url = generateNodeUrl({
+      roadmapId,
+      nodeId: nodeInfo.nodeId,
+      nodeType: nodeInfo.nodeType,
+    });
+  }
+
   return {
     node_id: nodeInfo.nodeId,
     title: nodeInfo.title ?? "Unknown",
     score: nodeWithScore.score ?? 0,
     text_snippet: textSnippet,
-    url: generateNodeUrl({
-      roadmapId,
-      nodeId: nodeInfo.nodeId,
-      nodeType: nodeInfo.nodeType,
-    }),
+    url,
     node_type: nodeInfo.nodeType,
     roadmap_id: roadmapId,
   };
