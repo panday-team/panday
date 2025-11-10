@@ -1,16 +1,15 @@
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { createOpenAI } from "@ai-sdk/openai";
-import { StreamData, streamText, type LanguageModel } from "ai";
+import { StreamData, streamText } from "ai";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { queryEmbeddings, getActiveBackend } from "@/lib/embeddings-hybrid";
+import { env } from "@/env";
+import { getChatModel } from "@/lib/ai-model";
 import { logger } from "@/lib/logger";
 import { chatRateLimit } from "@/lib/rate-limit";
-import { env } from "@/env";
 import { getCookieName } from "@/lib/user-identifier";
 import { loadNodeContent } from "@/lib/roadmap-loader";
+import { db } from "@/server/db";
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -37,36 +36,8 @@ const ChatRequestSchema = z.object({
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 
-function getAIModel(): LanguageModel {
-  switch (env.AI_PROVIDER) {
-    case "google": {
-      if (!env.GOOGLE_API_KEY) {
-        throw new Error("GOOGLE_API_KEY is not configured");
-      }
-      const google = createGoogleGenerativeAI({
-        apiKey: env.GOOGLE_API_KEY,
-      });
-      return google(env.AI_MODEL);
-    }
-    case "openai": {
-      const openai = createOpenAI({
-        apiKey: env.OPENAI_API_KEY,
-      });
-      return openai(env.AI_MODEL);
-    }
-    case "anthropic": {
-      if (!env.ANTHROPIC_API_KEY) {
-        throw new Error("ANTHROPIC_API_KEY is not configured");
-      }
-      const anthropic = createAnthropic({
-        apiKey: env.ANTHROPIC_API_KEY,
-      });
-      return anthropic(env.AI_MODEL);
-    }
-    default:
-      throw new Error(`Unsupported AI provider: ${env.AI_PROVIDER as string}`);
-  }
-}
+const SESSION_IDLE_TIMEOUT_MS = 1000 * 60 * 30; // 30 minutes
+const MAX_MESSAGES_PER_SESSION = 30;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -101,6 +72,54 @@ function formatStreamErrorMessage(
 
   logger.error("Chat stream error", undefined, { userId, rawError: error });
   return "An unexpected error occurred";
+}
+
+async function getOrCreateChatSession(
+  userId: string,
+  roadmapId?: string | null,
+) {
+  const existingSession = await db.chatSession.findFirst({
+    where: { userId, endedAt: null },
+    orderBy: { startedAt: "desc" },
+    include: {
+      messages: {
+        select: { createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
+    },
+  });
+
+  if (existingSession) {
+    const lastInteraction =
+      existingSession.messages[0]?.createdAt ?? existingSession.startedAt;
+    const isFresh =
+      lastInteraction &&
+      Date.now() - lastInteraction.getTime() <= SESSION_IDLE_TIMEOUT_MS;
+
+    if (isFresh) {
+      if (!existingSession.roadmapId && roadmapId) {
+        await db.chatSession.update({
+          where: { id: existingSession.id },
+          data: { roadmapId },
+        });
+        return { ...existingSession, roadmapId };
+      }
+      return existingSession;
+    }
+
+    await db.chatSession.update({
+      where: { id: existingSession.id },
+      data: { endedAt: new Date() },
+    });
+  }
+
+  return db.chatSession.create({
+    data: {
+      userId,
+      roadmapId: roadmapId ?? null,
+    },
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -159,6 +178,23 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "No user message found" }, { status: 400 });
     }
 
+    const defaultRoadmapId = validatedBody.roadmap_id ?? "global";
+    const session = await getOrCreateChatSession(userId, defaultRoadmapId);
+    const sessionId = session.id;
+
+    await db.chatMessage.create({
+      data: {
+        sessionId,
+        role: "user",
+        content: lastUserMessage.content,
+        metadata: {
+          roadmapId: validatedBody.roadmap_id,
+          selectedNodeId: validatedBody.selected_node_id,
+          userProfile: validatedBody.user_profile ?? null,
+        },
+      },
+    });
+
     const activeBackend = getActiveBackend();
     logger.info("Using embeddings backend", {
       backend: activeBackend,
@@ -182,15 +218,17 @@ export async function POST(req: NextRequest) {
       sourcesCount: embeddingsResponse.sources.length,
     });
 
+    const normalizedSources = embeddingsResponse.sources.map((source) => ({
+      node_id: source.node_id,
+      title: source.title,
+      score: source.score,
+      text_snippet: source.text_snippet,
+    }));
+
     const metadataPayload: JsonValue = {
       type: "metadata",
       roadmapId: embeddingsResponse.roadmap_id,
-      sources: embeddingsResponse.sources.map((source) => ({
-        node_id: source.node_id,
-        title: source.title,
-        score: source.score,
-        text_snippet: source.text_snippet,
-      })),
+      sources: normalizedSources,
     };
     dataStream.append(metadataPayload);
     dataStream.append({
@@ -251,14 +289,42 @@ Use this information to provide personalized guidance based on the user's curren
 Always cite which specific sections or documents your answer comes from when possible.`;
 
     const result = streamText({
-      model: getAIModel(),
+      model: getChatModel(),
       system: systemPrompt,
       messages: validatedBody.messages.map((msg) => ({
         role: msg.role,
         content: msg.content,
       })),
       maxTokens: 1024,
-      onFinish: async () => {
+      onFinish: async ({ text, sources, usage, finishReason }) => {
+        try {
+          await db.chatMessage.create({
+            data: {
+              sessionId,
+              role: "assistant",
+              content: text ?? "",
+              metadata: {
+                roadmapId: embeddingsResponse.roadmap_id,
+                retrievedSources: normalizedSources,
+                modelSources: sources ?? null,
+                usage,
+                finishReason,
+              },
+            },
+          });
+
+          if (!session.endedAt && validatedBody.messages.length >= MAX_MESSAGES_PER_SESSION) {
+            await db.chatSession.update({
+              where: { id: sessionId },
+              data: { endedAt: new Date() },
+            });
+          }
+        } catch (persistenceError) {
+          logger.error("Failed to persist assistant response", persistenceError, {
+            sessionId,
+          });
+        }
+
         logger.info("Chat completion finished", {
           provider: env.AI_PROVIDER,
           model: env.AI_MODEL,
