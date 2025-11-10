@@ -58,6 +58,12 @@ const isMetadataEvent = (value: unknown): value is StreamMetadataEvent => {
   return typeof typeValue === "string" && typeValue === "metadata";
 };
 
+type MinimalMessage = { content: string };
+
+const filterEmptyMessages = <T extends MinimalMessage>(messages: T[]): T[] => {
+  return messages.filter((message) => message.content.trim().length > 0);
+};
+
 export function ChatWidget({
   selectedNodeId,
   roadmapId,
@@ -112,6 +118,13 @@ export function ChatWidget({
       selected_node_id: selectedNodeId ?? undefined,
       user_profile: userProfile,
     },
+    experimental_prepareRequestBody: ({ messages: outgoingMessages, ...rest }) => {
+      const filtered = filterEmptyMessages(outgoingMessages);
+      return {
+        ...rest,
+        messages: filtered.length > 0 ? filtered : outgoingMessages,
+      };
+    },
   });
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -124,7 +137,10 @@ export function ChatWidget({
       try {
         const parsed = JSON.parse(stored) as unknown;
         if (Array.isArray(parsed)) {
-          setMessages(parsed as Parameters<typeof setMessages>[0]);
+          const sanitized = filterEmptyMessages(
+            parsed as Array<{ content: string }>,
+          ) as Parameters<typeof setMessages>[0];
+          setMessages(sanitized);
         }
       } catch (e) {
         logger.error(
