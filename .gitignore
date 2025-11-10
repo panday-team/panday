@@ -70,3 +70,4 @@ dist/
 build/
 *.egg
 /public/real--mascot.png
+.aider*
