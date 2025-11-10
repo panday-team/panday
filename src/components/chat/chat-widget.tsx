@@ -13,18 +13,34 @@ import Typewriter from "./typewriter";
 
 interface ChatWidgetProps {
   selectedNodeId?: string | null;
+  roadmapId?: string;
+  userProfile?: {
+    trade?: string;
+    currentLevel?: string;
+    specialization?: string;
+    residencyStatus?: string;
+  };
 }
 
 const STORAGE_KEY = "panday_chat_messages";
 
-export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
+export function ChatWidget({
+  selectedNodeId,
+  roadmapId,
+  userProfile,
+}: ChatWidgetProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const didMountRef = useRef(false);
+
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
+    null,
+  );
 
   const {
     messages,
@@ -39,14 +55,119 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
     onError: (error) => {
       console.error("Chat error:", error);
       setIsLoading(false);
+      setStatusMessage(null);
     },
     onResponse: (response) => {
       console.log("Chat response received:", response.status);
       setIsLoading(true);
+      setStatusMessage(null); // Clear status once response starts
     },
     onFinish: (message) => {
       console.log("Message finished:", message);
       setIsLoading(false);
+      setStatusMessage(null);
+      setStreamingMessageId(null);
+    },
+    body: {
+      roadmap_id: roadmapId,
+      selected_node_id: selectedNodeId ?? undefined,
+      user_profile: userProfile,
+    },
+    // Handle custom data from the stream
+    fetch: async (url, options) => {
+      const response = await fetch(url, options);
+
+      if (!response.body) {
+        throw new Error("No response body");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      // Create a new stream that processes our custom events
+      const customStream = new ReadableStream({
+        start(controller) {
+          let buffer = "";
+
+          function pump(): Promise<void> {
+            return reader.read().then(({ done, value }) => {
+              if (done) {
+                controller.close();
+                return;
+              }
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() ?? "";
+
+              for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                  const data = line.slice(6);
+
+                  try {
+                    const parsed: unknown = JSON.parse(data);
+
+                    // Handle our custom status updates
+                    if (
+                      typeof parsed === "object" &&
+                      parsed !== null &&
+                      "type" in parsed &&
+                      parsed.type === "status" &&
+                      "message" in parsed &&
+                      typeof parsed.message === "string"
+                    ) {
+                      setStatusMessage(parsed.message);
+                      continue; // Don't pass to AI SDK
+                    }
+
+                    if (
+                      typeof parsed === "object" &&
+                      parsed !== null &&
+                      "type" in parsed &&
+                      parsed.type === "metadata"
+                    ) {
+                      // Handle metadata (sources, roadmap_id) if needed
+                      console.log("Received metadata:", parsed);
+                      continue; // Don't pass to AI SDK
+                    }
+
+                    if (
+                      typeof parsed === "object" &&
+                      parsed !== null &&
+                      "type" in parsed &&
+                      parsed.type === "error" &&
+                      "message" in parsed &&
+                      typeof parsed.message === "string"
+                    ) {
+                      console.error("Stream error:", parsed.message);
+                      setStatusMessage(null);
+                      setIsLoading(false);
+                      continue; // Don't pass to AI SDK
+                    }
+                  } catch {
+                    // If it's not JSON, it's probably AI SDK data
+                    // Fall through to pass it along
+                  }
+                }
+
+                // Pass through other data to AI SDK
+                controller.enqueue(new TextEncoder().encode(line + "\n"));
+              }
+
+              return pump();
+            });
+          }
+
+          return pump();
+        },
+      });
+
+      // Return a new response with our processed stream
+      return new Response(customStream, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      });
     },
   });
 
@@ -105,6 +226,8 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
     }
     // Optimistically show loading immediately upon submit
     setIsLoading(true);
+    setStatusMessage("Processing request...");
+    setStreamingMessageId("streaming");
     handleSubmit(e);
   };
 
@@ -139,7 +262,7 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
           <div ref={containerRef} className="flex-1 overflow-y-auto">
             {messages.length > 0 ? (
               <div className="space-y-3 p-6">
-                {messages.map((message, index) => (
+                {messages.map((message, _index) => (
                   <div
                     key={message.id}
                     className={`animate-in fade-in slide-in-from-bottom-2 rounded-xl px-4 py-3 duration-300 ${
@@ -221,18 +344,86 @@ export function ChatWidget({ selectedNodeId }: ChatWidgetProps) {
                         >
                           {message.content}
                         </ReactMarkdown>
+                      ) : streamingMessageId === message.id ? (
+                        <Typewriter
+                          content={message.content}
+                          scrollContainerRef={containerRef}
+                        />
                       ) : (
-                        <Typewriter content={message.content} />
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              p: ({ children }) => (
+                                <p className="mb-2 text-xs leading-relaxed last:mb-0">
+                                  {children}
+                                </p>
+                              ),
+                              ul: ({ children }) => (
+                                <ul className="mb-2 list-disc space-y-0.5 pl-5 text-xs">
+                                  {children}
+                                </ul>
+                              ),
+                              ol: ({ children }) => (
+                                <ol className="mb-2 list-decimal space-y-0.5 pl-5 text-xs">
+                                  {children}
+                                </ol>
+                              ),
+                              li: ({ children }) => (
+                                <li className="leading-relaxed">{children}</li>
+                              ),
+                              strong: ({ children }) => (
+                                <strong className="font-semibold text-gray-900 dark:text-white">
+                                  {children}
+                                </strong>
+                              ),
+                              em: ({ children }) => (
+                                <em className="italic">{children}</em>
+                              ),
+                              code: ({ children }) => (
+                                <code className="rounded bg-gray-200 px-1 py-0.5 font-mono text-xs dark:bg-white/10">
+                                  {children}
+                                </code>
+                              ),
+                              pre: ({ children }) => (
+                                <pre className="my-2 overflow-x-auto rounded-lg bg-gray-200 p-2 text-xs dark:bg-white/10">
+                                  {children}
+                                </pre>
+                              ),
+                              a: ({ children, href }) => (
+                                <a
+                                  href={href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[#76E54A] underline underline-offset-2 hover:text-[#76E54A]/80"
+                                >
+                                  {children}
+                                </a>
+                              ),
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
                       )}
                     </div>
                   </div>
                 ))}
-                {isLoading && (
+                {(isLoading || statusMessage) && (
                   <div className="mr-8 animate-pulse rounded-xl bg-gray-100 px-4 py-3 text-gray-900 dark:bg-white/5 dark:text-white/90">
                     <div className="mb-1.5 text-xs font-semibold tracking-wide uppercase opacity-60">
                       AI
                     </div>
-                    <ChatLoading />
+                    {statusMessage ? (
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-500"></div>
+                        <span className="text-xs text-gray-600 dark:text-white/70">
+                          {statusMessage}
+                        </span>
+                      </div>
+                    ) : (
+                      <ChatLoading />
+                    )}
                   </div>
                 )}
                 {error && (

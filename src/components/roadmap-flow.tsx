@@ -463,7 +463,20 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
         </div>
       )}
 
-      <ChatWidget selectedNodeId={selectedNodeId ?? undefined} />
+      <ChatWidget
+        selectedNodeId={selectedNodeId ?? undefined}
+        roadmapId={roadmap.metadata.id}
+        userProfile={
+          userProfile
+            ? {
+                trade: userProfile.trade,
+                currentLevel: userProfile.currentLevel,
+                specialization: userProfile.specialization,
+                residencyStatus: userProfile.residencyStatus,
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }
