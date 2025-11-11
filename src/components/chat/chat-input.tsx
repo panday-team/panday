@@ -9,6 +9,16 @@ export default function ChatInput() {
     useChat({ api: "http://localhost:3000/api/chat" });
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
+
+  const catchPromptInjectionAttempt = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const rawPrompt = event.target.value;
+    rawPrompt.includes("User:[SYSTEM OVERRIDE]")
+      ? new Error("Unaccpetable Prompt")
+      : handleInputChange(event);
+  };
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -43,11 +53,12 @@ export default function ChatInput() {
         <div className="rounded-md bg-white dark:bg-gray-800">
           <div>
             <Input
+              ref={chatInputRef}
               type="text"
               placeholder="Chat with AI!"
               disabled={isLoading}
               value={input}
-              onChange={handleInputChange}
+              onChange={catchPromptInjectionAttempt}
               className="p-8 text-gray-900 focus-visible:ring-0 dark:text-white"
             />
           </div>
