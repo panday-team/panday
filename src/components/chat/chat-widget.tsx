@@ -233,6 +233,7 @@ export function ChatWidget({
               logger.error(
                 "Failed to save reduced messages to localStorage",
                 retryError,
+                {},
               );
             }
           }
