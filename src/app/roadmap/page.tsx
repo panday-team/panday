@@ -16,14 +16,14 @@ export default async function RoadmapPage() {
   const { userId } = await auth();
   const roadmap = await roadmapCache.get("electrician-bc");
 
-  // Fetch user profile for personalization
+  // Fetch user profile for personalization (guests will have null profile)
   let userProfile: UserProfile | null = null;
   if (userId) {
     const dbProfile = await prisma.userProfile.findUnique({
       where: { clerkUserId: userId },
     });
 
-    // Redirect to onboarding if profile doesn't exist or onboarding not completed
+    // Redirect to onboarding if authenticated but profile incomplete
     if (!dbProfile?.onboardingCompletedAt) {
       redirect("/onboarding");
     }

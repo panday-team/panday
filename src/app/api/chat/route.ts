@@ -48,10 +48,32 @@ function getAIModel(): LanguageModel {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function getRequestIdentifier(req: NextRequest): string {
+/**
+ * Get request identifier for rate limiting and error logging.
+ * Prefers authenticated userId, falls back to IP address for unauthenticated requests.
+ */
+function getRequestIdentifier(
+  req: NextRequest,
+  userId?: string | null,
+): string {
+  if (userId) {
+    return userId;
+  }
+
+  // Fallback to IP address for rate limiting unauthenticated requests
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    return forwardedFor.split(",")[0]?.trim() ?? "anonymous";
+  }
+
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) {
+    return realIp;
+  }
+
+  // Last resort - use cookie-based identifier for error logging only
   const cookieName = getCookieName();
   const userIdCookie = req.cookies.get(cookieName)?.value;
-
   if (userIdCookie) {
     return userIdCookie;
   }
@@ -61,13 +83,12 @@ function getRequestIdentifier(req: NextRequest): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, isAuthenticated } = await auth();
-    if (!isAuthenticated) throw new Error("user not logged in");
+    const { userId } = await auth();
 
+    // Apply rate limiting BEFORE authentication check to prevent abuse
+    const identifier = getRequestIdentifier(req, userId);
     const { success, limit, reset, remaining } =
-      await chatRateLimit.limit(userId);
-
-    logger.debug(`User ID: ${userId}`);
+      await chatRateLimit.limit(identifier);
 
     if (!success) {
       return Response.json(
@@ -87,6 +108,16 @@ export async function POST(req: NextRequest) {
         },
       );
     }
+
+    // Require authentication for chat
+    if (!userId) {
+      return Response.json(
+        { error: "Authentication required to use chat" },
+        { status: 401 },
+      );
+    }
+
+    logger.debug(`User ID: ${userId}`);
 
     const body: unknown = await req.json();
 
@@ -288,8 +319,9 @@ Provide personalized guidance based strictly on the user's current situation and
 
     return response;
   } catch (error) {
+    const { userId } = await auth();
     logger.error("Chat API error", error, {
-      identifier: getRequestIdentifier(req),
+      identifier: getRequestIdentifier(req, userId),
     });
 
     if (error instanceof Error) {
@@ -299,6 +331,27 @@ Provide personalized guidance based strictly on the user's current situation and
           { status: 504 },
         );
       }
+
+      // Handle Redis/connection errors
+      if (
+        error.message.includes("ECONNREFUSED") ||
+        error.message.includes("Redis") ||
+        error.message.includes("Connection refused")
+      ) {
+        return Response.json(
+          { error: "Service temporarily unavailable. Please try again later." },
+          { status: 503 },
+        );
+      }
+
+      // Handle rate limit errors
+      if (error.message.includes("rate limit")) {
+        return Response.json(
+          { error: "Too many requests. Please try again later." },
+          { status: 429 },
+        );
+      }
+
       return Response.json({ error: error.message }, { status: 500 });
     }
 
