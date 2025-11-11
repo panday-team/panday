@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { X, ExternalLink, FileText, ArrowDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -11,6 +12,9 @@ import { ChatButton } from "./chat-button";
 import ChatLoading from "./chat-loading";
 import Typewriter from "./typewriter";
 import type { SourceDocument } from "@/lib/embeddings-service";
+import { useAuth, SignInButton } from "@clerk/nextjs";
+import { CHAT_CONFIG } from "@/lib/chat-config";
+import { logger } from "@/lib/logger";
 
 interface ChatWidgetProps {
   selectedNodeId?: string | null;
@@ -23,13 +27,12 @@ interface ChatWidgetProps {
   };
 }
 
-const STORAGE_KEY = "panday_chat_messages";
-
 export function ChatWidget({
   selectedNodeId,
   roadmapId,
   userProfile,
 }: ChatWidgetProps) {
+  const { isSignedIn } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -185,7 +188,7 @@ export function ChatWidget({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(CHAT_CONFIG.STORAGE_KEY);
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as unknown;
@@ -199,9 +202,48 @@ export function ChatWidget({
     setIsHydrated(true);
   }, [setMessages]);
 
+  // Save messages to localStorage with size limits and error handling
   useEffect(() => {
     if (isHydrated && messages.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+      // Trim old messages if exceeding limit
+      const trimmedMessages = messages.slice(-CHAT_CONFIG.MAX_CACHED_MESSAGES);
+      const serialized = JSON.stringify(trimmedMessages);
+
+      // Check size before saving to prevent QuotaExceededError
+      if (serialized.length < CHAT_CONFIG.MAX_STORAGE_SIZE_BYTES) {
+        try {
+          localStorage.setItem(CHAT_CONFIG.STORAGE_KEY, serialized);
+        } catch (e) {
+          if (e instanceof DOMException && e.name === "QuotaExceededError") {
+            logger.warn("localStorage quota exceeded, clearing old messages", {
+              messageCount: messages.length,
+              size: serialized.length,
+            });
+            // Clear old data and retry with fewer messages
+            localStorage.removeItem(CHAT_CONFIG.STORAGE_KEY);
+            const reducedMessages = messages.slice(
+              -CHAT_CONFIG.FALLBACK_MESSAGE_COUNT,
+            );
+            try {
+              localStorage.setItem(
+                CHAT_CONFIG.STORAGE_KEY,
+                JSON.stringify(reducedMessages),
+              );
+            } catch (retryError) {
+              logger.error(
+                "Failed to save reduced messages to localStorage",
+                retryError,
+                {},
+              );
+            }
+          }
+        }
+      } else {
+        logger.warn("Chat history too large for localStorage, skipping save", {
+          size: serialized.length,
+          maxSize: CHAT_CONFIG.MAX_STORAGE_SIZE_BYTES,
+        });
+      }
     }
   }, [messages, isHydrated]);
 
@@ -217,7 +259,9 @@ export function ChatWidget({
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
       // Show button if user has scrolled up more than 100px from bottom
-      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      const isNearBottom =
+        scrollHeight - scrollTop - clientHeight <
+        CHAT_CONFIG.SCROLL_THRESHOLD_PX;
       setShowScrollButton(!isNearBottom);
     };
 
@@ -227,7 +271,7 @@ export function ChatWidget({
 
   const handleClearChat = () => {
     setMessages([]);
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(CHAT_CONFIG.STORAGE_KEY);
   };
 
   const scrollToBottom = () => {
@@ -241,9 +285,16 @@ export function ChatWidget({
   };
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    // Check authentication before allowing chat
+    if (!isSignedIn) {
+      logger.info("Guest attempted to use chat", { nodeId: selectedNodeId });
+      return; // Don't submit if not signed in
+    }
+
     // Prevent optimistic loading for empty/whitespace-only messages
     if (!input.trim()) {
-      e.preventDefault();
       return;
     }
     // Clear sources for new message
@@ -258,9 +309,9 @@ export function ChatWidget({
   // Sources component to display citations
   function SourcesDisplay({ sources }: { sources: SourceDocument[] }) {
     // Filter for high relevance (>70%) and remove duplicates
-    const RELEVANCE_THRESHOLD = 0.7;
+
     const filteredSources = sources
-      .filter((source) => source.score > RELEVANCE_THRESHOLD)
+      .filter((source) => source.score > CHAT_CONFIG.RELEVANCE_THRESHOLD)
       .reduce((acc: SourceDocument[], current) => {
         // Remove duplicates based on title
         const isDuplicate = acc.some((item) => item.title === current.title);
@@ -522,6 +573,21 @@ export function ChatWidget({
                 )}
                 <div ref={endRef} />
               </div>
+            ) : !isSignedIn ? (
+              <div className="flex h-full flex-col items-center justify-center gap-4 p-6">
+                <p className="text-center text-sm text-black">
+                  Sign in to use the AI assistant
+                </p>
+                <p className="text-center text-xs text-black/70">
+                  Get personalized guidance on your career roadmap with our
+                  AI-powered assistant
+                </p>
+                <SignInButton mode="modal">
+                  <Button size="sm" className="bg-teal-500 hover:bg-teal-400">
+                    Sign In to Chat
+                  </Button>
+                </SignInButton>
+              </div>
             ) : (
               <div className="flex h-full items-center justify-center p-6">
                 <p className="text-center text-sm text-black">
@@ -555,15 +621,17 @@ export function ChatWidget({
               >
                 <Input
                   type="text"
-                  placeholder="Write your message"
-                  disabled={isLoading}
+                  placeholder={
+                    !isSignedIn ? "Sign in to chat" : "Write your message"
+                  }
+                  disabled={isLoading || !isSignedIn}
                   value={input}
                   onChange={handleInputChange}
                   className="h-10 rounded-3xl border-white/10 bg-white text-sm text-black placeholder:font-extrabold placeholder:text-black/40 focus-visible:ring-0"
                 />
                 <button
                   type="submit"
-                  disabled={isLoading || !input.trim()}
+                  disabled={isLoading || !input.trim() || !isSignedIn}
                   className="rounded-lg p-2 transition-all hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
                   aria-label="Send message"
                 >

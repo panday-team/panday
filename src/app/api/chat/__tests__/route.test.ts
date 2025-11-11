@@ -8,7 +8,6 @@ vi.mock("@clerk/nextjs/server", () => ({
     Promise.resolve({
       userId: "test-user-id",
       sessionId: "test-session-id",
-      isAuthenticated: true,
     }),
   ),
 }));
@@ -38,6 +37,7 @@ vi.mock("@/lib/rate-limit", () => ({
         limit: 10,
         reset: Date.now() + 60000,
         remaining: 9,
+        pending: Promise.resolve(),
       }),
     ),
   },
@@ -54,6 +54,111 @@ vi.mock("@/env", () => ({
 describe("Chat API Route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe("POST /api/chat - Guest Access", () => {
+    it("should return 401 when user is not authenticated", async () => {
+      const { auth } = await import("@clerk/nextjs/server");
+      vi.mocked(auth).mockResolvedValueOnce({
+        userId: null,
+      } as never);
+
+      const request = new NextRequest("http://localhost:3000/api/chat", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "test query" }],
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.error).toBe("Authentication required to use chat");
+    });
+
+    it("should apply rate limiting before authentication check", async () => {
+      const { chatRateLimit } = await import("@/lib/rate-limit");
+
+      // Mock rate limit to fail
+      vi.mocked(chatRateLimit.limit).mockResolvedValueOnce({
+        success: false,
+        limit: 10,
+        reset: Date.now() + 60000,
+        remaining: 0,
+        pending: Promise.resolve(),
+      });
+
+      const request = new NextRequest("http://localhost:3000/api/chat", {
+        method: "POST",
+        headers: {
+          "x-forwarded-for": "192.168.1.1",
+        },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "test query" }],
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(429);
+      expect(data.error).toBe("Rate limit exceeded");
+      // Verify rate limit was called before auth check would reject
+      expect(chatRateLimit.limit).toHaveBeenCalled();
+    });
+
+    it("should use IP address for rate limiting when user is not authenticated", async () => {
+      const { chatRateLimit } = await import("@/lib/rate-limit");
+      const { auth } = await import("@clerk/nextjs/server");
+      vi.mocked(auth).mockResolvedValueOnce({
+        userId: null,
+      } as never);
+
+      const request = new NextRequest("http://localhost:3000/api/chat", {
+        method: "POST",
+        headers: {
+          "x-forwarded-for": "192.168.1.1, 10.0.0.1",
+        },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "test query" }],
+        }),
+      });
+
+      await POST(request);
+
+      // Verify rate limit was called with IP address (first in x-forwarded-for)
+      expect(chatRateLimit.limit).toHaveBeenCalledWith("192.168.1.1");
+    });
+
+    it("should use userId for rate limiting when user is authenticated", async () => {
+      const { chatRateLimit } = await import("@/lib/rate-limit");
+      const { queryEmbeddings } = await import("@/lib/embeddings-hybrid");
+      const { streamText } = await import("ai");
+
+      vi.mocked(queryEmbeddings).mockResolvedValueOnce({
+        query: "test query",
+        roadmap_id: "electrician-bc",
+        sources: [],
+        context: "Test context",
+      });
+
+      vi.mocked(streamText).mockReturnValueOnce({
+        toDataStreamResponse: vi.fn(() => new Response("stream")),
+      } as never);
+
+      const request = new NextRequest("http://localhost:3000/api/chat", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "test query" }],
+        }),
+      });
+
+      await POST(request);
+
+      // Verify rate limit was called with userId
+      expect(chatRateLimit.limit).toHaveBeenCalledWith("test-user-id");
+    });
   });
 
   describe("POST /api/chat", () => {

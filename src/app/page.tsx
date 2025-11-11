@@ -17,7 +17,20 @@ export default function LandingPage() {
 
         <div className="flex flex-col items-center gap-4">
           <SignedOut>
-            <AuthControls />
+            <div className="flex flex-col items-center gap-4">
+              <AuthControls />
+              <div className="flex items-center gap-3">
+                <div className="bg-muted-foreground h-px w-12" />
+                <span className="text-muted-foreground text-sm">or</span>
+                <div className="bg-muted-foreground h-px w-12" />
+              </div>
+              <Link
+                href="/roadmap"
+                className="rounded-md border border-slate-600 px-6 py-3 text-sm font-semibold text-slate-300 shadow-sm transition hover:bg-slate-800 hover:text-white"
+              >
+                Browse as Guest
+              </Link>
+            </div>
           </SignedOut>
 
           <SignedIn>

@@ -31,7 +31,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Settings, Home } from "lucide-react";
 import Link from "next/link";
+import { SignInButton } from "@clerk/nextjs";
 import type { Roadmap } from "@/data/types/roadmap";
+import { logger } from "@/lib/logger";
 import {
   calculateChildOffsets,
   calculateChildPosition,
@@ -397,10 +399,10 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
         />
       </ReactFlow>
 
-      {userProfile && (
-        <div className="pointer-events-none absolute top-0 right-0 flex w-full justify-end p-4 md:pt-10 md:pr-10 md:pl-0">
-          <div className="pointer-events-auto">
-            <Card className="bg-background/95 supports-[backdrop-filter]:bg-background/80 p-4 backdrop-blur">
+      <div className="pointer-events-none absolute top-0 right-0 flex w-full justify-end p-4 md:pt-10 md:pr-10 md:pl-0">
+        <div className="pointer-events-auto">
+          {userProfile ? (
+            <Card className="bg-background/95 supports-[backdrop-filter]:bg-background/80 min-h-[140px] p-4 backdrop-blur">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
@@ -430,9 +432,46 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
                 </div>
               </div>
             </Card>
-          </div>
+          ) : (
+            <Card className="bg-background/95 supports-[backdrop-filter]:bg-background/80 min-h-[140px] p-4 backdrop-blur">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="default"
+                    className="bg-yellow-500/20 text-yellow-700 ring-yellow-500/30 dark:text-yellow-300"
+                  >
+                    Guest Mode
+                  </Badge>
+                </div>
+                <p className="text-muted-foreground max-w-xs text-xs">
+                  Sign in to save your progress and get personalized
+                  recommendations
+                </p>
+                <div className="flex gap-2">
+                  <SignInButton mode="modal">
+                    <Button
+                      size="sm"
+                      className="h-8 flex-1 bg-teal-500 hover:bg-teal-400"
+                      onClick={() =>
+                        logger.info("Guest clicked sign in from roadmap", {
+                          source: "roadmap_profile_card",
+                        })
+                      }
+                    >
+                      Sign In
+                    </Button>
+                  </SignInButton>
+                  <Link href="/">
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <Home className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </Card>
+          )}
         </div>
-      )}
+      </div>
 
       {selectedContent && selectedNodeId && (
         <div className="pointer-events-none absolute top-0 left-0 flex w-full justify-start p-4 md:pt-10 md:pr-0 md:pl-10">
