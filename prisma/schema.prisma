@@ -106,3 +106,83 @@ model NodeProgress {
   @@unique([userId, roadmapId, nodeId])
   @@index([userId, roadmapId])
 }
+
+model ChatSession {
+  id        String        @id @default(cuid())
+  userId    String
+  roadmapId String?
+  startedAt DateTime      @default(now())
+  endedAt   DateTime?
+  messages  ChatMessage[]
+  qaPairs   QAPair[]
+
+  @@index([userId, startedAt])
+  @@index([endedAt])
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String
+  content   String      @db.Text
+  metadata  Json?
+  createdAt DateTime    @default(now())
+
+  @@index([sessionId, createdAt])
+}
+
+model FAQCategory {
+  id           String     @id @default(cuid())
+  name         String     @unique
+  description  String?
+  roadmapId    String?
+  displayOrder Int        @default(0)
+  createdAt    DateTime   @default(now())
+  qaPairs      QAPair[]
+  faqEntries   FAQEntry[]
+
+  @@index([roadmapId])
+  @@index([displayOrder])
+}
+
+model QAPair {
+  id         String       @id @default(cuid())
+  sessionId  String
+  session    ChatSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question   String       @db.Text
+  answer     String       @db.Text
+  messageIds String[]
+  categoryId String?
+  category   FAQCategory? @relation(fields: [categoryId], references: [id])
+  clusterId  String?
+  embedding  Json?
+  frequency  Int          @default(1)
+  isGlobal   Boolean      @default(false)
+  confidence Float?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([sessionId])
+  @@index([categoryId])
+  @@index([clusterId])
+}
+
+model FAQEntry {
+  id              String      @id @default(cuid())
+  categoryId      String
+  category        FAQCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  question        String      @db.Text
+  answer          String      @db.Text
+  variations      String[]
+  sourceQAPairIds String[]
+  frequency       Int         @default(1)
+  isGlobal        Boolean     @default(false)
+  displayOrder    Int         @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([categoryId])
+  @@index([isGlobal])
+  @@index([displayOrder])
+}
