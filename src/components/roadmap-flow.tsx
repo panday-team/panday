@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, SetStateAction } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -29,7 +29,7 @@ import { ChatWidget } from "@/components/chat/chat-widget";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, Home } from "lucide-react";
+import { Settings, Home, BookOpenText } from "lucide-react";
 import Link from "next/link";
 import { SignInButton } from "@clerk/nextjs";
 import type { Roadmap } from "@/data/types/roadmap";
@@ -52,7 +52,12 @@ import {
   LEVEL_METADATA,
 } from "@/lib/profile-types";
 import { calculateViewportForNode } from "@/lib/viewport-utils";
+import { nullable } from "zod";
 
+import useLocalStorage from "./local-storage";
+
+import RoadmapTutorialWidget from "./roadmap-tutorial";
+import { C } from "vitest/dist/chunks/reporters.d.BFLkQcL6.js";
 type FlowNode = HubNodeType | ChecklistNodeType | TerminalNodeType;
 type FlowEdge = Edge;
 
@@ -95,6 +100,24 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
   const [nodeStatuses, setNodeStatuses] = useState<Record<string, NodeStatus>>(
     {},
   );
+
+  const [showTutorial, setShowTutorial] = useState<boolean>(false);
+  const tutorialKey = `${userProfile?.clerkUserId || "guest-account"}:tutorial-finished`;
+  // use the users id to identify if they have completed the tutorial already.
+  const { getItem: getTutorialCompleted, setItem: setTutorialCompleted } =
+    useLocalStorage(tutorialKey);
+
+  // check local storage when roadmap renders
+  useEffect(() => {
+    const tutorialCompleted = getTutorialCompleted();
+    // console.log(`Showed Tutorial: ${tutorialCompleted || false}`);
+
+    if (!tutorialCompleted) {
+      setTutorialCompleted("burger ate");
+      return setShowTutorial(true);
+    }
+    // console.log(`Showed : ${tutorialCompleted || false}`);
+  }, [getTutorialCompleted, setTutorialCompleted]);
 
   // Load statuses from database on mount, with localStorage fallback
   useEffect(() => {
@@ -347,6 +370,12 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
     );
   }, [setNodes]);
 
+  const handleTutorialClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    console.log("smash burger");
+    setShowTutorial(true);
+  };
+
   const handleStatusChange = useCallback(
     (nodeId: string, status: NodeStatus) => {
       // Update localStorage immediately (returns void, database update happens in background)
@@ -401,6 +430,14 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
 
       <div className="pointer-events-none absolute top-0 right-0 flex w-full justify-end p-4 md:pt-10 md:pr-10 md:pl-0">
         <div className="pointer-events-auto">
+          {showTutorial && (
+            <>
+              <RoadmapTutorialWidget
+                setShowTutorial={setShowTutorial}
+                showTutorial={showTutorial}
+              />
+            </>
+          )}
           {userProfile ? (
             <Card className="bg-background/95 supports-[backdrop-filter]:bg-background/80 min-h-[140px] p-4 backdrop-blur">
               <div className="flex items-start justify-between gap-4">
@@ -419,6 +456,16 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
                   </p>
                 </div>
                 <div className="flex gap-1">
+                  <div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={handleTutorialClick}
+                    >
+                      <BookOpenText className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <Link href="/">
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                       <Home className="h-4 w-4" />
