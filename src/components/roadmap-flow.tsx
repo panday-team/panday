@@ -102,7 +102,7 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
   );
 
   const [showTutorial, setShowTutorial] = useState<boolean>(false);
-  const tutorialKey = `${userProfile?.clerkUserId || "guest-account"}:tutorial-finished`;
+  const tutorialKey = `${userProfile?.clerkUserId ?? "guest-account"}:tutorial-finished`;
   // use the users id to identify if they have completed the tutorial already.
   const { getItem: getTutorialCompleted, setItem: setTutorialCompleted } =
     useLocalStorage(tutorialKey);
