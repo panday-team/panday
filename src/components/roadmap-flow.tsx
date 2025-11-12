@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, SetStateAction } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -63,7 +63,7 @@ import {
   LEVEL_METADATA,
 } from "@/lib/profile-types";
 import { calculateViewportForNode } from "@/lib/viewport-utils";
-import { calculateNodeProgress } from "@/lib/progress-utils";
+import { nullable } from "zod";
 
 type FlowNode =
   | HubNodeType
@@ -975,6 +975,14 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
 
       <div className="pointer-events-none absolute top-0 right-0 flex w-full justify-end p-4 md:pt-10 md:pr-10 md:pl-0">
         <div className="pointer-events-auto">
+          {showTutorial && (
+            <>
+              <RoadmapTutorialWidget
+                setShowTutorial={setShowTutorial}
+                showTutorial={showTutorial}
+              />
+            </>
+          )}
           {userProfile ? (
             <Card className="bg-background/95 supports-[backdrop-filter]:bg-background/80 p-4 backdrop-blur">
               <div className="flex items-start justify-between gap-4">
