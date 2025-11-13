@@ -39,9 +39,18 @@ interface SubnodeConfig {
   labelPosition?: "left" | "right" | "top" | "bottom";
 }
 
+interface CategoryConfig {
+  id: string;
+  type: "category";
+  title: string;
+  icon: "brain" | "clipboard-list" | "traffic-cone";
+  nodes: SubnodeConfig[];
+}
+
 interface ChecklistFrontmatter {
   milestoneId: string;
-  nodes: SubnodeConfig[];
+  nodes?: SubnodeConfig[]; // Legacy format (flat)
+  categories?: CategoryConfig[]; // New format (nested)
 }
 
 interface GraphNode {
@@ -50,6 +59,7 @@ interface GraphNode {
   sourcePosition?: "top" | "bottom" | "left" | "right";
   targetPosition?: "top" | "bottom" | "left" | "right";
   parentId?: string;
+  categoryId?: string;
 }
 
 interface GraphEdge {
@@ -69,8 +79,11 @@ interface RoadmapGraph {
 interface SimNode extends SimulationNodeDatum {
   id: string;
   isMainNode: boolean;
+  isCategoryNode?: boolean;
   parentId?: string;
+  categoryId?: string;
   labelPosition?: string;
+  icon?: string;
   fx?: number | null;
   fy?: number | null;
 }
@@ -202,8 +215,9 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
 
   validationErrors.push(...validateNodePositions(nodesToValidate));
 
-  // Load checklist nodes
+  // Load checklist nodes (with backward compatibility for flat structure)
   const checklistRefs: Array<{ fileName: string; parentId: string }> = [];
+  const categoriesByParent = new Map<string, CategoryConfig[]>();
 
   for (const file of checklistFiles) {
     const checklist = await loadChecklistContent(roadmapId, file);
@@ -214,20 +228,161 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
 
     if (!allNodeIds.has(parentId)) continue;
 
-    subnodesByParent.set(parentId, checklist.nodes);
-    checklist.nodes.forEach((node) => allNodeIds.add(node.id));
+    // Handle new nested categories format
+    if (checklist.categories && checklist.categories.length > 0) {
+      categoriesByParent.set(parentId, checklist.categories);
+      // Add category IDs to allNodeIds
+      checklist.categories.forEach((category) => {
+        allNodeIds.add(category.id);
+        // Add checklist node IDs
+        category.nodes.forEach((node) => allNodeIds.add(node.id));
+      });
+    }
+    // Fall back to legacy flat structure
+    else if (checklist.nodes && checklist.nodes.length > 0) {
+      subnodesByParent.set(parentId, checklist.nodes);
+      checklist.nodes.forEach((node) => allNodeIds.add(node.id));
+    }
   }
 
   validationErrors.push(...validateParentReferences(checklistRefs, allNodeIds));
 
-  // Create subnode simulation nodes with circular positioning around parent
-  for (const [parentId, subnodes] of subnodesByParent) {
+  // Node dimensions (from component definitions)
+  const hubNodeSize = 128; // h-32 w-32 = 128px
+  const categoryNodeSize = 96; // h-24 w-24 = 96px
+  const checklistNodeSize = 64; // h-16 w-16 = 64px
+
+  // Create category and checklist nodes with 3-level hierarchy
+  for (const [parentId, categories] of categoriesByParent) {
     const parentLayout = nodeLayouts.get(parentId);
     if (!parentLayout) continue;
 
-    // Node dimensions (from component definitions)
-    const hubNodeSize = 128; // h-32 w-32 = 128px
-    const checklistNodeSize = 64; // h-16 w-16 = 64px
+    // Calculate center of hub node (React Flow positions are top-left corner)
+    const parentCenterX = parentLayout.position.x + hubNodeSize / 2;
+    const parentCenterY = parentLayout.position.y + hubNodeSize / 2;
+
+    // Position categories in inner ring around hub
+    const categoryRadius = 200; // Distance from hub center to category centers
+
+    // Fixed angles for each category type (in degrees, converted to radians)
+    const categoryAngles: Record<string, number> = {
+      resources: (210 * Math.PI) / 180, // Bottom-left
+      actions: (330 * Math.PI) / 180, // Bottom-right
+    };
+
+    categories.forEach((category) => {
+      // Determine angle based on category title/id
+      const categoryKey = category.title.toLowerCase().includes("resource")
+        ? "resources"
+        : category.title.toLowerCase().includes("action") ||
+            category.title.toLowerCase().includes("checklist")
+          ? "actions"
+          : "roadblocks";
+
+      let categoryX: number;
+      let categoryY: number;
+
+      if (categoryKey === "roadblocks") {
+        // Position roadblocks on the path to the next hub node
+        const nextHubId = parentLayout.connectsTo?.[0];
+        if (nextHubId) {
+          const nextHubLayout = nodeLayouts.get(nextHubId);
+          if (nextHubLayout) {
+            // Calculate position halfway between current and next hub
+            const nextHubCenterX = nextHubLayout.position.x + hubNodeSize / 2;
+            const nextHubCenterY = nextHubLayout.position.y + hubNodeSize / 2;
+
+            // Position at 40% of the way from parent to next hub (closer to parent)
+            const t = 0.4;
+            const categoryCenterX = parentCenterX + (nextHubCenterX - parentCenterX) * t;
+            const categoryCenterY = parentCenterY + (nextHubCenterY - parentCenterY) * t;
+
+            categoryX = categoryCenterX - categoryNodeSize / 2;
+            categoryY = categoryCenterY - categoryNodeSize / 2;
+          } else {
+            // Fallback: position above the hub if no next hub found
+            categoryX = parentCenterX - categoryNodeSize / 2;
+            categoryY = parentCenterY - 200 - categoryNodeSize / 2;
+          }
+        } else {
+          // No next hub (terminal node), position above
+          categoryX = parentCenterX - categoryNodeSize / 2;
+          categoryY = parentCenterY - 200 - categoryNodeSize / 2;
+        }
+      } else {
+        // Resources and Actions: circular positioning
+        const angle = categoryAngles[categoryKey] ?? 0;
+        const categoryCenterX = parentCenterX + categoryRadius * Math.cos(angle);
+        const categoryCenterY = parentCenterY + categoryRadius * Math.sin(angle);
+        categoryX = categoryCenterX - categoryNodeSize / 2;
+        categoryY = categoryCenterY - categoryNodeSize / 2;
+      }
+
+      simNodes.push({
+        id: category.id,
+        isMainNode: false,
+        isCategoryNode: true,
+        parentId: parentId,
+        icon: category.icon,
+        x: categoryX,
+        y: categoryY,
+        fx: categoryX, // Fix position
+        fy: categoryY, // Fix position
+      });
+
+      simLinks.push({
+        source: parentId,
+        target: category.id,
+      });
+
+      // Position checklist nodes in outer ring around each category
+      const checklistRadius = 150; // Distance from category center to checklist centers
+      const totalChecklists = category.nodes.length;
+      const angleStep = (2 * Math.PI) / totalChecklists; // Divide circle evenly
+      const startAngle = -Math.PI / 2; // Start at top (12 o'clock position)
+
+      // Calculate category center from top-left position
+      const categoryCenterX = categoryX + categoryNodeSize / 2;
+      const categoryCenterY = categoryY + categoryNodeSize / 2;
+
+      category.nodes.forEach((checklistNode, index) => {
+        const checklistAngle = startAngle + index * angleStep;
+
+        // Calculate position of checklist center on the circle
+        const checklistCenterX =
+          categoryCenterX + checklistRadius * Math.cos(checklistAngle);
+        const checklistCenterY =
+          categoryCenterY + checklistRadius * Math.sin(checklistAngle);
+
+        // Convert from center position to top-left position for React Flow
+        const checklistX = checklistCenterX - checklistNodeSize / 2;
+        const checklistY = checklistCenterY - checklistNodeSize / 2;
+
+        simNodes.push({
+          id: checklistNode.id,
+          isMainNode: false,
+          isCategoryNode: false,
+          parentId: category.id, // Parent is the category
+          categoryId: category.id, // Track which category this belongs to
+          labelPosition: checklistNode.labelPosition,
+          x: checklistX,
+          y: checklistY,
+          fx: checklistX, // Fix position
+          fy: checklistY, // Fix position
+        });
+
+        simLinks.push({
+          source: category.id,
+          target: checklistNode.id,
+        });
+      });
+    });
+  }
+
+  // Handle legacy flat structure (backward compatibility)
+  for (const [parentId, subnodes] of subnodesByParent) {
+    const parentLayout = nodeLayouts.get(parentId);
+    if (!parentLayout) continue;
 
     // Calculate center of hub node (React Flow positions are top-left corner)
     const parentCenterX = parentLayout.position.x + hubNodeSize / 2;
@@ -326,6 +481,7 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
     sourcePosition: "bottom" as const,
     targetPosition: "top" as const,
     parentId: simNode.parentId,
+    categoryId: simNode.categoryId,
   }));
 
   // Create edges with proper handles
@@ -347,7 +503,37 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
     }
   }
 
-  // Subnode edges
+  // Category and checklist edges (3-level hierarchy)
+  for (const [parentId, categories] of categoriesByParent) {
+    for (const category of categories) {
+      // Hub → Category edges
+      edges.push({
+        id: `edge-${parentId}-${category.id}`,
+        source: parentId,
+        target: category.id,
+        sourceHandle: "bottom-source",
+        targetHandle: "top-target",
+        type: "default",
+      });
+
+      // Category → Checklist edges
+      for (const checklistNode of category.nodes) {
+        const handles = getHandlesForPosition(
+          checklistNode.labelPosition ?? "left",
+        );
+        edges.push({
+          id: `edge-${category.id}-${checklistNode.id}`,
+          source: category.id,
+          target: checklistNode.id,
+          sourceHandle: handles.sourceHandle,
+          targetHandle: handles.targetHandle,
+          type: "default",
+        });
+      }
+    }
+  }
+
+  // Subnode edges (legacy flat structure)
   for (const [parentId, subnodes] of subnodesByParent) {
     for (const subnode of subnodes) {
       const handles = getHandlesForPosition(subnode.labelPosition ?? "left");

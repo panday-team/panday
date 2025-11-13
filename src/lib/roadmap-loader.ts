@@ -178,13 +178,46 @@ async function loadChecklistNodes(
   try {
     const fileContents = await fs.readFile(contentPath, "utf-8");
     const parsed = matter(fileContents);
-    const nodes = (parsed.data.nodes ?? []) as Array<{
+
+    // Handle new nested categories format
+    interface CategoryData {
+      id: string;
+      type: string;
+      title: string;
+      icon: string;
+      nodes: Array<{
+        id: string;
+        type: string;
+        title: string;
+        nodeType: string;
+        labelPosition?: string;
+      }>;
+    }
+
+    let nodes: Array<{
       id: string;
       type: string;
       title: string;
       nodeType: string;
       labelPosition?: string;
-    }>;
+    }> = [];
+
+    // Check for new nested categories format
+    if (parsed.data.categories) {
+      const categories = parsed.data.categories as CategoryData[];
+      // Flatten all nodes from all categories
+      nodes = categories.flatMap((category) => category.nodes);
+    }
+    // Fall back to old flat nodes format for backward compatibility
+    else if (parsed.data.nodes) {
+      nodes = parsed.data.nodes as Array<{
+        id: string;
+        type: string;
+        title: string;
+        nodeType: string;
+        labelPosition?: string;
+      }>;
+    }
 
     // Split content by markdown separators (---)
     const contentSections = parsed.content

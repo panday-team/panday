@@ -1,21 +1,36 @@
 ---
 milestoneId: "direct-entry"
-nodes:
-  - id: "direct-entry-req-sponsor"
-    type: "checklist"
-    title: "Employer Sponsor Required"
-    nodeType: "checklist"
-    labelPosition: "left"
-  - id: "direct-entry-benefit-earnings"
-    type: "checklist"
-    title: "Immediate Earnings"
-    nodeType: "checklist"
-    labelPosition: "right"
-  - id: "direct-entry-resource-jobsearch"
-    type: "checklist"
-    title: "Find Electrical Employers"
-    nodeType: "checklist"
-    labelPosition: "right"
+categories:
+  - id: "direct-entry-resources"
+    type: "category"
+    title: "Resources"
+    icon: "brain"
+    nodes:
+      - id: "direct-entry-resource-jobsearch"
+        type: "checklist"
+        title: "Find Electrical Employers"
+        nodeType: "checklist"
+        labelPosition: "right"
+  - id: "direct-entry-actions"
+    type: "category"
+    title: "Actions"
+    icon: "clipboard-list"
+    nodes:
+      - id: "direct-entry-req-sponsor"
+        type: "checklist"
+        title: "Employer Sponsor Required"
+        nodeType: "checklist"
+        labelPosition: "left"
+      - id: "direct-entry-benefit-earnings"
+        type: "checklist"
+        title: "Immediate Earnings"
+        nodeType: "checklist"
+        labelPosition: "right"
+  - id: "direct-entry-roadblocks"
+    type: "category"
+    title: "Roadblocks"
+    icon: "traffic-cone"
+    nodes: []
 ---
 
 # Employer Sponsor Required

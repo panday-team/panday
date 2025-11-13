@@ -1,21 +1,36 @@
 ---
 milestoneId: "ace-it-program"
-nodes:
-  - id: "ace-it-req-highschool"
-    type: "checklist"
-    title: "High School Enrollment"
-    nodeType: "checklist"
-    labelPosition: "left"
-  - id: "ace-it-benefit-dualcredit"
-    type: "checklist"
-    title: "Dual Credit System"
-    nodeType: "checklist"
-    labelPosition: "right"
-  - id: "ace-it-resource-youthprograms"
-    type: "checklist"
-    title: "Youth Programs"
-    nodeType: "checklist"
-    labelPosition: "right"
+categories:
+  - id: "ace-it-program-resources"
+    type: "category"
+    title: "Resources"
+    icon: "brain"
+    nodes:
+      - id: "ace-it-resource-youthprograms"
+        type: "checklist"
+        title: "Youth Programs"
+        nodeType: "checklist"
+        labelPosition: "right"
+  - id: "ace-it-program-actions"
+    type: "category"
+    title: "Actions"
+    icon: "clipboard-list"
+    nodes:
+      - id: "ace-it-req-highschool"
+        type: "checklist"
+        title: "High School Enrollment"
+        nodeType: "checklist"
+        labelPosition: "left"
+      - id: "ace-it-benefit-dualcredit"
+        type: "checklist"
+        title: "Dual Credit System"
+        nodeType: "checklist"
+        labelPosition: "right"
+  - id: "ace-it-program-roadblocks"
+    type: "category"
+    title: "Roadblocks"
+    icon: "traffic-cone"
+    nodes: []
 ---
 
 # High School Enrollment

@@ -20,6 +20,9 @@ import {
   HubNode,
   ChecklistNode,
   TerminalNode,
+  ResourcesNode,
+  ActionsNode,
+  RoadblocksNode,
   type HubNodeType,
   type ChecklistNodeType,
   type TerminalNodeType,
@@ -151,12 +154,42 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
     //build nodes from graph/content
     const builtNodes: FlowNode[] = roadmap.graph.nodes.map((graphNode) => {
       const content = roadmap.content.get(graphNode.id);
-      if (!content) {
+
+      // Category nodes don't have markdown content files
+      const isCategoryNode = graphNode.id.includes("-resources") ||
+                            graphNode.id.includes("-actions") ||
+                            graphNode.id.includes("-roadblocks");
+
+      if (!content && !isCategoryNode) {
         throw new Error(`Content not found for node: ${graphNode.id}`);
       }
 
-      const { frontmatter } = content;
       const isMainNode = !graphNode.parentId;
+
+      // For category nodes, determine type and label from ID
+      let nodeType: string;
+      let nodeLabel: string;
+      let nodeIcon: "brain" | "clipboard-list" | "traffic-cone" | undefined;
+
+      if (isCategoryNode) {
+        if (graphNode.id.includes("-resources")) {
+          nodeType = "resources";
+          nodeLabel = "Resources";
+          nodeIcon = "brain";
+        } else if (graphNode.id.includes("-actions")) {
+          nodeType = "actions";
+          nodeLabel = "Actions";
+          nodeIcon = "clipboard-list";
+        } else {
+          nodeType = "roadblocks";
+          nodeLabel = "Roadblocks";
+          nodeIcon = "traffic-cone";
+        }
+      } else {
+        const { frontmatter } = content!;
+        nodeType = frontmatter.type;
+        nodeLabel = frontmatter.title;
+      }
 
       // Determine if this node should be auto-completed based on user profile
       const isCompletedByProfile = completedLevelIds.includes(graphNode.id);
@@ -171,13 +204,14 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
 
       return {
         id: graphNode.id,
-        type: frontmatter.type,
+        type: nodeType,
         position: graphNode.position,
         data: {
-          label: frontmatter.title,
-          glow: frontmatter.glow ?? isCurrentLevel,
-          labelPosition: frontmatter.labelPosition,
-          showLabelDot: frontmatter.showLabelDot,
+          label: nodeLabel,
+          icon: nodeIcon,
+          glow: content?.frontmatter.glow ?? isCurrentLevel,
+          labelPosition: content?.frontmatter.labelPosition,
+          showLabelDot: content?.frontmatter.showLabelDot,
           parentId: graphNode.parentId,
           status: nodeStatus,
           isCurrentLevel,
@@ -242,24 +276,35 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
 
   const updateChildrenPositions = useCallback(
     (parentId: string, parentX: number, parentY: number, smooth = false) => {
-      setNodes((currentNodes) =>
-        currentNodes.map((node) => {
-          const offset = childOffsets.get(node.id);
-          if (offset && offset.parentId === parentId) {
-            const targetPosition = {
-              x: parentX + offset.offsetX,
-              y: parentY + offset.offsetY,
-            };
-            const newPosition = calculateChildPosition(
-              node.position,
-              targetPosition,
-              smooth,
-            );
-            return { ...node, position: newPosition };
-          }
-          return node;
-        }),
-      );
+      setNodes((currentNodes) => {
+        const updatedNodes = new Map(currentNodes.map(n => [n.id, n]));
+
+        // Recursively update children and their descendants
+        const updateNodeAndDescendants = (nodeId: string, newX: number, newY: number) => {
+          // Find all direct children of this node
+          currentNodes.forEach((node) => {
+            const offset = childOffsets.get(node.id);
+            if (offset && offset.parentId === nodeId) {
+              const targetPosition = {
+                x: newX + offset.offsetX,
+                y: newY + offset.offsetY,
+              };
+              const newPosition = calculateChildPosition(
+                node.position,
+                targetPosition,
+                smooth,
+              );
+              updatedNodes.set(node.id, { ...node, position: newPosition });
+
+              // Recursively update this node's children
+              updateNodeAndDescendants(node.id, newPosition.x, newPosition.y);
+            }
+          });
+        };
+
+        updateNodeAndDescendants(parentId, parentX, parentY);
+        return Array.from(updatedNodes.values());
+      });
     },
     [childOffsets, setNodes],
   );
@@ -304,14 +349,22 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
     (_event: React.MouseEvent, node: FlowNodeType) => {
       isDraggingRef.current = null;
 
-      nodes.forEach((childNode) => {
-        const offset = childOffsets.get(childNode.id);
-        if (offset && offset.parentId === node.id) {
-          const targetX = node.position.x + offset.offsetX;
-          const targetY = node.position.y + offset.offsetY;
-          animateChildToTarget(childNode.id, targetX, targetY);
-        }
-      });
+      // Recursively animate all descendants
+      const animateNodeAndDescendants = (nodeId: string, nodeX: number, nodeY: number) => {
+        nodes.forEach((childNode) => {
+          const offset = childOffsets.get(childNode.id);
+          if (offset && offset.parentId === nodeId) {
+            const targetX = nodeX + offset.offsetX;
+            const targetY = nodeY + offset.offsetY;
+            animateChildToTarget(childNode.id, targetX, targetY);
+
+            // Recursively animate this child's descendants
+            animateNodeAndDescendants(childNode.id, targetX, targetY);
+          }
+        });
+      };
+
+      animateNodeAndDescendants(node.id, node.position.x, node.position.y);
     },
     [nodes, childOffsets, animateChildToTarget],
   );
@@ -329,6 +382,10 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
       hub: HubNode,
       checklist: ChecklistNode,
       terminal: TerminalNode,
+      category: ResourcesNode, // Will be determined dynamically in node creation
+      resources: ResourcesNode,
+      actions: ActionsNode,
+      roadblocks: RoadblocksNode,
       requirement: HubNode,
       portal: HubNode,
       checkpoint: HubNode,

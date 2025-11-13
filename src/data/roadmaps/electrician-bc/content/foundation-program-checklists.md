@@ -1,21 +1,36 @@
 ---
 milestoneId: "foundation-program"
-nodes:
-  - id: "foundation-req-education"
-    type: "checklist"
-    title: "Grade 12 Recommended"
-    nodeType: "checklist"
-    labelPosition: "left"
-  - id: "foundation-benefit-credits"
-    type: "checklist"
-    title: "Level 1 Credit + 375 Hours"
-    nodeType: "checklist"
-    labelPosition: "right"
-  - id: "foundation-resource-providers"
-    type: "checklist"
-    title: "Training Providers"
-    nodeType: "checklist"
-    labelPosition: "right"
+categories:
+  - id: "foundation-program-resources"
+    type: "category"
+    title: "Resources"
+    icon: "brain"
+    nodes:
+      - id: "foundation-resource-providers"
+        type: "checklist"
+        title: "Training Providers"
+        nodeType: "checklist"
+        labelPosition: "right"
+  - id: "foundation-program-actions"
+    type: "category"
+    title: "Actions"
+    icon: "clipboard-list"
+    nodes:
+      - id: "foundation-req-education"
+        type: "checklist"
+        title: "Grade 12 Recommended"
+        nodeType: "checklist"
+        labelPosition: "left"
+      - id: "foundation-benefit-credits"
+        type: "checklist"
+        title: "Level 1 Credit + 375 Hours"
+        nodeType: "checklist"
+        labelPosition: "right"
+  - id: "foundation-program-roadblocks"
+    type: "category"
+    title: "Roadblocks"
+    icon: "traffic-cone"
+    nodes: []
 ---
 
 # Grade 12 Recommended
