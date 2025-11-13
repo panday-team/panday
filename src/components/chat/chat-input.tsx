@@ -9,6 +9,7 @@ export default function ChatInput() {
     useChat({ api: "http://localhost:3000/api/chat" });
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -43,6 +44,7 @@ export default function ChatInput() {
         <div className="rounded-md bg-white dark:bg-gray-800">
           <div>
             <Input
+              ref={chatInputRef}
               type="text"
               placeholder="Chat with AI!"
               disabled={isLoading}
