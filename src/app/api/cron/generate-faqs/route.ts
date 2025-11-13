@@ -1,4 +1,4 @@
-import { streamText } from "ai";
+import { generateObject } from "ai";
 import type { NextRequest } from "next/server";
 
 import { getChatModel } from "@/lib/ai-model";
@@ -7,14 +7,24 @@ import { db } from "@/server/db";
 import { requireCronAuth } from "@/server/cron-auth";
 
 import type { QAPair } from "@prisma/client";
+import { z } from "zod";
 
 const CLUSTER_BATCH_SIZE = 10;
 
 type ConsolidatedFAQ = {
-  question?: string;
-  answer?: string;
+  question: string;
+  answer: string;
   variations?: string[];
 };
+
+const ConsolidatedFAQSchema = z.object({
+  question: z.string().min(1).describe("Canonical concise question"),
+  answer: z.string().min(1).describe("Comprehensive merged answer"),
+  variations: z
+    .array(z.string().min(1))
+    .optional()
+    .describe("Optional alternative phrasings"),
+});
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -121,20 +131,26 @@ Produce ONLY valid JSON:
 }
 `;
 
-  const completion = streamText({
-    model: getChatModel(),
-    system: "You merge similar FAQs into a single definitive answer.",
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.25,
-    maxTokens: 1024,
-  });
-
-  const response = await completion.text;
-
   try {
-    return JSON.parse(response) as ConsolidatedFAQ;
+    const completion = await generateObject({
+      model: getChatModel(),
+      system: "You merge similar FAQs into a single definitive answer.",
+      prompt,
+      schema: ConsolidatedFAQSchema,
+      temperature: 0.25,
+      maxTokens: 1024,
+    });
+
+    logger.info("Consolidated FAQ cluster", {
+      clusterSize: qaPairs.length,
+      preview: completion.object.question.slice(0, 120),
+    });
+
+    return completion.object;
   } catch (error) {
-    logger.error("Failed to parse consolidated FAQ response", error, { response });
+    logger.error("Failed to consolidate FAQ cluster", error, {
+      promptPreview: prompt.slice(0, 500),
+    });
     throw error;
   }
 }

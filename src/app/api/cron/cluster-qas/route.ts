@@ -8,7 +8,7 @@ import { db } from "@/server/db";
 import { requireCronAuth } from "@/server/cron-auth";
 
 import { Prisma } from "@prisma/client";
-import type { QAPair } from "@prisma/client";
+import type { FAQCategory, QAPair } from "@prisma/client";
 
 const EMBEDDING_BATCH_SIZE = 25;
 const CLUSTER_SAMPLE_SIZE = 200;
@@ -22,8 +22,14 @@ export async function GET(request: NextRequest) {
   if (unauthorized) return unauthorized;
 
   const embeddingModel = getEmbeddingModel();
+  const globalCategory = await getOrCreateGlobalCategory();
+  const { count: assignedGlobal } = await db.qAPair.updateMany({
+    where: { categoryId: null },
+    data: { categoryId: globalCategory.id },
+  });
+
   const qasWithoutEmbedding = await db.qAPair.findMany({
-    where: { embedding: { equals: Prisma.JsonNull } },
+    where: { embedding: { equals: Prisma.DbNull } },
     orderBy: { createdAt: "asc" },
     take: EMBEDDING_BATCH_SIZE,
   });
@@ -48,7 +54,7 @@ export async function GET(request: NextRequest) {
     where: {
       clusterId: null,
       categoryId: { not: null },
-      NOT: { embedding: { equals: Prisma.JsonNull } },
+      NOT: { embedding: { equals: Prisma.DbNull } },
     },
     orderBy: { createdAt: "asc" },
     take: CLUSTER_SAMPLE_SIZE,
@@ -67,6 +73,25 @@ export async function GET(request: NextRequest) {
   return Response.json({
     embeddingsGenerated: qasWithoutEmbedding.length,
     clustersCreated: clusters.length,
+    globalAssignments: assignedGlobal,
+  });
+}
+
+const GLOBAL_CATEGORY_NAME = "Global";
+
+async function getOrCreateGlobalCategory(): Promise<FAQCategory> {
+  const existing = await db.fAQCategory.findFirst({
+    where: { name: GLOBAL_CATEGORY_NAME, roadmapId: null },
+  });
+
+  if (existing) return existing;
+
+  return db.fAQCategory.create({
+    data: {
+      name: GLOBAL_CATEGORY_NAME,
+      description: "Catch-all for uncategorized questions",
+      roadmapId: null,
+    },
   });
 }
 
