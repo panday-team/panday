@@ -4,13 +4,14 @@ import { BaseNode } from "@/components/base-node";
 import { NodeAppendix } from "@/components/node-appendix";
 import { motion, AnimatePresence } from "motion/react";
 import Image from "next/image";
-import { Brain, ClipboardList, TrafficCone, type LucideIcon } from "lucide-react";
+import { Brain, ClipboardList, TrafficCone, ChevronRight, type LucideIcon } from "lucide-react";
 
 export type CategoryNodeData = {
   label: string;
   icon?: "brain" | "clipboard-list" | "traffic-cone";
   color?: string;
   isSelected?: boolean;
+  isExpanded?: boolean;
 };
 
 export type CategoryNodeType = Node<CategoryNodeData, "category">;
@@ -31,6 +32,7 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
     icon = "brain",
     color = "#0077CC",
     isSelected,
+    isExpanded = false,
   } = data;
 
   const hiddenHandleClass =
@@ -100,6 +102,25 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
           className="pointer-events-none relative z-10 h-10 w-10 text-white"
           strokeWidth={2}
         />
+
+        {/* Expand/Collapse indicator */}
+        <motion.div
+          className="pointer-events-none absolute bottom-0 right-0 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-md"
+          animate={{
+            rotate: isExpanded ? 90 : 0,
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 300,
+            damping: 25,
+          }}
+        >
+          <ChevronRight
+            className="h-4 w-4"
+            style={{ color }}
+            strokeWidth={2.5}
+          />
+        </motion.div>
 
         {/* Mascot - only shown when node is selected */}
         <AnimatePresence mode="wait">

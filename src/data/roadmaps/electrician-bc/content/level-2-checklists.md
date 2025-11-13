@@ -4,6 +4,7 @@ categories:
   - id: "level-2-resources"
     type: "category"
     title: "Resources"
+    description: "Essential resources and information to help you understand and navigate Level 2 Electrician training"
     icon: "brain"
     nodes:
       - id: "level-2-resource-outline"
@@ -24,6 +25,7 @@ categories:
   - id: "level-2-actions"
     type: "category"
     title: "Actions"
+    description: "Key steps and requirements you need to complete to progress through Level 2"
     icon: "clipboard-list"
     nodes:
       - id: "level-2-req-level1"
@@ -69,6 +71,7 @@ categories:
   - id: "level-2-roadblocks"
     type: "category"
     title: "Roadblocks"
+    description: "Common challenges and obstacles you may encounter during Level 2, and how to overcome them"
     icon: "traffic-cone"
     nodes: []
 ---

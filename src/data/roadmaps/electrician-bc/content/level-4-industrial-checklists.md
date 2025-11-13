@@ -4,6 +4,7 @@ categories:
   - id: "level-4-industrial-resources"
     type: "category"
     title: "Resources"
+    description: "Essential resources and information to help you understand and navigate Level 4 Industrial Electrician training"
     icon: "brain"
     nodes:
       - id: "level-4-industrial-resource-profile"
@@ -19,6 +20,7 @@ categories:
   - id: "level-4-industrial-actions"
     type: "category"
     title: "Actions"
+    description: "Key steps and requirements you need to complete to progress through Level 4 Industrial Electrician training"
     icon: "clipboard-list"
     nodes:
       - id: "level-4-industrial-req-level3"
@@ -64,6 +66,7 @@ categories:
   - id: "level-4-industrial-roadblocks"
     type: "category"
     title: "Roadblocks"
+    description: "Common challenges and obstacles you may encounter during Level 4 Industrial Electrician training, and how to overcome them"
     icon: "traffic-cone"
     nodes: []
 ---

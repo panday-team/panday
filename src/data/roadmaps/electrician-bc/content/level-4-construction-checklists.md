@@ -4,6 +4,7 @@ categories:
   - id: "level-4-construction-resources"
     type: "category"
     title: "Resources"
+    description: "Essential resources and information to help you understand and navigate Level 4 Construction Electrician training"
     icon: "brain"
     nodes:
       - id: "level-4-construction-resource-profile"
@@ -19,6 +20,7 @@ categories:
   - id: "level-4-construction-actions"
     type: "category"
     title: "Actions"
+    description: "Key steps and requirements you need to complete to progress through Level 4 Construction Electrician training"
     icon: "clipboard-list"
     nodes:
       - id: "level-4-construction-req-level3"
@@ -64,6 +66,7 @@ categories:
   - id: "level-4-construction-roadblocks"
     type: "category"
     title: "Roadblocks"
+    description: "Common challenges and obstacles you may encounter during Level 4 Construction Electrician training, and how to overcome them"
     icon: "traffic-cone"
     nodes: []
 ---

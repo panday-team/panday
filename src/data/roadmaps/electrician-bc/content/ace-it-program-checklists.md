@@ -4,6 +4,7 @@ categories:
   - id: "ace-it-program-resources"
     type: "category"
     title: "Resources"
+    description: "Essential resources and information to help you understand and navigate the ACE IT Program"
     icon: "brain"
     nodes:
       - id: "ace-it-resource-youthprograms"
@@ -14,6 +15,7 @@ categories:
   - id: "ace-it-program-actions"
     type: "category"
     title: "Actions"
+    description: "Key steps and requirements you need to complete to progress through the ACE IT Program"
     icon: "clipboard-list"
     nodes:
       - id: "ace-it-req-highschool"
@@ -29,6 +31,7 @@ categories:
   - id: "ace-it-program-roadblocks"
     type: "category"
     title: "Roadblocks"
+    description: "Common challenges and obstacles you may encounter during the ACE IT Program, and how to overcome them"
     icon: "traffic-cone"
     nodes: []
 ---

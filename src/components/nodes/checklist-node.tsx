@@ -10,6 +10,7 @@ export type ChecklistNodeData = {
   labelPosition?: "top" | "bottom" | "left" | "right";
   status?: "base" | "in-progress" | "completed";
   isSelected?: boolean;
+  animationIndex?: number;
 };
 
 export type ChecklistNodeType = Node<ChecklistNodeData, "checklist">;
@@ -20,7 +21,7 @@ export type ChecklistNodeType = Node<ChecklistNodeData, "checklist">;
  * Features Obsidian-inspired physics-based floating animation
  */
 function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
-  const { label, status = "base", isSelected } = data;
+  const { label, status = "base", isSelected, animationIndex = 0 } = data;
   const hiddenHandleClass =
     "pointer-events-none opacity-0 h-3 w-3 bg-transparent border-transparent";
 
@@ -73,15 +74,17 @@ function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
+      initial={{ opacity: 0, scale: 0.3 }}
       animate={{
         opacity: 1,
         scale: 1,
       }}
+      exit={{ opacity: 0, scale: 0.3 }}
       transition={{
         type: "spring",
-        stiffness: 200,
+        stiffness: 260,
         damping: 20,
+        delay: animationIndex * 0.08, // Stagger delay for cascade effect
       }}
       whileHover={{
         scale: 1.1,

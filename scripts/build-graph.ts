@@ -261,17 +261,19 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
     const parentCenterX = parentLayout.position.x + hubNodeSize / 2;
     const parentCenterY = parentLayout.position.y + hubNodeSize / 2;
 
-    // Position categories in inner ring around hub
-    const categoryRadius = 200; // Distance from hub center to category centers
+    // Position categories around hub
+    const categoryRadius = 270; // Distance from hub center to category centers
 
     // Fixed angles for each category type (in degrees, converted to radians)
+    // Note: In screen coordinates, 0° = right, 90° = down, 180° = left, 270° = up
     const categoryAngles: Record<string, number> = {
       resources: (210 * Math.PI) / 180, // Bottom-left
       actions: (330 * Math.PI) / 180, // Bottom-right
+      roadblocks: (270 * Math.PI) / 180, // Top (directly above)
     };
 
     categories.forEach((category) => {
-      // Determine angle based on category title/id
+      // Determine category type based on title/id
       const categoryKey = category.title.toLowerCase().includes("resource")
         ? "resources"
         : category.title.toLowerCase().includes("action") ||
@@ -279,44 +281,14 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
           ? "actions"
           : "roadblocks";
 
-      let categoryX: number;
-      let categoryY: number;
+      // All categories use circular positioning around the hub
+      const angle = categoryAngles[categoryKey] ?? 0;
+      const categoryCenterX = parentCenterX + categoryRadius * Math.cos(angle);
+      const categoryCenterY = parentCenterY + categoryRadius * Math.sin(angle);
 
-      if (categoryKey === "roadblocks") {
-        // Position roadblocks on the path to the next hub node
-        const nextHubId = parentLayout.connectsTo?.[0];
-        if (nextHubId) {
-          const nextHubLayout = nodeLayouts.get(nextHubId);
-          if (nextHubLayout) {
-            // Calculate position halfway between current and next hub
-            const nextHubCenterX = nextHubLayout.position.x + hubNodeSize / 2;
-            const nextHubCenterY = nextHubLayout.position.y + hubNodeSize / 2;
-
-            // Position at 40% of the way from parent to next hub (closer to parent)
-            const t = 0.4;
-            const categoryCenterX = parentCenterX + (nextHubCenterX - parentCenterX) * t;
-            const categoryCenterY = parentCenterY + (nextHubCenterY - parentCenterY) * t;
-
-            categoryX = categoryCenterX - categoryNodeSize / 2;
-            categoryY = categoryCenterY - categoryNodeSize / 2;
-          } else {
-            // Fallback: position above the hub if no next hub found
-            categoryX = parentCenterX - categoryNodeSize / 2;
-            categoryY = parentCenterY - 200 - categoryNodeSize / 2;
-          }
-        } else {
-          // No next hub (terminal node), position above
-          categoryX = parentCenterX - categoryNodeSize / 2;
-          categoryY = parentCenterY - 200 - categoryNodeSize / 2;
-        }
-      } else {
-        // Resources and Actions: circular positioning
-        const angle = categoryAngles[categoryKey] ?? 0;
-        const categoryCenterX = parentCenterX + categoryRadius * Math.cos(angle);
-        const categoryCenterY = parentCenterY + categoryRadius * Math.sin(angle);
-        categoryX = categoryCenterX - categoryNodeSize / 2;
-        categoryY = categoryCenterY - categoryNodeSize / 2;
-      }
+      // Convert from center position to top-left position for React Flow
+      const categoryX = categoryCenterX - categoryNodeSize / 2;
+      const categoryY = categoryCenterY - categoryNodeSize / 2;
 
       simNodes.push({
         id: category.id,
@@ -341,9 +313,7 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
       const angleStep = (2 * Math.PI) / totalChecklists; // Divide circle evenly
       const startAngle = -Math.PI / 2; // Start at top (12 o'clock position)
 
-      // Calculate category center from top-left position
-      const categoryCenterX = categoryX + categoryNodeSize / 2;
-      const categoryCenterY = categoryY + categoryNodeSize / 2;
+      // Use the category center that was already calculated above
 
       category.nodes.forEach((checklistNode, index) => {
         const checklistAngle = startAngle + index * angleStep;

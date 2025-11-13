@@ -184,6 +184,7 @@ async function loadChecklistNodes(
       id: string;
       type: string;
       title: string;
+      description?: string;
       icon: string;
       nodes: Array<{
         id: string;
@@ -202,9 +203,11 @@ async function loadChecklistNodes(
       labelPosition?: string;
     }> = [];
 
+    let categories: CategoryData[] = [];
+
     // Check for new nested categories format
     if (parsed.data.categories) {
-      const categories = parsed.data.categories as CategoryData[];
+      categories = parsed.data.categories as CategoryData[];
       // Flatten all nodes from all categories
       nodes = categories.flatMap((category) => category.nodes);
     }
@@ -240,6 +243,19 @@ async function loadChecklistNodes(
           }),
         },
         content: nodeContent,
+      });
+    });
+
+    // Add category nodes to content map with their descriptions
+    categories.forEach((category) => {
+      contentMap.set(category.id, {
+        frontmatter: {
+          id: category.id,
+          type: "category" as const,
+          title: category.title,
+          nodeType: "category" as const,
+        },
+        content: category.description ?? "",
       });
     });
 

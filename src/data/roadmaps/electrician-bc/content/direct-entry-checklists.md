@@ -4,6 +4,7 @@ categories:
   - id: "direct-entry-resources"
     type: "category"
     title: "Resources"
+    description: "Essential resources and information to help you understand and navigate Direct Entry"
     icon: "brain"
     nodes:
       - id: "direct-entry-resource-jobsearch"
@@ -14,6 +15,7 @@ categories:
   - id: "direct-entry-actions"
     type: "category"
     title: "Actions"
+    description: "Key steps and requirements you need to complete to progress through Direct Entry"
     icon: "clipboard-list"
     nodes:
       - id: "direct-entry-req-sponsor"
@@ -29,6 +31,7 @@ categories:
   - id: "direct-entry-roadblocks"
     type: "category"
     title: "Roadblocks"
+    description: "Common challenges and obstacles you may encounter during Direct Entry, and how to overcome them"
     icon: "traffic-cone"
     nodes: []
 ---

@@ -4,6 +4,7 @@ categories:
   - id: "foundation-program-resources"
     type: "category"
     title: "Resources"
+    description: "Essential resources and information to help you understand and navigate the Foundation Program"
     icon: "brain"
     nodes:
       - id: "foundation-resource-providers"
@@ -14,6 +15,7 @@ categories:
   - id: "foundation-program-actions"
     type: "category"
     title: "Actions"
+    description: "Key steps and requirements you need to complete to progress through the Foundation Program"
     icon: "clipboard-list"
     nodes:
       - id: "foundation-req-education"
@@ -29,6 +31,7 @@ categories:
   - id: "foundation-program-roadblocks"
     type: "category"
     title: "Roadblocks"
+    description: "Common challenges and obstacles you may encounter during the Foundation Program, and how to overcome them"
     icon: "traffic-cone"
     nodes: []
 ---

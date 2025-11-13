@@ -4,6 +4,7 @@ categories:
   - id: "level-3-resources"
     type: "category"
     title: "Resources"
+    description: "Essential resources and information to help you understand and navigate Level 3 Electrician training"
     icon: "brain"
     nodes:
       - id: "level-3-resource-outline"
@@ -24,6 +25,7 @@ categories:
   - id: "level-3-actions"
     type: "category"
     title: "Actions"
+    description: "Key steps and requirements you need to complete to progress through Level 3"
     icon: "clipboard-list"
     nodes:
       - id: "level-3-req-level2"
@@ -69,6 +71,7 @@ categories:
   - id: "level-3-roadblocks"
     type: "category"
     title: "Roadblocks"
+    description: "Common challenges and obstacles you may encounter during Level 3, and how to overcome them"
     icon: "traffic-cone"
     nodes: []
 ---

@@ -4,6 +4,7 @@ categories:
   - id: "red-seal-certification-resources"
     type: "category"
     title: "Resources"
+    description: "Essential resources and information to help you understand and navigate Red Seal Certification"
     icon: "brain"
     nodes:
       - id: "red-seal-resource-prep"
@@ -24,6 +25,7 @@ categories:
   - id: "red-seal-certification-actions"
     type: "category"
     title: "Actions"
+    description: "Key steps and requirements you need to complete to progress through Red Seal Certification"
     icon: "clipboard-list"
     nodes:
       - id: "red-seal-req-levels"
@@ -69,6 +71,7 @@ categories:
   - id: "red-seal-certification-roadblocks"
     type: "category"
     title: "Roadblocks"
+    description: "Common challenges and obstacles you may encounter during Red Seal Certification, and how to overcome them"
     icon: "traffic-cone"
     nodes: []
 ---
