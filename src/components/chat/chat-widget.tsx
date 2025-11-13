@@ -308,7 +308,7 @@ export function ChatWidget({
 
   // Sources component to display citations
   function SourcesDisplay({ sources }: { sources: SourceDocument[] }) {
-    // Filter for high relevance (>70%) and remove duplicates
+    // Filter for moderate-to-high relevance (>50%) and remove duplicates
 
     const filteredSources = sources
       .filter((source) => source.score > CHAT_CONFIG.RELEVANCE_THRESHOLD)

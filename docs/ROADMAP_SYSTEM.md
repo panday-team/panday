@@ -287,16 +287,31 @@ Complete Level 2 with mastery of intermediate electrical concepts...
 
 ## Node Types
 
-The system supports five node types, each with distinct visual styling:
+The system supports multiple node types, each with distinct visual styling:
 
-| Type          | Purpose                            | Color              | Example                 |
-| ------------- | ---------------------------------- | ------------------ | ----------------------- |
-| `hub`         | Main training/education milestones | Yellow (`#FFD84D`) | Level 2, Level 3        |
-| `terminal`    | Start/end points                   | Purple             | Red Seal, Direct Entry  |
-| `requirement` | Prerequisites/conditions           | Lime Green         | Foundation Requirements |
-| `portal`      | External systems                   | Light Blue         | SkilledTradesBC Portal  |
-| `checkpoint`  | Milestones/waiting periods         | Purple             | Waiting Period          |
-| `checklist`   | Subnode checklist items            | Varies             | Level 1 requirements    |
+| Type          | Purpose                                  | Color              | Example                 | Status |
+| ------------- | ---------------------------------------- | ------------------ | ----------------------- | ------ |
+| `hub`         | Main training/education milestones       | Yellow (`#FFD84D`) | Level 2, Level 3        | ✓ Active |
+| `terminal`    | Final goal/endpoint                      | Purple (`purple-500`) | Red Seal             | ✓ Active |
+| `resources`   | Connector node for resource checklists   | Blue (`#0077CC`)   | Study materials, guides | ✓ Active |
+| `actions`     | Connector node for action item checklists| Green (`#00A67E`)  | Safety training, exams  | ✓ Active |
+| `roadblocks`  | Connector node for challenge checklists  | Orange (`#FF6B35`) | Common issues           | ✓ Active |
+| `checklist`   | Individual task/requirement items        | Teal               | "Complete safety training" | ✓ Active |
+| `requirement` | Prerequisites/conditions (alias for hub) | Lime Green         | Foundation Requirements | Registered, not used |
+| `portal`      | External systems (alias for hub)         | Light Blue         | SkilledTradesBC Portal  | Registered, not used |
+| `checkpoint`  | Milestones/waiting periods (alias for hub)| Purple            | Waiting Period          | Registered, not used |
+
+### Connector Nodes (New Design - Nov 2025)
+
+The `resources`, `actions`, and `roadblocks` connector nodes serve as collapsible category containers that organize checklist items:
+
+- **Visual Design**: 96x96px circular nodes with icons (brain, clipboard-list, traffic-cone) and animated chevron indicators
+- **Selection-Based Visibility**: Checklist subnodes appear automatically when:
+  1. The connector node is selected in the node-info-panel, OR
+  2. Any subnode within that category is selected
+- **Hierarchy**: Hub → Connector (category) → Checklist (individual items)
+- **User Experience**: Click a connector to reveal all its subnodes; click a subnode to keep siblings visible; click elsewhere to collapse
+- **Implementation**: Visibility driven by `selectedNodeId` state in `src/components/roadmap-flow.tsx` (no persistent toggle state)
 
 ## Checklist System
 
@@ -340,6 +355,18 @@ import { RoadmapChecklist } from "@/components/roadmap-checklist";
 │    ├─ Parses frontmatter (gray-matter) │
 │    │  └─ Extracts checklists array      │
 │    └─ Extracts markdown content         │
+│                                          │
+│  - loadNodeContent(roadmapId, nodeId)   │
+│    ├─ Try standalone file (e.g., level-1.md) │
+│    └─ On ENOENT, search checklist files │
+│       ├─ Extract pattern from nodeId    │
+│       │  (e.g., "level-1" from          │
+│       │   "level-1-training-safety")    │
+│       ├─ Try pattern-checklists.md      │
+│       └─ Return specific node content   │
+│                                          │
+│  Used by: Chat API for RAG context,     │
+│           future API endpoints          │
 └────────┬────────────────────────────────┘
          │ 2. Returns Roadmap object
          ▼
@@ -575,10 +602,26 @@ content/
 
 ### Node not appearing
 
-1. Check markdown file exists in `content/` directory
-2. Verify `id` in frontmatter matches filename
-3. Ensure node is added to `graph.json`
+1. Check markdown file exists in `content/` directory (either standalone or in checklist file)
+2. Verify `id` in frontmatter matches filename (for standalone) or node ID in checklist frontmatter
+3. Ensure node is added to `graph.json` (or run `bun run roadmap:build`)
 4. Check browser console for errors
+
+### loadNodeContent() failing for checklist nodes
+
+The `loadNodeContent()` function automatically searches checklist files when a standalone file doesn't exist:
+
+1. **Standalone nodes**: Loaded from `{nodeId}.md` (e.g., `foundation-program.md`)
+2. **Checklist nodes**: Automatically discovered in checklist files:
+   - `level-1-training-safety` → searches `level-1-checklists.md`
+   - `foundation-program-req-age` → searches `foundation-program-checklists.md`
+   - `level-4-construction-training-controls` → searches `level-4-construction-checklists.md`
+
+If loading fails:
+1. Verify the node exists in the appropriate checklist file's frontmatter
+2. Check the node ID matches exactly (case-sensitive)
+3. Ensure checklist file naming follows the pattern `{prefix}-checklists.md`
+4. Check server logs for detailed error messages
 
 ### Checklists not displaying
 
