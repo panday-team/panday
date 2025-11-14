@@ -1,85 +1,79 @@
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
+  CardDescription,
 } from "@/components/ui/card";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
-import type { Dispatch, SetStateAction } from "react";
+interface RoadmapTutorialProps {
+  open: boolean;
+  onComplete: () => void;
+}
 
 const TUTORIAL_STEPS = [
   {
-    id: 420,
+    id: "pan",
     title: "Pan",
     description: "Click and drag empty space to move around the roadmap.",
   },
   {
-    id: 69,
+    id: "zoom",
     title: "Zoom",
     description:
       "Use CTRL + Scroll wheel on mouse and keyboard; Use a pinching motion with your fingers on trackpad",
   },
   {
-    id: 67,
+    id: "select",
     title: "Select",
     description:
       "Click a node to open its details panel and update its status.",
   },
   {
-    id: 41,
+    id: "chat",
     title: "Chat",
     description:
       "Get more assistance on your current progress with our AI Chatbot in the bottom-right corner",
   },
 ];
 
-export default function RoadmapTutorialWidget({
-  setShowTutorial,
-  showTutorial,
-}: {
-  setShowTutorial: Dispatch<SetStateAction<boolean>>;
-  showTutorial: boolean;
-}) {
+export function RoadmapTutorial({ open, onComplete }: RoadmapTutorialProps) {
   return (
-    <>
-      <AlertDialog open={showTutorial ? true : false}>
-        <AlertDialogContent className="mx-50">
-          <AlertDialogHeader className="text-center">
-            <AlertDialogTitle className="text-2xl">
-              Roadmap Tutorial
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              3 simple controls to navigate your career!
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onComplete()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader className="text-center">
+          <DialogTitle className="text-2xl">Roadmap Tutorial</DialogTitle>
+          <DialogDescription>
+            3 simple controls to navigate your career!
+          </DialogDescription>
+        </DialogHeader>
 
-          <div id="instructions" className="flex flex-col gap-4 text-center">
-            {TUTORIAL_STEPS.map((step) => (
-              <Card key={step.id} className="">
-                <CardHeader>
-                  <CardTitle>{step.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>{step.description}</CardDescription>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          <AlertDialogAction onClick={() => setShowTutorial(false)}>
-            Let&apos;s Go!
-          </AlertDialogAction>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+        <div className="flex flex-col gap-4 text-center">
+          {TUTORIAL_STEPS.map((step) => (
+            <Card key={step.id}>
+              <CardHeader>
+                <CardTitle>{step.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>{step.description}</CardDescription>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <DialogFooter>
+          <Button onClick={onComplete}>Let&apos;s Go!</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

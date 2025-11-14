@@ -86,6 +86,7 @@ model UserProfile {
   specialization        String         @default("undecided")
   residencyStatus       String
   onboardingCompletedAt DateTime?
+  tutorialCompletedAt   DateTime?
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
   nodeProgress          NodeProgress[]
