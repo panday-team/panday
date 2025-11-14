@@ -4,13 +4,16 @@ import { useState, useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X, ExternalLink, FileText, ArrowDown } from "lucide-react";
+import { X, ExternalLink, FileText, ArrowDown, History, Settings, ChartPie } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Image from "next/image";
 import { ChatButton } from "./chat-button";
 import ChatLoading from "./chat-loading";
 import Typewriter from "./typewriter";
+import { ConversationHistory } from "./conversation-history";
+import { ConversationSettingsPanel, type ConversationSettings } from "./conversation-settings";
+import { ConversationInsightsPanel } from "./conversation-insights";
 import type { SourceDocument } from "@/lib/embeddings-service";
 import { useAuth, SignInButton } from "@clerk/nextjs";
 import { CHAT_CONFIG } from "@/lib/chat-config";
@@ -25,20 +28,44 @@ interface ChatWidgetProps {
     specialization?: string;
     residencyStatus?: string;
   };
+  chatTrigger: {
+    open: boolean;
+    nodeId: string;
+    nodeTitle: string;
+  } | null;
+  onChatClose: () => void;
+  initialConversationId?: string;
 }
 
 export function ChatWidget({
   selectedNodeId,
   roadmapId,
   userProfile,
+  chatTrigger,
+  onChatClose,
 }: ChatWidgetProps) {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, userId } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
   const [sources, setSources] = useState<SourceDocument[]>([]);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [conversationId, setConversationId] = useState<string | undefined>(
+    chatTrigger?.nodeId || undefined,
+  );
+  const [showConversationHistory, setShowConversationHistory] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showInsights, setShowInsights] = useState(false); // New state for insights panel
+  const [conversationSettings, setConversationSettings] = useState<ConversationSettings>({
+    explanationStyle: "detailed", // Default value
+    expertiseLevel: 50, // Default value
+    projectType: "web", // Default value
+    codeJurisdiction: "none", // Default value
+    includeCodeExamples: false, // Default value
+    useRCR: true, // Default value
+    temperature: CHAT_CONFIG.DEFAULT_TEMPERATURE, // Now available
+  });
 
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -55,6 +82,7 @@ export function ChatWidget({
     handleSubmit,
     error,
     setMessages,
+    setInput,
   } = useChat({
     api: "/api/chat",
     streamProtocol: "data",
@@ -78,6 +106,10 @@ export function ChatWidget({
       roadmap_id: roadmapId,
       selected_node_id: selectedNodeId ?? undefined,
       user_profile: userProfile,
+      enable_rcr: conversationSettings.useRCR, // Use setting
+      temperature: conversationSettings.temperature, // Use setting
+      conversation_id: conversationId,
+      messages: messages.map(msg => ({ role: msg.role, content: msg.content })),
     },
     // Handle custom data from the stream
     fetch: async (url, options) => {
@@ -109,6 +141,7 @@ export function ChatWidget({
               for (const line of lines) {
                 if (line.startsWith("data: ")) {
                   const data = line.slice(6);
+                  let isCustomEvent = false;
 
                   try {
                     const parsed: unknown = JSON.parse(data);
@@ -123,10 +156,8 @@ export function ChatWidget({
                       typeof parsed.message === "string"
                     ) {
                       setStatusMessage(parsed.message);
-                      continue; // Don't pass to AI SDK
-                    }
-
-                    if (
+                      isCustomEvent = true;
+                    } else if (
                       typeof parsed === "object" &&
                       parsed !== null &&
                       "type" in parsed &&
@@ -140,10 +171,8 @@ export function ChatWidget({
                       ) {
                         setSources(parsed.sources as SourceDocument[]);
                       }
-                      continue; // Don't pass to AI SDK
-                    }
-
-                    if (
+                      isCustomEvent = true;
+                    } else if (
                       typeof parsed === "object" &&
                       parsed !== null &&
                       "type" in parsed &&
@@ -154,16 +183,19 @@ export function ChatWidget({
                       logger.error("Stream error", { message: parsed.message });
                       setStatusMessage(null);
                       setIsLoading(false);
-                      continue; // Don't pass to AI SDK
+                      isCustomEvent = true;
                     }
                   } catch {
-                    // If it's not JSON, it's probably AI SDK data
-                    // Fall through to pass it along
+                    // If JSON parsing fails, it's not a custom event, so it's likely AI SDK data.
+                    // isCustomEvent remains false.
+                  }
+
+                  if (!isCustomEvent) {
+                    // If it's a "data:" line and not a custom event, pass it to AI SDK
+                    controller.enqueue(new TextEncoder().encode(data + "\n"));
                   }
                 }
-
-                // Pass through other data to AI SDK
-                controller.enqueue(new TextEncoder().encode(line + "\n"));
+                // If line does NOT start with "data: ", it's ignored (filters out f:, 0:, e:, d: etc.)
               }
 
               return pump();
@@ -246,6 +278,83 @@ export function ChatWidget({
       }
     }
   }, [messages, isHydrated]);
+
+  const handleSaveSettings = (newSettings: ConversationSettings) => {
+    setConversationSettings(newSettings);
+    setShowSettings(false); // Close panel after saving
+    logger.info("Conversation settings saved", { newSettings });
+  };
+
+  const handleCreateNewConversation = async () => {
+    try {
+      const response = await fetch("/api/conversations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "New conversation",
+          roadmapId: roadmapId || "electrician-bc",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create new conversation: ${response.statusText}`);
+      }
+
+      const newConversation = await response.json();
+      setConversationId(newConversation.id); // Update conversationId with the new ID
+      setMessages([]); // Clear messages for the new conversation
+      setShowConversationHistory(false); // Hide history sidebar
+      logger.info("New conversation created", { conversationId: newConversation.id });
+    } catch (error) {
+      logger.error("Failed to create new conversation", error);
+      // Optionally, display an error message to the user
+    }
+  };
+
+  const handleSelectConversation = async (id: string) => {
+    setConversationId(id);
+    setMessages([]); // Clear messages to load history for selected conversation
+    setShowConversationHistory(false); // Hide history sidebar
+    logger.info("Conversation selected", { conversationId: id });
+
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/conversations/${id}/messages`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch messages: ${response.statusText}`);
+      }
+      const fetchedMessages = await response.json();
+      // Assuming fetchedMessages are in the format { id: string, role: string, content: string, createdAt: string }
+      setMessages(fetchedMessages.map((msg: any) => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        createdAt: new Date(msg.createdAt), // Convert createdAt string to Date object
+      })));
+    } catch (error) {
+      logger.error("Failed to load conversation messages", error, { conversationId: id });
+      // Optionally, display an error message to the user
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Effect to handle chat widget opening and initial message based on chatTrigger
+  useEffect(() => {
+    if (chatTrigger?.open) {
+      setIsExpanded(true);
+      // Pre-fill chat input with a context-aware greeting
+      setInput(`What do you want to know about ${chatTrigger.nodeTitle}?`);
+      // Optionally, submit this as the first message
+      // This would require a programmatic way to trigger handleSubmit,
+      // or setting messages directly. For now, just pre-filling the input.
+    } else if (chatTrigger === null) {
+      // If chatTrigger is explicitly null, close the chat
+      setIsExpanded(false);
+    }
+  }, [chatTrigger, setInput]);
 
   useEffect(() => {
     if (!isExpanded) didMountRef.current = false;
@@ -368,6 +477,39 @@ export function ChatWidget({
               Assistant
             </h3>
             <div className="flex items-center gap-2">
+              {isSignedIn && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowInsights(!showInsights)}
+                  className="h-8 w-8 text-black transition-colors hover:bg-white/10 hover:text-white"
+                  aria-label="Toggle conversation insights"
+                >
+                  <ChartPie size={20} />
+                </Button>
+              )}
+              {isSignedIn && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowSettings(!showSettings)}
+                  className="h-8 w-8 text-black transition-colors hover:bg-white/10 hover:text-white"
+                  aria-label="Toggle conversation settings"
+                >
+                  <Settings size={20} />
+                </Button>
+              )}
+              {isSignedIn && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowConversationHistory(!showConversationHistory)}
+                  className="h-8 w-8 text-black transition-colors hover:bg-white/10 hover:text-white"
+                  aria-label="Toggle conversation history"
+                >
+                  <History size={20} />
+                </Button>
+              )}
               {messages.length > 0 && (
                 <button
                   onClick={handleClearChat}
@@ -378,7 +520,7 @@ export function ChatWidget({
                 </button>
               )}
               <button
-                onClick={() => setIsExpanded(false)}
+                onClick={onChatClose} // Use onChatClose prop
                 className="rounded p-1.5 text-black transition-colors hover:bg-white/10 hover:text-white"
                 aria-label="Collapse chat"
               >
@@ -388,7 +530,25 @@ export function ChatWidget({
           </div>
 
           <div ref={containerRef} className="relative flex-1 overflow-y-auto">
-            {messages.length > 0 ? (
+            {isSignedIn && showConversationHistory ? (
+              <ConversationHistory
+                userId={userId}
+                onSelectConversation={handleSelectConversation}
+                onCreateNewConversation={handleCreateNewConversation}
+                currentConversationId={conversationId}
+              />
+            ) : isSignedIn && showSettings && conversationId ? (
+              <ConversationSettingsPanel
+                initialSettings={conversationSettings}
+                onSave={handleSaveSettings}
+                onClose={() => setShowSettings(false)}
+              />
+            ) : isSignedIn && showInsights && conversationId ? ( // New conditional rendering for insights
+              <ConversationInsightsPanel
+                conversationId={conversationId}
+                onClose={() => setShowInsights(false)}
+              />
+            ) : messages.length > 0 ? (
               <div className="space-y-3 p-6">
                 {messages.map((message, _index) => (
                   <div
@@ -660,7 +820,7 @@ export function ChatWidget({
       )}
       <ChatButton
         isExpanded={isExpanded}
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => setIsExpanded(!isExpanded)} // Keep existing toggle for the button
       />
     </div>
   );

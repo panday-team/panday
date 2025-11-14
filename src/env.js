@@ -31,6 +31,7 @@ export const env = createEnv({
     OPENAI_API_KEY: z.string(),
     GOOGLE_API_KEY: z.string().optional(),
     EMBEDDINGS_BACKEND: z.enum(["json", "postgres"]).default("json"),
+    ENABLE_RCR: z.string().optional(),
   },
 
   /**
@@ -65,6 +66,7 @@ export const env = createEnv({
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
     EMBEDDINGS_BACKEND: process.env.EMBEDDINGS_BACKEND,
+    ENABLE_RCR: process.env.ENABLE_RCR,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
   },

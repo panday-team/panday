@@ -109,6 +109,13 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   );
   const { fitView } = useReactFlow();
 
+  // State for controlling chat widget visibility and context
+  const [chatTrigger, setChatTrigger] = useState<{
+    open: boolean;
+    nodeId: string;
+    nodeTitle: string;
+  } | null>(null);
+
   // Track which category nodes are expanded (showing their checklist children)
   // Always initialize with empty Set to avoid hydration mismatch
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
@@ -658,8 +665,19 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
           data: { ...n.data, isSelected: n.id === node.id },
         })),
       );
+
+      // Get node title for chat context
+      const nodeContent = roadmap.content.get(node.id);
+      const nodeTitle =
+        nodeContent?.frontmatter.title || (node.data.label as string); // Fallback to data.label if frontmatter title is missing
+
+      setChatTrigger({
+        open: true,
+        nodeId: node.id,
+        nodeTitle: nodeTitle,
+      });
     },
-    [setNodes],
+    [setNodes, roadmap.content],
   );
 
   const onPaneClick = useCallback(() => {
@@ -671,6 +689,8 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         data: { ...n.data, isSelected: false },
       })),
     );
+    // Also close the chat widget when clicking on the pane
+    setChatTrigger(null);
   }, [setNodes]);
 
   const handleStatusChange = useCallback(
@@ -977,6 +997,8 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
               }
             : undefined
         }
+        chatTrigger={chatTrigger}
+        onChatClose={() => setChatTrigger(null)}
       />
 
       <RoadmapTutorial

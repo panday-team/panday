@@ -1,16 +1,12 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
-  // binaryTargets = ["native", "debian-openssl-1.1.x", "darwin", "darwin-arm64", "windows"]
 }
 
 datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
-  extensions = [pgvector(map: "vector", schema: "public")]
+  extensions = [vector(schema: "public")]
 }
 
 model Job {
@@ -35,20 +31,19 @@ model Document {
 
 /// Stores individual embedded document chunks for RAG retrieval
 model EmbeddingDocument {
-  id        String                     @id @default(cuid())
-  roadmapId String // e.g., "electrician-bc"
-  nodeId    String? // null for general roadmap content, set for specific nodes
-  userId    String? // null for global index, set for user-specific personalized content
-  content   String @db.Text // The text that was embedded
-  embedding Unsupported("vector(1536)") // OpenAI text-embedding-3-small (1536 dimensions)
-  metadata  Json? // Additional metadata: source file, section type, etc.
-  hash      String? // Content hash for incremental updates
-  version   Int                        @default(1)
-  createdAt DateTime                   @default(now())
-  updatedAt DateTime                   @updatedAt
-
-  index   EmbeddingIndex @relation(fields: [indexId], references: [id], onDelete: Cascade)
-  indexId String
+  id        String                @id @default(cuid())
+  roadmapId String
+  nodeId    String?
+  userId    String?
+  content   String
+  embedding Unsupported("vector")
+  metadata  Json?
+  hash      String?
+  version   Int                   @default(1)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  indexId   String
+  index     EmbeddingIndex        @relation(fields: [indexId], references: [id], onDelete: Cascade)
 
   @@index([roadmapId, userId])
   @@index([nodeId])
@@ -59,18 +54,17 @@ model EmbeddingDocument {
 
 /// Tracks embedding index versions and metadata for each roadmap/user combination
 model EmbeddingIndex {
-  id            String   @id @default(cuid())
+  id            String              @id @default(cuid())
   roadmapId     String
-  userId        String? // null for global roadmap index, set for user-specific
-  version       Int      @default(1)
-  modelName     String   @default("text-embedding-3-small")
-  dimensions    Int      @default(1536)
-  documentCount Int      @default(0)
-  isActive      Boolean  @default(true) // Allow multiple versions, mark active one
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  documents EmbeddingDocument[]
+  userId        String?
+  version       Int                 @default(1)
+  modelName     String              @default("text-embedding-3-small")
+  dimensions    Int                 @default(1536)
+  documentCount Int                 @default(0)
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  documents     EmbeddingDocument[]
 
   @@unique([roadmapId, userId, version])
   @@index([roadmapId, isActive])
@@ -83,27 +77,95 @@ model UserProfile {
   clerkUserId           String         @unique
   trade                 String
   currentLevel          String
-  specialization        String         @default("undecided")
   residencyStatus       String
   onboardingCompletedAt DateTime?
   tutorialCompletedAt   DateTime?
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
+  specialization        String         @default("undecided")
   nodeProgress          NodeProgress[]
 
   @@index([clerkUserId])
 }
 
 model NodeProgress {
-  id          Int         @id @default(autoincrement())
-  userId      String
-  user        UserProfile @relation(fields: [userId], references: [clerkUserId], onDelete: Cascade)
-  roadmapId   String
-  nodeId      String
-  status      String // "base" | "in-progress" | "completed"
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id        Int         @id @default(autoincrement())
+  userId    String
+  roadmapId String
+  nodeId    String
+  status    String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      UserProfile @relation(fields: [userId], references: [clerkUserId], onDelete: Cascade)
 
   @@unique([userId, roadmapId, nodeId])
   @@index([userId, roadmapId])
+}
+
+/// Stores conversation threads and topic continuity for RCR (Relationship Context Recognition)
+model ConversationThread {
+  id            String        @id @default(cuid())
+  userId        String
+  roadmapId     String
+  title         String?
+  currentTopic  String?       // e.g., "conduit_sizing", "circuit_loading"
+  topicDepth    String        @default("beginner") // beginner, intermediate, advanced
+  questionCount Int           @default(0)
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  messages      ConversationMessage[]
+
+  @@unique([userId, roadmapId])
+  @@index([userId])
+  @@index([isActive])
+  @@map("conversation_threads")
+}
+
+/// Individual messages within a conversation thread for RCR context
+model ConversationMessage {
+  id        String             @id @default(cuid())
+  threadId  String
+  role      String             // user, assistant
+  content   String
+  topics    Json?              // ["conduit_sizing", "amperage"]
+  intent    String?            // question, clarification, comparison, new_topic
+  nodeId    String?            // Optional reference to a roadmap node
+  nodeTitle String?            // Optional title of the referenced node
+  createdAt DateTime           @default(now())
+  thread    ConversationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId])
+  @@index([createdAt])
+  @@map("conversation_messages")
+}
+
+/// Tracks user's knowledge level and understanding progression
+model UserKnowledge {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  understoodTopics  Json?    // ["basic_circuits", "wire_colors"]
+  strugglingTopics  Json?    // ["conduit_calculations", "voltage_drop"]
+  preferredStyle    String   @default("step_by_step") // step_by_step, examples, concise
+  expertiseLevel    String   @default("apprentice") // apprentice, journeyman, master
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@map("user_knowledge")
+}
+
+/// Stores project context for personalized responses
+model UserProject {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  projectType    String   @default("residential") // residential, commercial, industrial
+  buildingType   String?  // single_family, multi_family, etc.
+  codeJurisdiction String @default("NEC") // NEC, CEC, local
+  pastTopics     Json?    // ["kitchen_circuits", "gfci_requirements"]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+  @@map("user_projects")
 }

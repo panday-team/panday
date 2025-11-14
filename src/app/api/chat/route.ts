@@ -4,11 +4,13 @@ import { type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { queryEmbeddings, getActiveBackend } from "@/lib/embeddings-hybrid";
+import { getRCRContext, updateRCRContext, generateRCRContextPrompt } from "@/lib/rcr-processor";
 import { logger } from "@/lib/logger";
 import { chatRateLimit } from "@/lib/rate-limit";
 import { env } from "@/env";
 import { getCookieName } from "@/lib/user-identifier";
 import { loadNodeContent } from "@/lib/roadmap-loader";
+import { db } from "@/server/db"; // Import db
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -30,6 +32,8 @@ const ChatRequestSchema = z.object({
     })
     .optional(),
   top_k: z.number().int().min(1).max(20).optional(),
+  enable_rcr: z.boolean().optional().default(false),
+  conversation_id: z.string().optional(), // Add conversation_id to schema
 });
 
 function getAIModel(): LanguageModel {
@@ -146,7 +150,46 @@ export async function POST(req: NextRequest) {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
+        let rcrContext; // Declare rcrContext here
+        let aiResponseContent = ""; // Declare aiResponseContent here
         try {
+          let conversationId = validatedBody.conversation_id;
+
+          if (!conversationId && userId) {
+            const existingConversation = await db.conversationThread.findUnique({
+              where: {
+                userId_roadmapId: {
+                  userId: userId,
+                  roadmapId: validatedBody.roadmap_id || "electrician-bc",
+                },
+              },
+            });
+
+            if (existingConversation) {
+              conversationId = existingConversation.id;
+            } else {
+              const newConversation = await db.conversationThread.create({
+                data: {
+                  userId: userId,
+                  title: lastUserMessage.content.substring(0, 50), // Use first 50 chars of user message as title
+                  roadmapId: validatedBody.roadmap_id ?? "electrician-bc", // Default to electrician-bc if not provided
+                },
+              });
+              conversationId = newConversation.id;
+            }
+          }
+
+          if (conversationId && userId) {
+            await db.conversationMessage.create({
+              data: {
+                threadId: conversationId,
+                role: "user",
+                content: lastUserMessage.content,
+                nodeId: validatedBody.selected_node_id,
+              },
+            });
+          }
+
           const activeBackend = getActiveBackend();
           logger.info("Using embeddings backend", {
             backend: activeBackend,
@@ -198,7 +241,7 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Build node context string
+          let nodeTitle: string | undefined;
           let nodeContext = "";
           if (validatedBody.selected_node_id && validatedBody.roadmap_id) {
             try {
@@ -207,7 +250,8 @@ export async function POST(req: NextRequest) {
                 validatedBody.selected_node_id,
               );
               if (nodeContent) {
-                nodeContext = `Current Step Information:\nTitle: ${nodeContent.frontmatter.title}\n${
+                nodeTitle = nodeContent.frontmatter.title;
+                nodeContext = `Current Step Information:\nTitle: ${nodeTitle}\n${
                   nodeContent.content
                     .split("\n")
                     .find(
@@ -224,84 +268,139 @@ export async function POST(req: NextRequest) {
               });
             }
           }
+ 
+          // Get RCR context for enhanced conversation understanding
+          let rcrContextPrompt = "";
+          const isRCREnabled = env.ENABLE_RCR === "true" && validatedBody.enable_rcr;
 
-          const systemPrompt = `You are a helpful career guidance assistant for skilled trades in British Columbia, Canada.
-
-${userContext}${nodeContext}You have access to the following relevant information from the career roadmap database:
-
-${embeddingsResponse.context}
-
-CRITICAL INSTRUCTIONS:
-1. ONLY use information from the provided context above. Do not use any external knowledge or make assumptions.
-2. If the context does not contain sufficient information to answer the user's question, explicitly state: "I don't have enough information in the provided sources to answer this question."
-3. Cite your sources using the format [Source: Title] when referencing specific information.
-4. When multiple sources are relevant, cite each one appropriately.
-5. Do not provide general guidance or advice that is not directly supported by the provided context.
-6. Be precise and accurate - if you're not certain about information from the context, acknowledge the limitation.
-
-Example citation format:
-- "According to the Foundation Program [Source: Electrician Foundation], students receive 375 work-based training hours."
-- "The requirements include [Source: Level 1] completion of technical training."
-
-Provide personalized guidance based strictly on the user's current situation and the step they're asking about, using only the information provided in the context.`;
-
-          // start the AI response stream
-          const result = streamText({
-            model: getAIModel(),
-            system: systemPrompt,
-            messages: validatedBody.messages.map((msg) => ({
-              role: msg.role,
-              content: msg.content,
-            })),
-            maxTokens: 1024,
-            onFinish: async () => {
-              logger.info("Chat completion finished", {
-                provider: env.AI_PROVIDER,
-                model: env.AI_MODEL,
-                userId,
-              });
-            },
-          });
-
-          // send metadata before streaming starts
-          const metadataUpdate = {
-            type: "metadata",
-            sources: embeddingsResponse.sources,
-            roadmapId: embeddingsResponse.roadmap_id,
-          };
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(metadataUpdate)}\n\n`),
-          );
-
-          // stream the AI response
-          const reader = result.toDataStream().getReader();
-
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              controller.enqueue(value);
-            }
-          } finally {
-            reader.releaseLock();
+          if (isRCREnabled) {
+            rcrContext = await getRCRContext( // Assign to the declared variable
+              userId,
+              validatedBody.roadmap_id || "electrician-bc",
+              lastUserMessage.content,
+              validatedBody.messages.slice(-10).map(msg => msg.content), // Last 10 messages for history
+              validatedBody.selected_node_id, // nodeId
+              nodeTitle, // nodeTitle
+            );
+            rcrContextPrompt = generateRCRContextPrompt(rcrContext);
           }
+ 
+          const systemPrompt = `You are a helpful career guidance assistant for skilled trades in British Columbia, Canada.
+ 
+ ${userContext}${nodeContext}${rcrContextPrompt}You have access to the following relevant information from the career roadmap database:
+ 
+ ${embeddingsResponse.context}
+ 
+ CRITICAL INSTRUCTIONS:
+ 1. ONLY use information from the provided context above. Do not use any external knowledge or make assumptions.
+ 2. If the context does not contain sufficient information to answer the user's question, explicitly state: "I don't have enough information in the provided sources to answer this question."
+ 3. Cite your sources using the format [Source: Title] when referencing specific information.
+ 4. When multiple sources are relevant, cite each one appropriately.
+ 5. Do not provide general guidance or advice that is not directly supported by the provided context.
+ 6. Be precise and accurate - if you're not certain about information from the context, acknowledge the limitation.
+ 
+ Example citation format:
+ - "According to the Foundation Program [Source: Electrician Foundation], students receive 375 work-based training hours."
+ - "The requirements include [Source: Level 1] completion of technical training."
+ 
+ Provide personalized guidance based strictly on the user's current situation and the step they're asking about, using only the information provided in the context.`;
+ 
+            // start the AI response stream
+            const result = streamText({
+              model: getAIModel(),
+              system: systemPrompt,
+              messages: validatedBody.messages.map((msg) => ({
+                role: msg.role,
+                content: msg.content,
+              })),
+              maxTokens: 1024,
+              onFinish: async () => {
+                logger.info("Chat completion finished", {
+                  provider: env.AI_PROVIDER,
+                  model: env.AI_MODEL,
+                  userId,
+                });
+              },
+            });
+ 
+            // send metadata before streaming starts
+            const metadataUpdate = {
+              type: "metadata",
+              sources: embeddingsResponse.sources,
+              roadmapId: embeddingsResponse.roadmap_id,
+            };
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify(metadataUpdate)}\n\n`),
+            );
+ 
+            // stream the AI response
+            const reader = result.toDataStream().getReader();
+ 
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                // Decode the raw content from the model
+                const rawContent = new TextDecoder().decode(value);
+                
+                // Clean the content by removing Gemini's internal formatting tokens
+                const cleanedContent = rawContent.replace(/f:\{.*?\}|0:"|"|e:\{.*?\}|d:\{.*?\}/g, "");
+                
+                // Capture the cleaned content
+                aiResponseContent += cleanedContent;
+                
+                // If there's cleaned content, wrap it in AI SDK message event format and enqueue
+                if (cleanedContent.trim()) {
+                  const messageEvent = `data: ${JSON.stringify({ content: cleanedContent })}\n\n`;
+                  controller.enqueue(encoder.encode(messageEvent));
+                }
+              }
+            } finally {
+              reader.releaseLock();
+              // Update RCR context with the latest interaction, only if RCR was enabled
+              if (isRCREnabled && rcrContext?.conversationThreadId && rcrContext?.conversationMessageId) {
+                await updateRCRContext(
+                  userId,
+                  validatedBody.roadmap_id || "electrician-bc",
+                  lastUserMessage.content, // userMessageContent
+                  aiResponseContent, // assistantResponse
+                  rcrContext.conversationThreadId,
+                  rcrContext.conversationMessageId,
+                  validatedBody.selected_node_id, // nodeId
+                  nodeTitle, // nodeTitle
+                );
+              }
 
-          controller.close();
-        } catch (error) {
-          const errorUpdate = {
-            type: "error",
-            message:
-              error instanceof Error
-                ? error.message
-                : "An unexpected error occurred",
-          };
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(errorUpdate)}\n\n`),
-          );
-          controller.close();
-        }
-      },
-    });
+              // Save assistant message
+              if (conversationId && userId) {
+                await db.conversationMessage.create({
+                  data: {
+                    threadId: conversationId,
+                    role: "assistant",
+                    content: aiResponseContent,
+                    nodeId: validatedBody.selected_node_id,
+                  },
+                });
+              }
+            }
+ 
+            controller.close();
+          } catch (error) {
+           const errorUpdate = {
+             type: "error",
+             message:
+               error instanceof Error
+                 ? error.message
+                 : "An unexpected error occurred",
+           };
+           controller.enqueue(
+             encoder.encode(`data: ${JSON.stringify(errorUpdate)}\n\n`),
+           );
+           controller.close();
+         }
+       },
+     });
 
     const response = new Response(stream, {
       headers: {

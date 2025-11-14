@@ -40,4 +40,22 @@ export const CHAT_CONFIG = {
    * localStorage key for persisting chat messages
    */
   STORAGE_KEY: "panday_chat_messages",
+
+  /**
+   * Default temperature for the AI model (0-1)
+   * Higher values make the output more random, lower values make it more focused
+   */
+  DEFAULT_TEMPERATURE: 0.7,
+
+  /**
+   * Default values for conversation settings, used by ConversationSettingsPanel
+   * and related RCR logic. Centralized for consistency.
+   */
+  CONVERSATION_DEFAULTS: {
+    preferredStyle: "concise", // e.g., "concise", "detailed", "neutral"
+    expertiseLevel: "intermediate", // e.g., "beginner", "intermediate", "expert"
+    projectType: "web-app", // e.g., "web-app", "mobile-app", "backend-service", "data-science"
+    codeJurisdiction: "none", // e.g., "canada-bc", "usa-california", "none"
+    enableRCR: true, // Enable/disable RCR (Roadmap Contextual Retrieval)
+  },
 } as const;
