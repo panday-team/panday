@@ -36,6 +36,7 @@ export default async function RoadmapPage() {
       specialization: dbProfile.specialization as ElectricianSpecialization,
       residencyStatus: dbProfile.residencyStatus as ResidencyStatus,
       onboardingCompletedAt: dbProfile.onboardingCompletedAt,
+      tutorialCompletedAt: dbProfile.tutorialCompletedAt,
       createdAt: dbProfile.createdAt,
       updatedAt: dbProfile.updatedAt,
     };

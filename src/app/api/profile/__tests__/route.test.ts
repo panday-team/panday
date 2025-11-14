@@ -78,6 +78,7 @@ describe("Profile API Route", () => {
         specialization: ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
+        tutorialCompletedAt: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };
@@ -176,6 +177,7 @@ describe("Profile API Route", () => {
         specialization: ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date(),
+        tutorialCompletedAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -229,6 +231,7 @@ describe("Profile API Route", () => {
         specialization: ELECTRICIAN_SPECIALIZATION.INDUSTRIAL,
         residencyStatus: RESIDENCY_STATUS.PERMANENT_RESIDENT,
         onboardingCompletedAt: new Date(),
+        tutorialCompletedAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -309,6 +312,7 @@ describe("Profile API Route", () => {
         specialization: ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
+        tutorialCompletedAt: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };
@@ -356,6 +360,7 @@ describe("Profile API Route", () => {
         specialization: ELECTRICIAN_SPECIALIZATION.UNDECIDED,
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
+        tutorialCompletedAt: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };
@@ -399,6 +404,7 @@ describe("Profile API Route", () => {
         specialization: ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
+        tutorialCompletedAt: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };
@@ -442,6 +448,7 @@ describe("Profile API Route", () => {
         specialization: ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
+        tutorialCompletedAt: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };
@@ -485,6 +492,7 @@ describe("Profile API Route", () => {
         specialization: ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
+        tutorialCompletedAt: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };
@@ -538,6 +546,7 @@ describe("Profile API Route", () => {
         specialization: ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
+        tutorialCompletedAt: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };
@@ -575,6 +584,7 @@ describe("Profile API Route", () => {
         specialization: ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
+        tutorialCompletedAt: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };
@@ -612,6 +622,7 @@ describe("Profile API Route", () => {
         specialization: ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
+        tutorialCompletedAt: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };

@@ -49,6 +49,7 @@ export interface UserProfile {
   specialization: ElectricianSpecialization;
   residencyStatus: ResidencyStatus;
   onboardingCompletedAt: Date | null;
+  tutorialCompletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
