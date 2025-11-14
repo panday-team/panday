@@ -7,8 +7,10 @@ export const CHAT_CONFIG = {
   /**
    * Minimum relevance score (0-1) for displaying source citations
    * Sources below this threshold are filtered out to reduce noise
+   * Set to 0.5 (50%) to show moderately relevant sources - helps users
+   * understand what context informed the AI response
    */
-  RELEVANCE_THRESHOLD: 0.7,
+  RELEVANCE_THRESHOLD: 0.5,
 
   /**
    * Scroll distance in pixels from bottom before showing scroll-to-bottom button

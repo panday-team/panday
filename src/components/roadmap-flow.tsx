@@ -1,18 +1,20 @@
 "use client";
 
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
-import type { CSSProperties, SetStateAction } from "react";
+import type { CSSProperties } from "react";
 import {
   Background,
   BackgroundVariant,
   MarkerType,
   ReactFlow,
+  ReactFlowProvider,
   type Edge,
   type NodeTypes,
   Position,
   type Node as FlowNodeType,
   useNodesState,
   useEdgesState,
+  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -20,11 +22,15 @@ import {
   HubNode,
   ChecklistNode,
   TerminalNode,
+  ResourcesNode,
+  ActionsNode,
+  RoadblocksNode,
   type HubNodeType,
   type ChecklistNodeType,
   type TerminalNodeType,
+  type CategoryNodeType,
 } from "@/components/nodes";
-import { NodeInfoPanel } from "@/components/node-info-panel";
+import { NodeInfoPanel, type Category } from "@/components/node-info-panel";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -52,13 +58,15 @@ import {
   LEVEL_METADATA,
 } from "@/lib/profile-types";
 import { calculateViewportForNode } from "@/lib/viewport-utils";
-import { nullable } from "zod";
 
 import useLocalStorage from "./local-storage";
 
 import RoadmapTutorialWidget from "./roadmap-tutorial";
-import { C } from "vitest/dist/chunks/reporters.d.BFLkQcL6.js";
-type FlowNode = HubNodeType | ChecklistNodeType | TerminalNodeType;
+type FlowNode =
+  | HubNodeType
+  | ChecklistNodeType
+  | TerminalNodeType
+  | CategoryNodeType;
 type FlowEdge = Edge;
 
 const flowColor = "#35C1B9";
@@ -93,13 +101,40 @@ function stringToPosition(pos?: string): Position | undefined {
   return posMap[pos.toLowerCase()];
 }
 
-export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
+function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const animationsRef = useRef<Map<string, () => void>>(new Map());
   const isDraggingRef = useRef<string | null>(null);
   const [nodeStatuses, setNodeStatuses] = useState<Record<string, NodeStatus>>(
     {},
   );
+  const { fitView } = useReactFlow();
+
+  // Track which category nodes are expanded (showing their checklist children)
+  // Always initialize with empty Set to avoid hydration mismatch
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  // Load from sessionStorage after mount (client-only)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const stored = sessionStorage.getItem(`roadmap-expanded-${roadmap.metadata.id}`);
+      if (stored) {
+        setExpandedCategories(new Set(JSON.parse(stored) as string[]));
+      }
+    } catch {
+      // Ignore errors
+    }
+  }, [roadmap.metadata.id]);
+
+  // Persist expanded state to sessionStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    sessionStorage.setItem(
+      `roadmap-expanded-${roadmap.metadata.id}`,
+      JSON.stringify(Array.from(expandedCategories))
+    );
+  }, [expandedCategories, roadmap.metadata.id]);
 
   const [showTutorial, setShowTutorial] = useState<boolean>(false);
   const tutorialKey = `${userProfile?.clerkUserId ?? "guest-account"}:tutorial-finished`;
@@ -123,6 +158,22 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
   useEffect(() => {
     void fetchNodeStatuses(roadmap.metadata.id).then(setNodeStatuses);
   }, [roadmap.metadata.id]);
+
+  // Pre-compute node relationships once for reuse across multiple memos
+  const nodeRelationships = useMemo(() => {
+    const hubNodeIds = new Set(
+      roadmap.graph.nodes.filter((n) => !n.parentId).map((n) => n.id)
+    );
+    const nodesByParent = new Map<string, typeof roadmap.graph.nodes>();
+    for (const node of roadmap.graph.nodes) {
+      if (node.parentId) {
+        const siblings = nodesByParent.get(node.parentId) ?? [];
+        siblings.push(node);
+        nodesByParent.set(node.parentId, siblings);
+      }
+    }
+    return { hubNodeIds, nodesByParent };
+  }, [roadmap]);
 
   // Calculate initial viewport based on user's current level
   const initialViewport = useMemo(() => {
@@ -148,15 +199,69 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
         )
       : null;
 
+    // Use pre-computed node relationships from shared memo
+    const { hubNodeIds, nodesByParent } = nodeRelationships;
+
     //build nodes from graph/content
-    const builtNodes: FlowNode[] = roadmap.graph.nodes.map((graphNode) => {
+    const builtNodes: FlowNode[] = roadmap.graph.nodes
+      .filter((graphNode) => {
+        // Always show hub and category nodes
+        if (!graphNode.parentId) return true; // Hub/terminal nodes
+
+        // Category nodes have a hub as parent (O(1) lookup)
+        if (graphNode.parentId && hubNodeIds.has(graphNode.parentId))
+          return true;
+
+        // Checklist nodes: show if parent category is selected OR any sibling is selected
+        if (graphNode.parentId) {
+          // Show if the parent category itself is selected
+          if (selectedNodeId === graphNode.parentId) return true;
+
+          // Show if any sibling (same parent) is selected (O(siblings) instead of O(all nodes))
+          const siblings = nodesByParent.get(graphNode.parentId) ?? [];
+          if (siblings.some((n) => n.id === selectedNodeId)) return true;
+        }
+
+        return false;
+      })
+      .map((graphNode) => {
       const content = roadmap.content.get(graphNode.id);
-      if (!content) {
+
+      // Category nodes don't have markdown content files
+      const isCategoryNode = graphNode.id.includes("-resources") ||
+                            graphNode.id.includes("-actions") ||
+                            graphNode.id.includes("-roadblocks");
+
+      if (!content && !isCategoryNode) {
         throw new Error(`Content not found for node: ${graphNode.id}`);
       }
 
-      const { frontmatter } = content;
       const isMainNode = !graphNode.parentId;
+
+      // For category nodes, determine type and label from ID
+      let nodeType: string;
+      let nodeLabel: string;
+      let nodeIcon: "brain" | "clipboard-list" | "traffic-cone" | undefined;
+
+      if (isCategoryNode) {
+        if (graphNode.id.includes("-resources")) {
+          nodeType = "resources";
+          nodeLabel = "Resources";
+          nodeIcon = "brain";
+        } else if (graphNode.id.includes("-actions")) {
+          nodeType = "actions";
+          nodeLabel = "Actions";
+          nodeIcon = "clipboard-list";
+        } else {
+          nodeType = "roadblocks";
+          nodeLabel = "Roadblocks";
+          nodeIcon = "traffic-cone";
+        }
+      } else {
+        const { frontmatter } = content!;
+        nodeType = frontmatter.type;
+        nodeLabel = frontmatter.title;
+      }
 
       // Determine if this node should be auto-completed based on user profile
       const isCompletedByProfile = completedLevelIds.includes(graphNode.id);
@@ -169,19 +274,43 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
         nodeStatus = "completed";
       }
 
+      // Calculate animation index for checklist nodes (for cascade animation)
+      let animationIndex: number | undefined;
+      if (graphNode.parentId && !isMainNode && !isCategoryNode) {
+        // This is a checklist node - find its index among siblings (use pre-computed map)
+        const siblings = nodesByParent.get(graphNode.parentId) ?? [];
+        animationIndex = siblings.findIndex((n) => n.id === graphNode.id);
+      }
+
+      // For category nodes, determine if expanded based on selection
+      let isExpanded: boolean | undefined = undefined;
+      if (isCategoryNode) {
+        // Category is expanded if it's selected OR any of its children is selected
+        const isCategorySelected = selectedNodeId === graphNode.id;
+        const hasChildSelected = selectedNodeId
+          ? (nodesByParent.get(graphNode.id) ?? []).some(
+              (n) => n.id === selectedNodeId
+            )
+          : false;
+        isExpanded = isCategorySelected || hasChildSelected;
+      }
+
       return {
         id: graphNode.id,
-        type: frontmatter.type,
+        type: nodeType,
         position: graphNode.position,
         data: {
-          label: frontmatter.title,
-          glow: frontmatter.glow ?? isCurrentLevel,
-          labelPosition: frontmatter.labelPosition,
-          showLabelDot: frontmatter.showLabelDot,
+          label: nodeLabel,
+          icon: nodeIcon,
+          glow: content?.frontmatter.glow ?? isCurrentLevel,
+          labelPosition: content?.frontmatter.labelPosition,
+          showLabelDot: content?.frontmatter.showLabelDot,
           parentId: graphNode.parentId,
           status: nodeStatus,
           isCurrentLevel,
           isDimmed,
+          isExpanded,
+          animationIndex,
         },
         sourcePosition: stringToPosition(graphNode.sourcePosition),
         targetPosition: stringToPosition(graphNode.targetPosition),
@@ -191,7 +320,7 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
     });
 
     return builtNodes;
-  }, [roadmap, nodeStatuses, userProfile]);
+  }, [roadmap, nodeStatuses, userProfile, selectedNodeId, nodeRelationships]);
 
   const initialEdges = useMemo<FlowEdge[]>(() => {
     return roadmap.graph.edges
@@ -205,6 +334,29 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
         if (targetNode?.parentId === sourceNode?.id) {
           return false;
         }
+
+        // Hide edges to checklist nodes whose category is not selected
+        if (targetNode?.parentId) {
+          // Check if target is a checklist node (parent is a category)
+          const parentNode = roadmap.graph.nodes.find(
+            (n) => n.id === targetNode.parentId
+          );
+          const isCategoryParent = parentNode?.parentId !== undefined && parentNode?.parentId !== null;
+
+          if (isCategoryParent) {
+            // Show edge if parent category is selected
+            if (selectedNodeId === targetNode.parentId) return true;
+
+            // Show edge if any sibling is selected
+            const hasSiblingSelected = roadmap.graph.nodes.some(
+              n => n.parentId === targetNode.parentId && n.id === selectedNodeId
+            );
+            if (hasSiblingSelected) return true;
+
+            return false; // Hide edge if category not selected
+          }
+        }
+
         return true;
       })
       .map((graphEdge) => ({
@@ -217,10 +369,20 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
         style: baseEdgeStyle,
         markerEnd: arrowMarker,
       }));
-  }, [roadmap]);
+  }, [roadmap, selectedNodeId]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges] = useEdgesState(initialEdges);
+  const [edges, setEdges] = useEdgesState(initialEdges);
+
+  // Update edges when selection changes (affects subnode visibility)
+  useEffect(() => {
+    setEdges(initialEdges);
+  }, [initialEdges, setEdges]);
+
+  // Update nodes when selection changes (for animations to work)
+  useEffect(() => {
+    setNodes(initialNodes);
+  }, [initialNodes, setNodes]);
 
   // Update nodes when statuses change
   useEffect(() => {
@@ -242,24 +404,35 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
 
   const updateChildrenPositions = useCallback(
     (parentId: string, parentX: number, parentY: number, smooth = false) => {
-      setNodes((currentNodes) =>
-        currentNodes.map((node) => {
-          const offset = childOffsets.get(node.id);
-          if (offset && offset.parentId === parentId) {
-            const targetPosition = {
-              x: parentX + offset.offsetX,
-              y: parentY + offset.offsetY,
-            };
-            const newPosition = calculateChildPosition(
-              node.position,
-              targetPosition,
-              smooth,
-            );
-            return { ...node, position: newPosition };
-          }
-          return node;
-        }),
-      );
+      setNodes((currentNodes) => {
+        const updatedNodes = new Map(currentNodes.map(n => [n.id, n]));
+
+        // Recursively update children and their descendants
+        const updateNodeAndDescendants = (nodeId: string, newX: number, newY: number) => {
+          // Find all direct children of this node
+          currentNodes.forEach((node) => {
+            const offset = childOffsets.get(node.id);
+            if (offset && offset.parentId === nodeId) {
+              const targetPosition = {
+                x: newX + offset.offsetX,
+                y: newY + offset.offsetY,
+              };
+              const newPosition = calculateChildPosition(
+                node.position,
+                targetPosition,
+                smooth,
+              );
+              updatedNodes.set(node.id, { ...node, position: newPosition });
+
+              // Recursively update this node's children
+              updateNodeAndDescendants(node.id, newPosition.x, newPosition.y);
+            }
+          });
+        };
+
+        updateNodeAndDescendants(parentId, parentX, parentY);
+        return Array.from(updatedNodes.values());
+      });
     },
     [childOffsets, setNodes],
   );
@@ -304,14 +477,22 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
     (_event: React.MouseEvent, node: FlowNodeType) => {
       isDraggingRef.current = null;
 
-      nodes.forEach((childNode) => {
-        const offset = childOffsets.get(childNode.id);
-        if (offset && offset.parentId === node.id) {
-          const targetX = node.position.x + offset.offsetX;
-          const targetY = node.position.y + offset.offsetY;
-          animateChildToTarget(childNode.id, targetX, targetY);
-        }
-      });
+      // Recursively animate all descendants
+      const animateNodeAndDescendants = (nodeId: string, nodeX: number, nodeY: number) => {
+        nodes.forEach((childNode) => {
+          const offset = childOffsets.get(childNode.id);
+          if (offset && offset.parentId === nodeId) {
+            const targetX = nodeX + offset.offsetX;
+            const targetY = nodeY + offset.offsetY;
+            animateChildToTarget(childNode.id, targetX, targetY);
+
+            // Recursively animate this child's descendants
+            animateNodeAndDescendants(childNode.id, targetX, targetY);
+          }
+        });
+      };
+
+      animateNodeAndDescendants(node.id, node.position.x, node.position.y);
     },
     [nodes, childOffsets, animateChildToTarget],
   );
@@ -329,6 +510,10 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
       hub: HubNode,
       checklist: ChecklistNode,
       terminal: TerminalNode,
+      category: ResourcesNode, // Will be determined dynamically in node creation
+      resources: ResourcesNode,
+      actions: ActionsNode,
+      roadblocks: RoadblocksNode,
       requirement: HubNode,
       portal: HubNode,
       checkpoint: HubNode,
@@ -372,7 +557,6 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
 
   const handleTutorialClick = (event: React.MouseEvent) => {
     event.preventDefault();
-    console.log("smash burger");
     setShowTutorial(true);
   };
 
@@ -397,6 +581,88 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
   const selectedContent = selectedNodeId
     ? roadmap.content.get(selectedNodeId)
     : null;
+
+  // Build categories for hub/category nodes (for Quick Navigation dropdown)
+  const selectedNodeCategories = useMemo<Category[] | undefined>(() => {
+    if (!selectedNodeId) return undefined;
+
+    const selectedNode = roadmap.graph.nodes.find((n) => n.id === selectedNodeId);
+    if (!selectedNode) return undefined;
+
+    const { nodesByParent } = nodeRelationships;
+
+    // Case 1: Selected node is a category node
+    const isCategoryNode = selectedNode.id.includes("-resources") ||
+                          selectedNode.id.includes("-actions") ||
+                          selectedNode.id.includes("-roadblocks");
+
+    if (isCategoryNode) {
+      // Show only this category's checklist items (use pre-computed map)
+      const checklistNodes = nodesByParent.get(selectedNodeId) ?? [];
+
+      const categoryContent = roadmap.content.get(selectedNodeId);
+
+      return [{
+        id: selectedNodeId,
+        title: categoryContent?.frontmatter.title ?? "Category",
+        description: categoryContent?.content,
+        items: checklistNodes.map((node) => ({
+          id: node.id,
+          title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
+        })),
+      }];
+    }
+
+    // Case 2: Selected node is a hub node (no parentId)
+    if (selectedNode.parentId) return undefined;
+
+    // Find all category nodes for this hub (use pre-computed map)
+    const categoryNodes = nodesByParent.get(selectedNodeId) ?? [];
+
+    // Build category data with their checklist items
+    const categories: Category[] = categoryNodes.map((categoryNode) => {
+      const categoryContent = roadmap.content.get(categoryNode.id);
+
+      // Find all checklist items for this category (use pre-computed map)
+      const checklistNodes = nodesByParent.get(categoryNode.id) ?? [];
+
+      return {
+        id: categoryNode.id,
+        title: categoryContent?.frontmatter.title ?? "Category",
+        description: categoryContent?.content,
+        items: checklistNodes.map((node) => ({
+          id: node.id,
+          title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
+        })),
+      };
+    });
+
+    return categories;
+  }, [selectedNodeId, roadmap, nodeRelationships]);
+
+  // Handle navigation from Quick Navigation dropdown
+  const handleNavigateToNode = useCallback(
+    (nodeId: string) => {
+      // Select the node (this will automatically show its category's subnodes)
+      setSelectedNodeId(nodeId);
+      setNodes((currentNodes) =>
+        currentNodes.map((n) => ({
+          ...n,
+          data: { ...n.data, isSelected: n.id === nodeId },
+        })),
+      );
+
+      // Wait for nodes to update before centering viewport
+      setTimeout(() => {
+        void fitView({
+          nodes: [{ id: nodeId }],
+          duration: 500,
+          padding: 0.3,
+        });
+      }, 100);
+    },
+    [setNodes, fitView],
+  );
 
   return (
     <div className="relative h-screen w-full overflow-hidden bg-[#EDF2F6] dark:bg-[#0C1020]">
@@ -538,12 +804,14 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
               benefits={selectedContent.benefits}
               outcomes={selectedContent.outcomes}
               resources={selectedContent.resources}
+              categories={selectedNodeCategories}
               nodeType={selectedContent.frontmatter.type}
               nodeId={selectedNodeId}
               nodeStatus={nodeStatuses[selectedNodeId] ?? "base"}
               onStatusChange={(status) =>
                 handleStatusChange(selectedNodeId, status)
               }
+              onNavigateToNode={handleNavigateToNode}
             />
           </div>
         </div>
@@ -564,5 +832,13 @@ export function RoadmapFlow({ roadmap, userProfile }: RoadmapFlowProps) {
         }
       />
     </div>
+  );
+}
+
+export function RoadmapFlow(props: RoadmapFlowProps) {
+  return (
+    <ReactFlowProvider>
+      <RoadmapFlowInner {...props} />
+    </ReactFlowProvider>
   );
 }

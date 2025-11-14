@@ -59,17 +59,17 @@ export function ChatWidget({
     api: "/api/chat",
     streamProtocol: "data",
     onError: (error) => {
-      console.error("Chat error:", error);
+      logger.error("Chat error", error);
       setIsLoading(false);
       setStatusMessage(null);
     },
     onResponse: (response) => {
-      console.log("Chat response received:", response.status);
+      logger.debug("Chat response received", { status: response.status });
       setIsLoading(true);
       setStatusMessage(null); // Clear status once response starts
     },
     onFinish: (message) => {
-      console.log("Message finished:", message);
+      logger.debug("Message finished", { messageId: message.id });
       setIsLoading(false);
       setStatusMessage(null);
       setStreamingMessageId(null);
@@ -133,7 +133,7 @@ export function ChatWidget({
                       parsed.type === "metadata"
                     ) {
                       // Handle metadata (sources, roadmap_id)
-                      console.log("Received metadata:", parsed);
+                      logger.debug("Received metadata", { parsed });
                       if (
                         "sources" in parsed &&
                         Array.isArray(parsed.sources)
@@ -151,7 +151,7 @@ export function ChatWidget({
                       "message" in parsed &&
                       typeof parsed.message === "string"
                     ) {
-                      console.error("Stream error:", parsed.message);
+                      logger.error("Stream error", { message: parsed.message });
                       setStatusMessage(null);
                       setIsLoading(false);
                       continue; // Don't pass to AI SDK
@@ -196,7 +196,7 @@ export function ChatWidget({
           setMessages(parsed as Parameters<typeof setMessages>[0]);
         }
       } catch (e) {
-        console.error("Failed to restore chat history:", e);
+        logger.error("Failed to restore chat history", e instanceof Error ? e : new Error(String(e)));
       }
     }
     setIsHydrated(true);
@@ -308,7 +308,7 @@ export function ChatWidget({
 
   // Sources component to display citations
   function SourcesDisplay({ sources }: { sources: SourceDocument[] }) {
-    // Filter for high relevance (>70%) and remove duplicates
+    // Filter for moderate-to-high relevance (>50%) and remove duplicates
 
     const filteredSources = sources
       .filter((source) => source.score > CHAT_CONFIG.RELEVANCE_THRESHOLD)

@@ -142,6 +142,7 @@ export async function loadNodeContent(
   );
 
   try {
+    // First, try to load as a standalone markdown file
     const fileContents = await fs.readFile(contentPath, "utf-8");
     const { data, content } = matter(fileContents);
 
@@ -154,6 +155,63 @@ export async function loadNodeContent(
       ...sections,
     };
   } catch (error) {
+    // If standalone file doesn't exist, try to load from checklist file
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+    ) {
+      try {
+        // Extract prefix from nodeId (e.g., "level-1" from "level-1-training-safety")
+        // Try common patterns: level-X, foundation-program, direct-entry, etc.
+        const checklistPatterns = [
+          // Match "level-1", "level-2", etc.
+          /^(level-\d+)/.exec(nodeId)?.[1],
+          // Match "foundation-program", "direct-entry", "ace-it-program", "red-seal"
+          /^(foundation-program|direct-entry|ace-it-program|red-seal)/.exec(nodeId)?.[1],
+          // Match "level-4-construction", "level-4-industrial"
+          /^(level-\d+-\w+)/.exec(nodeId)?.[1],
+        ].filter(Boolean);
+
+        for (const pattern of checklistPatterns) {
+          if (!pattern) continue;
+
+          const checklistFile = `${pattern}-checklists.md`;
+          const checklistPath = path.join(
+            ROADMAPS_BASE_PATH,
+            roadmapId,
+            "content",
+            checklistFile,
+          );
+
+          try {
+            // Check if checklist file exists
+            await fs.access(checklistPath);
+
+            // Load all nodes from the checklist file
+            const checklistNodes = await loadChecklistNodes(
+              roadmapId,
+              checklistFile,
+            );
+
+            // Return the specific node we're looking for
+            const nodeContent = checklistNodes.get(nodeId);
+            if (nodeContent) {
+              return nodeContent;
+            }
+          } catch {
+            // Continue to next pattern if this checklist file doesn't exist
+            continue;
+          }
+        }
+      } catch {
+        // If checklist loading also fails, throw original error
+        throw new Error(
+          `Failed to load content for node "${nodeId}" in roadmap "${roadmapId}": ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+
     throw new Error(
       `Failed to load content for node "${nodeId}" in roadmap "${roadmapId}": ${error instanceof Error ? error.message : String(error)}`,
     );
@@ -178,13 +236,49 @@ async function loadChecklistNodes(
   try {
     const fileContents = await fs.readFile(contentPath, "utf-8");
     const parsed = matter(fileContents);
-    const nodes = (parsed.data.nodes ?? []) as Array<{
+
+    // Handle new nested categories format
+    interface CategoryData {
+      id: string;
+      type: string;
+      title: string;
+      description?: string;
+      icon: string;
+      nodes: Array<{
+        id: string;
+        type: string;
+        title: string;
+        nodeType: string;
+        labelPosition?: string;
+      }>;
+    }
+
+    let nodes: Array<{
       id: string;
       type: string;
       title: string;
       nodeType: string;
       labelPosition?: string;
-    }>;
+    }> = [];
+
+    let categories: CategoryData[] = [];
+
+    // Check for new nested categories format
+    if (parsed.data.categories) {
+      categories = parsed.data.categories as CategoryData[];
+      // Flatten all nodes from all categories
+      nodes = categories.flatMap((category) => category.nodes);
+    }
+    // Fall back to old flat nodes format for backward compatibility
+    else if (parsed.data.nodes) {
+      nodes = parsed.data.nodes as Array<{
+        id: string;
+        type: string;
+        title: string;
+        nodeType: string;
+        labelPosition?: string;
+      }>;
+    }
 
     // Split content by markdown separators (---)
     const contentSections = parsed.content
@@ -207,6 +301,19 @@ async function loadChecklistNodes(
           }),
         },
         content: nodeContent,
+      });
+    });
+
+    // Add category nodes to content map with their descriptions
+    categories.forEach((category) => {
+      contentMap.set(category.id, {
+        frontmatter: {
+          id: category.id,
+          type: "category" as const,
+          title: category.title,
+          nodeType: "category" as const,
+        },
+        content: category.description ?? "",
       });
     });
 

@@ -1,5 +1,9 @@
 export interface ValidationError {
-  type: "missing-parent" | "missing-target" | "missing-position";
+  type:
+    | "missing-parent"
+    | "missing-target"
+    | "missing-position"
+    | "duplicate-category-id";
   nodeId: string;
   message: string;
   target?: string;
@@ -58,6 +62,28 @@ export function validateNodePositions(
         nodeId,
         message: `Node "${nodeId}" missing layout.position`,
       });
+    }
+  }
+
+  return errors;
+}
+
+export function validateCategoryIds(
+  categories: Array<{ id: string; parentId: string; fileName: string }>,
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const seenIds = new Map<string, { parentId: string; fileName: string }>();
+
+  for (const { id, parentId, fileName } of categories) {
+    const existing = seenIds.get(id);
+    if (existing) {
+      errors.push({
+        type: "duplicate-category-id",
+        nodeId: id,
+        message: `Duplicate category ID "${id}" found in "${fileName}" (parent: ${parentId}) and "${existing.fileName}" (parent: ${existing.parentId})`,
+      });
+    } else {
+      seenIds.set(id, { parentId, fileName });
     }
   }
 

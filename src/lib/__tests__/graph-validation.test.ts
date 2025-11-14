@@ -3,6 +3,7 @@ import {
   validateParentReferences,
   validateConnectionTargets,
   validateNodePositions,
+  validateCategoryIds,
   formatValidationErrors,
   type ValidationError,
 } from "../graph-validation";
@@ -123,6 +124,118 @@ describe("graph-validation", () => {
 
       expect(errors).toHaveLength(1);
       expect(errors[0]?.nodeId).toBe("node2");
+    });
+  });
+
+  describe("validateCategoryIds", () => {
+    it("should return no errors when all category IDs are unique", () => {
+      const categories = [
+        {
+          id: "level-1-resources",
+          parentId: "level-1",
+          fileName: "level-1-checklists.md",
+        },
+        {
+          id: "level-1-actions",
+          parentId: "level-1",
+          fileName: "level-1-checklists.md",
+        },
+        {
+          id: "level-2-resources",
+          parentId: "level-2",
+          fileName: "level-2-checklists.md",
+        },
+      ];
+
+      const errors = validateCategoryIds(categories);
+
+      expect(errors).toEqual([]);
+    });
+
+    it("should return error when category ID is duplicated", () => {
+      const categories = [
+        {
+          id: "level-1-resources",
+          parentId: "level-1",
+          fileName: "level-1-checklists.md",
+        },
+        {
+          id: "level-1-resources",
+          parentId: "level-2",
+          fileName: "level-2-checklists.md",
+        },
+      ];
+
+      const errors = validateCategoryIds(categories);
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0]).toMatchObject({
+        type: "duplicate-category-id",
+        nodeId: "level-1-resources",
+        message: expect.stringContaining("Duplicate category ID"),
+      });
+      expect(errors[0]?.message).toContain("level-1-checklists.md");
+      expect(errors[0]?.message).toContain("level-2-checklists.md");
+    });
+
+    it("should return multiple errors for multiple duplicates", () => {
+      const categories = [
+        {
+          id: "resources",
+          parentId: "level-1",
+          fileName: "level-1-checklists.md",
+        },
+        {
+          id: "resources",
+          parentId: "level-2",
+          fileName: "level-2-checklists.md",
+        },
+        {
+          id: "actions",
+          parentId: "level-1",
+          fileName: "level-1-checklists.md",
+        },
+        {
+          id: "actions",
+          parentId: "level-3",
+          fileName: "level-3-checklists.md",
+        },
+      ];
+
+      const errors = validateCategoryIds(categories);
+
+      expect(errors).toHaveLength(2);
+      expect(errors[0]?.nodeId).toBe("resources");
+      expect(errors[1]?.nodeId).toBe("actions");
+    });
+
+    it("should handle empty categories array", () => {
+      const errors = validateCategoryIds([]);
+
+      expect(errors).toEqual([]);
+    });
+
+    it("should provide detailed information about both duplicate locations", () => {
+      const categories = [
+        {
+          id: "duplicate-id",
+          parentId: "parent-a",
+          fileName: "file-a.md",
+        },
+        {
+          id: "duplicate-id",
+          parentId: "parent-b",
+          fileName: "file-b.md",
+        },
+      ];
+
+      const errors = validateCategoryIds(categories);
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0]?.message).toContain("parent-a");
+      expect(errors[0]?.message).toContain("parent-b");
+      expect(errors[0]?.message).toContain("file-a.md");
+      expect(errors[0]?.message).toContain("file-b.md");
     });
   });
 

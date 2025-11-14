@@ -29,6 +29,12 @@
 - Use the `NodeAppendix` wrapper when you need badges or controls anchored to a node edge; combine it with the BaseNode structure so appendix content stays positioned and accessible. citeturn1search1
 - For large diagrams, memoize custom node/edge components and callback props with `React.memo`, `useCallback`, and `useMemo`; avoid reading the full nodes/edges arrays inside components and collapse deep node trees to reduce re-renders. citeturn1search5
 - Custom node primitives for the Panday flow live under `src/components/nodes` (`HubNode`, `TerminalNode`, `ChecklistNode`); each wraps `BaseNode` + `NodeAppendix`, applies the brand palette (teal `#35C1B9` connectors/edges, yellow `#FFD84D` hubs for main path nodes, purple `purple-500` terminal for final goal, smaller teal checklist subnodes), and pre-registers handle IDs so edges land tangent to the circle rim without arrowheads. Note: `requirement`, `portal`, and `checkpoint` types are registered as aliases to `HubNode` but not currently used in the electrician roadmap.
+- **Connector Nodes**: Category nodes (`ResourcesNode`, `ActionsNode`, `RoadblocksNode`) serve as collapsible containers that organize checklist subnodes into thematic groups (Resources: blue `#0077CC`, Actions: green `#00A67E`, Roadblocks: orange `#FF6B35`). These 96x96px circular nodes display icons (brain, clipboard-list, traffic-cone) and a chevron indicator that rotates based on expansion state.
+  - **Selection-Based Visibility** (Nov 2025): Checklist subnodes are visible only when their parent connector node OR any sibling subnode is selected in the node-info-panel. This replaces the previous toggle-based expansion system.
+  - **Visual Feedback**: The `isExpanded` property is derived from selection state (category selected OR child selected) and drives chevron rotation (0° collapsed, 90° expanded).
+  - **Implementation**: Visibility logic lives in `src/components/roadmap-flow.tsx` node/edge filtering (lines 146-158, 260-280). No persistent state is stored—subnodes appear/disappear purely based on `selectedNodeId`.
+  - **User Experience**: Clicking a connector node opens the node-info-panel and reveals all its subnodes. Clicking a subnode (e.g., "Workplace Safety" under Actions) keeps all sibling subnodes visible. Clicking elsewhere or selecting a different hub collapses the category.
+  - **Component Hierarchy**: Hub → Connector (category) → Checklist (subnodes). Each connector has `parentId` pointing to its hub, and checklist nodes have `parentId` pointing to their connector.
 
 ## Dynamic Roadmap System
 
@@ -47,10 +53,19 @@
 - **Data Loading**: Server-side loading via `src/lib/roadmap-loader.ts` with caching via `src/lib/roadmap-cache.ts`
   - `roadmapCache.get(id)`: Loads complete roadmap with 5-minute in-memory cache
   - `buildRoadmap(id)`: Direct loader (bypasses cache) - loads metadata + graph + content
-  - `loadNodeContent(roadmapId, nodeId)`: Parses markdown frontmatter + content sections
+  - `loadNodeContent(roadmapId, nodeId)`: Parses markdown frontmatter + content sections with intelligent fallback
+    - First attempts to load standalone markdown files (e.g., `foundation-program.md`)
+    - On failure, automatically searches checklist files (e.g., `level-1-checklists.md`) for nodes like `level-1-training-safety`
+    - Supports pattern matching for checklist file discovery (`level-X`, `foundation-program`, `ace-it-program`, `red-seal`, `level-4-construction`, etc.)
+    - Critical for RAG/chat integration to access individual checklist node content for context
   - Uses `gray-matter` for frontmatter parsing
 - **Rendering Flow**: `app/page.tsx` (server) → `roadmapCache.get()` → `ErrorBoundary` → `RoadmapFlow` (client) → React Flow visualization
-- **Node Types**: `hub` (yellow `#FFD84D`, main path nodes), `terminal` (purple `purple-500`, final goal - Red Seal certification), `checklist` (teal, subnodes) — fully implemented in `src/components/nodes/`. Types `requirement`, `portal`, `checkpoint` are registered as aliases to `hub` but not used in current electrician roadmap.
+- **Node Types**:
+  - `hub` (yellow `#FFD84D`, main path nodes) — Main career milestones, serve as parents for connector nodes
+  - `terminal` (purple `purple-500`, final goal) — Red Seal certification endpoint
+  - `resources`, `actions`, `roadblocks` (blue/green/orange) — Connector/category nodes that organize checklist items, with selection-based visibility (see React Flow Integration section)
+  - `checklist` (teal, subnodes) — Individual tasks/requirements under connector nodes, visible only when parent or sibling is selected
+  - Types `requirement`, `portal`, `checkpoint` are registered as aliases to `hub` but not used in current electrician roadmap
 - **Animations**: Framer Motion integration in `BaseNode` component provides smooth scale/opacity transitions on load and 1.05x scale on hover
 - **Personalized Viewport**: Initial viewport dynamically centers on user's current level via `src/lib/viewport-utils.ts`
   - Data-driven approach reads node positions from `graph.json` (no hardcoded positions)
@@ -126,12 +141,16 @@
 
 - **Endpoint**: `/api/chat` - RAG-powered chat using embeddings + AI
 - **Flow**: User query → Hybrid Embeddings Backend (JSON or Postgres) → AI Provider (system prompt + context) → Streamed response
+- **Source Citation**:
+  - Relevance threshold: 50% (configurable in `src/lib/chat-config.ts`)
+  - Sources below threshold are filtered from display to reduce noise
+  - Threshold lowered from 70% to 50% to show moderately relevant context and prevent blank responses
 - **Security**:
   - Rate limiting: 10 requests/minute per IP via `@upstash/ratelimit` (Redis-backed sliding window)
   - Input validation: Zod schema enforces max 50 messages, 10k chars per message
   - Timeout: 30s AbortController timeout on embeddings API calls
   - ⚠️ No authentication yet (MVP-acceptable) - add Clerk protection before public launch
-- **Implementation**: `src/app/api/chat/route.ts`, `src/lib/embeddings-hybrid.ts`, `src/lib/embeddings-postgres.ts`, `src/lib/rate-limit.ts`
+- **Implementation**: `src/app/api/chat/route.ts`, `src/lib/embeddings-hybrid.ts`, `src/lib/embeddings-postgres.ts`, `src/lib/rate-limit.ts`, `src/lib/chat-config.ts`
 - **Testing**: See `src/app/api/chat/__tests__/route.test.ts` and `src/lib/__tests__/embeddings-client.test.ts`
 
 ## Embeddings System

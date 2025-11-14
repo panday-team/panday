@@ -9,6 +9,7 @@ export type NodeType =
   | "portal"
   | "checkpoint"
   | "terminal"
+  | "category"
   | "checklist";
 
 /**
@@ -59,6 +60,23 @@ export interface NodeContent {
 }
 
 /**
+ * Configuration for a category node with its child checklist nodes
+ */
+export interface CategoryConfig {
+  id: string;
+  type: "category";
+  title: string;
+  icon: "brain" | "clipboard-list" | "traffic-cone";
+  nodes: Array<{
+    id: string;
+    type: string;
+    title: string;
+    nodeType: string;
+    labelPosition?: "left" | "right" | "top" | "bottom";
+  }>;
+}
+
+/**
  * Graph node position and connection data
  */
 export interface GraphNode {
@@ -67,6 +85,7 @@ export interface GraphNode {
   sourcePosition?: Position;
   targetPosition?: Position;
   parentId?: string | null;
+  categoryId?: string | null;
 }
 
 /**
