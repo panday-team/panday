@@ -146,7 +146,7 @@ ${conversation}
       });
       logger.info("Extractor response received", {
         sessionId: session.id,
-        preview: (completion.text ?? "").slice(0, 200),
+        preview: JSON.stringify(completion.object).slice(0, 200),
         pairCount: completion.object.pairs.length,
       });
       return completion.object.pairs;
