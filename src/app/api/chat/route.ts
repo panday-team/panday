@@ -1,6 +1,7 @@
 import { StreamData, streamText } from "ai";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
+import type { ChatThread } from "@prisma/client";
 
 import { queryEmbeddings, getActiveBackend } from "@/lib/embeddings-hybrid";
 import { env } from "@/env";
@@ -10,6 +11,10 @@ import { chatRateLimit } from "@/lib/rate-limit";
 import { getCookieName } from "@/lib/user-identifier";
 import { loadNodeContent } from "@/lib/roadmap-loader";
 import { db } from "@/server/db";
+import {
+  buildMessagePreview,
+  deriveThreadTitle,
+} from "@/lib/chat-threads";
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -22,6 +27,7 @@ const ChatRequestSchema = z.object({
   messages: z.array(ChatMessageSchema).min(1).max(50),
   roadmap_id: z.string().optional(),
   selected_node_id: z.string().optional(),
+  thread_id: z.string().optional(),
   user_profile: z
     .object({
       trade: z.string().optional(),
@@ -169,6 +175,24 @@ export async function POST(req: NextRequest) {
     }
 
     const validatedBody = validationResult.data;
+    const threadId = validatedBody.thread_id ?? null;
+    let threadForPersistence:
+      | (ChatThread & { _count: { messages: number } })
+      | null = null;
+
+    if (threadId) {
+      threadForPersistence = await db.chatThread.findFirst({
+        where: { id: threadId, userId, deletedAt: null },
+        include: { _count: { select: { messages: true } } },
+      });
+
+      if (!threadForPersistence) {
+        return Response.json(
+          { error: "Chat thread not found" },
+          { status: 404 },
+        );
+      }
+    }
 
     const lastUserMessage = validatedBody.messages
       .filter((msg) => msg.role === "user")
@@ -194,6 +218,50 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+
+    if (threadForPersistence) {
+      const createdThreadMessage = await db.chatThreadMessage.create({
+        data: {
+          threadId: threadForPersistence.id,
+          role: "user",
+          content: lastUserMessage.content,
+        },
+      });
+
+      const shouldAutoRename =
+        (threadForPersistence._count?.messages ?? 0) === 0;
+
+      await db.chatThread.update({
+        where: { id: threadForPersistence.id },
+        data: {
+          lastMessageAt: createdThreadMessage.createdAt,
+          messagePreview: buildMessagePreview(lastUserMessage.content),
+          ...(shouldAutoRename
+            ? { title: deriveThreadTitle(lastUserMessage.content) }
+            : {}),
+          ...(validatedBody.selected_node_id &&
+          !threadForPersistence.selectedNodeId
+            ? { selectedNodeId: validatedBody.selected_node_id }
+            : {}),
+          ...(validatedBody.roadmap_id && !threadForPersistence.roadmapId
+            ? { roadmapId: validatedBody.roadmap_id }
+            : {}),
+        },
+      });
+
+      threadForPersistence = {
+        ...threadForPersistence,
+        roadmapId:
+          threadForPersistence.roadmapId ?? validatedBody.roadmap_id ?? null,
+        selectedNodeId:
+          threadForPersistence.selectedNodeId ??
+          validatedBody.selected_node_id ??
+          null,
+        _count: {
+          messages: (threadForPersistence._count?.messages ?? 0) + 1,
+        },
+      };
+    }
 
     const activeBackend = getActiveBackend();
     logger.info("Using embeddings backend", {
@@ -312,6 +380,25 @@ Always cite which specific sections or documents your answer comes from when pos
               },
             },
           });
+
+          if (threadForPersistence) {
+            const assistantThreadMessage = await db.chatThreadMessage.create({
+              data: {
+                threadId: threadForPersistence.id,
+                role: "assistant",
+                content: text ?? "",
+                sources: normalizedSources,
+              },
+            });
+
+            await db.chatThread.update({
+              where: { id: threadForPersistence.id },
+              data: {
+                lastMessageAt: assistantThreadMessage.createdAt,
+                messagePreview: buildMessagePreview(text ?? ""),
+              },
+            });
+          }
 
           if (!session.endedAt && validatedBody.messages.length >= MAX_MESSAGES_PER_SESSION) {
             await db.chatSession.update({

@@ -186,3 +186,33 @@ model FAQEntry {
   @@index([isGlobal])
   @@index([displayOrder])
 }
+
+model ChatThread {
+  id             String              @id @default(cuid())
+  userId         String
+  roadmapId      String?
+  selectedNodeId String?
+  title          String
+  messagePreview String?
+  lastMessageAt  DateTime            @default(now())
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  deletedAt      DateTime?
+  messages       ChatThreadMessage[]
+
+  @@index([userId, lastMessageAt])
+  @@index([roadmapId])
+  @@index([deletedAt])
+}
+
+model ChatThreadMessage {
+  id        String     @id @default(cuid())
+  threadId  String
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  role      String
+  content   String     @db.Text
+  sources   Json?
+  createdAt DateTime   @default(now())
+
+  @@index([threadId, createdAt])
+}
