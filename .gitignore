@@ -70,6 +70,10 @@ dist/
 build/
 *.egg
 /public/real--mascot.png
+<<<<<<< HEAD
 
 # Embeddings PDFs (served from src/data/embeddings)
 /public/embeddings/
+=======
+.aider*
+>>>>>>> 55825fb (Enables the chat API and widget to use the standard Vercel AI streaming protocol with provider‑agnostic model selection, structured StreamData status/metadata events, and clearer surfaced errors so the frontend no longer needs a custom fetch shim and users see meaningful status updates instead of generic stream failures.)

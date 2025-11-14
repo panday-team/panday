@@ -1,5 +1,7 @@
+import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { streamText, type LanguageModel } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
+import { StreamData, streamText, type LanguageModel } from "ai";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -32,13 +34,34 @@ const ChatRequestSchema = z.object({
   top_k: z.number().int().min(1).max(20).optional(),
 });
 
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
+
 function getAIModel(): LanguageModel {
   switch (env.AI_PROVIDER) {
     case "google": {
+      if (!env.GOOGLE_API_KEY) {
+        throw new Error("GOOGLE_API_KEY is not configured");
+      }
       const google = createGoogleGenerativeAI({
         apiKey: env.GOOGLE_API_KEY,
       });
       return google(env.AI_MODEL);
+    }
+    case "openai": {
+      const openai = createOpenAI({
+        apiKey: env.OPENAI_API_KEY,
+      });
+      return openai(env.AI_MODEL);
+    }
+    case "anthropic": {
+      if (!env.ANTHROPIC_API_KEY) {
+        throw new Error("ANTHROPIC_API_KEY is not configured");
+      }
+      const anthropic = createAnthropic({
+        apiKey: env.ANTHROPIC_API_KEY,
+      });
+      return anthropic(env.AI_MODEL);
     }
     default:
       throw new Error(`Unsupported AI provider: ${env.AI_PROVIDER as string}`);
@@ -81,9 +104,35 @@ function getRequestIdentifier(
   return "anonymous";
 }
 
+function formatStreamErrorMessage(
+  error: unknown,
+  userId: string | null,
+): string {
+  if (error instanceof Error) {
+    logger.error("Chat stream error", error, { userId });
+    return error.message;
+  }
+
+  if (typeof error === "string") {
+    logger.error("Chat stream error", undefined, {
+      userId,
+      rawError: error,
+    });
+    return error;
+  }
+
+  logger.error("Chat stream error", undefined, { userId, rawError: error });
+  return "An unexpected error occurred";
+}
+
 export async function POST(req: NextRequest) {
+  let dataStream: StreamData | null = null;
+  let currentUserId: string | null = null;
+
   try {
-    const { userId } = await auth();
+    const { userId, isAuthenticated } = await auth();
+    currentUserId = userId;
+    if (!isAuthenticated) throw new Error("user not logged in");
 
     // Apply rate limiting BEFORE authentication check to prevent abuse
     const identifier = getRequestIdentifier(req, userId);
@@ -142,90 +191,88 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "No user message found" }, { status: 400 });
     }
 
-    // Create a custom streaming response with status updates
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          const activeBackend = getActiveBackend();
-          logger.info("Using embeddings backend", {
-            backend: activeBackend,
-            roadmapId: validatedBody.roadmap_id,
-          });
-          // Send initial status update
-          const statusUpdate1 = {
-            type: "status",
-            message: "Retrieving Augmented info",
-          };
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(statusUpdate1)}\n\n`),
-          );
-          // Query embeddings
-          const embeddingsResponse = await queryEmbeddings({
-            query: lastUserMessage.content,
-            roadmap_id: validatedBody.roadmap_id,
-            top_k: validatedBody.top_k ?? 5,
-          });
-          logger.info("Retrieved embeddings successfully", {
-            backend: activeBackend,
-            sourcesCount: embeddingsResponse.sources.length,
-          });
-          // Send second status update
-          const statusUpdate2 = {
-            type: "status",
-            message: "Generating response",
-          };
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(statusUpdate2)}\n\n`),
-          );
-          // Build user context string
-          let userContext = "";
-          if (validatedBody.user_profile) {
-            const { trade, currentLevel, specialization, residencyStatus } =
-              validatedBody.user_profile;
-            const contextParts = [];
+    const activeBackend = getActiveBackend();
+    logger.info("Using embeddings backend", {
+      backend: activeBackend,
+      roadmapId: validatedBody.roadmap_id,
+    });
 
-            if (trade) contextParts.push(`Trade: ${trade}`);
-            if (currentLevel)
-              contextParts.push(`Current Level: ${currentLevel}`);
-            if (specialization)
-              contextParts.push(`Specialization: ${specialization}`);
-            if (residencyStatus)
-              contextParts.push(`Residency Status: ${residencyStatus}`);
+    dataStream = new StreamData();
+    dataStream.append({
+      type: "status",
+      message: "Preparing roadmap context...",
+    });
 
-            if (contextParts.length > 0) {
-              userContext = `User Profile:\n${contextParts.join("\n")}\n\n`;
-            }
-          }
+    const embeddingsResponse = await queryEmbeddings({
+      query: lastUserMessage.content,
+      roadmap_id: validatedBody.roadmap_id,
+      top_k: validatedBody.top_k ?? 5,
+    });
 
-          // Build node context string
-          let nodeContext = "";
-          if (validatedBody.selected_node_id && validatedBody.roadmap_id) {
-            try {
-              const nodeContent = await loadNodeContent(
-                validatedBody.roadmap_id,
-                validatedBody.selected_node_id,
-              );
-              if (nodeContent) {
-                nodeContext = `Current Step Information:\nTitle: ${nodeContent.frontmatter.title}\n${
-                  nodeContent.content
-                    .split("\n")
-                    .find(
-                      (line) => line.startsWith("#") === false && line.trim(),
-                    )
-                    ?.trim() ?? ""
-                }\n\n`;
-              }
-            } catch (error) {
-              logger.warn("Failed to load node content for context", {
-                error: error as Error,
-                nodeId: validatedBody.selected_node_id,
-                roadmapId: validatedBody.roadmap_id,
-              });
-            }
-          }
+    logger.info("Retrieved embeddings successfully", {
+      backend: activeBackend,
+      sourcesCount: embeddingsResponse.sources.length,
+    });
 
-          const systemPrompt = `You are a helpful career guidance assistant for skilled trades in British Columbia, Canada.
+    const metadataPayload: JsonValue = {
+      type: "metadata",
+      roadmapId: embeddingsResponse.roadmap_id,
+      sources: embeddingsResponse.sources.map((source) => ({
+        node_id: source.node_id,
+        title: source.title,
+        score: source.score,
+        text_snippet: source.text_snippet,
+      })),
+    };
+    dataStream.append(metadataPayload);
+    dataStream.append({
+      type: "status",
+      message: "Generating response...",
+    });
+    await dataStream.close();
+
+    let userContext = "";
+    if (validatedBody.user_profile) {
+      const { trade, currentLevel, specialization, residencyStatus } =
+        validatedBody.user_profile;
+      const contextParts = [];
+
+      if (trade) contextParts.push(`Trade: ${trade}`);
+      if (currentLevel) contextParts.push(`Current Level: ${currentLevel}`);
+      if (specialization) contextParts.push(`Specialization: ${specialization}`);
+      if (residencyStatus)
+        contextParts.push(`Residency Status: ${residencyStatus}`);
+
+      if (contextParts.length > 0) {
+        userContext = `User Profile:\n${contextParts.join("\n")}\n\n`;
+      }
+    }
+
+    let nodeContext = "";
+    if (validatedBody.selected_node_id && validatedBody.roadmap_id) {
+      try {
+        const nodeContent = await loadNodeContent(
+          validatedBody.roadmap_id,
+          validatedBody.selected_node_id,
+        );
+        if (nodeContent) {
+          nodeContext = `Current Step Information:\nTitle: ${nodeContent.frontmatter.title}\n${
+            nodeContent.content
+              .split("\n")
+              .find((line) => line.startsWith("#") === false && line.trim())
+              ?.trim() ?? ""
+          }\n\n`;
+        }
+      } catch (error) {
+        logger.warn("Failed to load node content for context", {
+          error: error as Error,
+          nodeId: validatedBody.selected_node_id,
+          roadmapId: validatedBody.roadmap_id,
+        });
+      }
+    }
+
+    const systemPrompt = `You are a helpful career guidance assistant for skilled trades in British Columbia, Canada.
 
 ${userContext}${nodeContext}You have access to the following relevant information from the career roadmap database:
 
@@ -245,81 +292,45 @@ Example citation format:
 
 Provide personalized guidance based strictly on the user's current situation and the step they're asking about, using only the information provided in the context.`;
 
-          // start the AI response stream
-          const result = streamText({
-            model: getAIModel(),
-            system: systemPrompt,
-            messages: validatedBody.messages.map((msg) => ({
-              role: msg.role,
-              content: msg.content,
-            })),
-            maxTokens: 1024,
-            onFinish: async () => {
-              logger.info("Chat completion finished", {
-                provider: env.AI_PROVIDER,
-                model: env.AI_MODEL,
-                userId,
-              });
-            },
-          });
-
-          // send metadata before streaming starts
-          const metadataUpdate = {
-            type: "metadata",
-            sources: embeddingsResponse.sources,
-            roadmapId: embeddingsResponse.roadmap_id,
-          };
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(metadataUpdate)}\n\n`),
-          );
-
-          // stream the AI response
-          const reader = result.toDataStream().getReader();
-
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              controller.enqueue(value);
-            }
-          } finally {
-            reader.releaseLock();
-          }
-
-          controller.close();
-        } catch (error) {
-          const errorUpdate = {
-            type: "error",
-            message:
-              error instanceof Error
-                ? error.message
-                : "An unexpected error occurred",
-          };
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(errorUpdate)}\n\n`),
-          );
-          controller.close();
-        }
+    const result = streamText({
+      model: getAIModel(),
+      system: systemPrompt,
+      messages: validatedBody.messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      })),
+      maxTokens: 1024,
+      onFinish: async () => {
+        logger.info("Chat completion finished", {
+          provider: env.AI_PROVIDER,
+          model: env.AI_MODEL,
+          userId,
+        });
       },
     });
 
-    const response = new Response(stream, {
+    const response = result.toDataStreamResponse({
+      data: dataStream ?? undefined,
       headers: {
         "X-RateLimit-Limit": limit.toString(),
         "X-RateLimit-Remaining": remaining.toString(),
         "X-RateLimit-Reset": reset.toString(),
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
       },
+      getErrorMessage: (streamError) =>
+        formatStreamErrorMessage(streamError, currentUserId),
     });
 
-    // for debugging
     response.headers.set("X-User-Id", userId);
-
     return response;
   } catch (error) {
-    const { userId } = await auth();
+    if (dataStream) {
+      try {
+        await dataStream.close();
+      } catch {
+        // ignore - stream might already be closed
+      }
+    }
+
     logger.error("Chat API error", error, {
       identifier: getRequestIdentifier(req, userId),
     });

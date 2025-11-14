@@ -27,6 +27,37 @@ interface ChatWidgetProps {
   };
 }
 
+const STORAGE_KEY = "panday_chat_messages";
+
+type StreamStatusEvent = {
+  type: "status";
+  message: string;
+};
+
+type StreamMetadataEvent = {
+  type: "metadata";
+  roadmapId?: string;
+  sources?: unknown;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null;
+};
+
+const isStatusEvent = (value: unknown): value is StreamStatusEvent => {
+  if (!isRecord(value)) return false;
+  const typeValue = value.type;
+  if (typeof typeValue !== "string" || typeValue !== "status") return false;
+  const messageValue = value.message;
+  return typeof messageValue === "string";
+};
+
+const isMetadataEvent = (value: unknown): value is StreamMetadataEvent => {
+  if (!isRecord(value)) return false;
+  const typeValue = value.type;
+  return typeof typeValue === "string" && typeValue === "metadata";
+};
+
 export function ChatWidget({
   selectedNodeId,
   roadmapId,
@@ -55,9 +86,9 @@ export function ChatWidget({
     handleSubmit,
     error,
     setMessages,
+    data: streamData,
   } = useChat({
     api: "/api/chat",
-    streamProtocol: "data",
     onError: (error) => {
       logger.error("Chat error", error);
       setIsLoading(false);
@@ -78,108 +109,6 @@ export function ChatWidget({
       roadmap_id: roadmapId,
       selected_node_id: selectedNodeId ?? undefined,
       user_profile: userProfile,
-    },
-    // Handle custom data from the stream
-    fetch: async (url, options) => {
-      const response = await fetch(url, options);
-
-      if (!response.body) {
-        throw new Error("No response body");
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      // Create a new stream that processes our custom events
-      const customStream = new ReadableStream({
-        start(controller) {
-          let buffer = "";
-
-          function pump(): Promise<void> {
-            return reader.read().then(({ done, value }) => {
-              if (done) {
-                controller.close();
-                return;
-              }
-
-              buffer += decoder.decode(value, { stream: true });
-              const lines = buffer.split("\n");
-              buffer = lines.pop() ?? "";
-
-              for (const line of lines) {
-                if (line.startsWith("data: ")) {
-                  const data = line.slice(6);
-
-                  try {
-                    const parsed: unknown = JSON.parse(data);
-
-                    // Handle our custom status updates
-                    if (
-                      typeof parsed === "object" &&
-                      parsed !== null &&
-                      "type" in parsed &&
-                      parsed.type === "status" &&
-                      "message" in parsed &&
-                      typeof parsed.message === "string"
-                    ) {
-                      setStatusMessage(parsed.message);
-                      continue; // Don't pass to AI SDK
-                    }
-
-                    if (
-                      typeof parsed === "object" &&
-                      parsed !== null &&
-                      "type" in parsed &&
-                      parsed.type === "metadata"
-                    ) {
-                      // Handle metadata (sources, roadmap_id)
-                      logger.debug("Received metadata", { parsed });
-                      if (
-                        "sources" in parsed &&
-                        Array.isArray(parsed.sources)
-                      ) {
-                        setSources(parsed.sources as SourceDocument[]);
-                      }
-                      continue; // Don't pass to AI SDK
-                    }
-
-                    if (
-                      typeof parsed === "object" &&
-                      parsed !== null &&
-                      "type" in parsed &&
-                      parsed.type === "error" &&
-                      "message" in parsed &&
-                      typeof parsed.message === "string"
-                    ) {
-                      logger.error("Stream error", { message: parsed.message });
-                      setStatusMessage(null);
-                      setIsLoading(false);
-                      continue; // Don't pass to AI SDK
-                    }
-                  } catch {
-                    // If it's not JSON, it's probably AI SDK data
-                    // Fall through to pass it along
-                  }
-                }
-
-                // Pass through other data to AI SDK
-                controller.enqueue(new TextEncoder().encode(line + "\n"));
-              }
-
-              return pump();
-            });
-          }
-
-          return pump();
-        },
-      });
-
-      // Return a new response with our processed stream
-      return new Response(customStream, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers,
-      });
     },
   });
 
@@ -246,6 +175,20 @@ export function ChatWidget({
       }
     }
   }, [messages, isHydrated]);
+
+  useEffect(() => {
+    if (!streamData || streamData.length === 0) return;
+
+    const latestEvent = streamData[streamData.length - 1];
+    if (isStatusEvent(latestEvent)) {
+      setStatusMessage(latestEvent.message);
+      return;
+    }
+
+    if (isMetadataEvent(latestEvent)) {
+      console.debug("Chat metadata", latestEvent);
+    }
+  }, [streamData]);
 
   useEffect(() => {
     if (!isExpanded) didMountRef.current = false;
