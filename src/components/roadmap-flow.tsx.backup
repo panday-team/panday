@@ -60,6 +60,9 @@ import {
 } from "@/lib/profile-types";
 import { calculateViewportForNode } from "@/lib/viewport-utils";
 
+import useLocalStorage from "./local-storage";
+
+import RoadmapTutorialWidget from "./roadmap-tutorial";
 type FlowNode =
   | HubNodeType
   | ChecklistNodeType
@@ -106,6 +109,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   const [nodeStatuses, setNodeStatuses] = useState<Record<string, NodeStatus>>(
     {},
   );
+<<<<<<< HEAD
   const { fitView } = useReactFlow();
 
   // Track which category nodes are expanded (showing their checklist children)
@@ -135,12 +139,32 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   }, [expandedCategories, roadmap.metadata.id]);
 
   const [showTutorial, setShowTutorial] = useState<boolean>(false);
+  const tutorialKey = `${userProfile?.clerkUserId ?? "guest-account"}:tutorial-finished`;
+  // use the users id to identify if they have completed the tutorial already.
+  const { getItem: getTutorialCompleted, setItem: setTutorialCompleted } =
+    useLocalStorage(tutorialKey);
+
+  // check local storage when roadmap renders
+  useEffect(() => {
+    const tutorialCompleted = getTutorialCompleted();
+    // console.log(`Showed Tutorial: ${tutorialCompleted || false}`);
+
+    if (!tutorialCompleted) {
+      setTutorialCompleted("burger ate");
+      return setShowTutorial(true);
+    }
+    // console.log(`Showed : ${tutorialCompleted || false}`);
+  }, [getTutorialCompleted, setTutorialCompleted]);
+=======
+  const [showTutorial, setShowTutorial] = useState<boolean>(false);
+>>>>>>> 07b76c4 (tutorial completion status stored in the database)
 
   // Load statuses from database on mount, with localStorage fallback
   useEffect(() => {
     void fetchNodeStatuses(roadmap.metadata.id).then(setNodeStatuses);
   }, [roadmap.metadata.id]);
 
+<<<<<<< HEAD
   // Pre-compute node relationships once for reuse across multiple memos
   const nodeRelationships = useMemo(() => {
     const hubNodeIds = new Set(
@@ -156,12 +180,14 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
     }
     return { hubNodeIds, nodesByParent };
   }, [roadmap]);
+=======
   // Show tutorial if user hasn't completed it
   useEffect(() => {
     if (userProfile && !userProfile.tutorialCompletedAt) {
       setShowTutorial(true);
     }
   }, [userProfile]);
+>>>>>>> 07b76c4 (tutorial completion status stored in the database)
 
   // Calculate initial viewport based on user's current level
   const initialViewport = useMemo(() => {
@@ -543,6 +569,11 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
     );
   }, [setNodes]);
 
+  const handleTutorialClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    setShowTutorial(true);
+  };
+
   const handleStatusChange = useCallback(
     (nodeId: string, status: NodeStatus) => {
       // Update localStorage immediately (returns void, database update happens in background)
@@ -698,6 +729,14 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
 
       <div className="pointer-events-none absolute top-0 right-0 flex w-full justify-end p-4 md:pt-10 md:pr-10 md:pl-0">
         <div className="pointer-events-auto">
+          {showTutorial && (
+            <>
+              <RoadmapTutorialWidget
+                setShowTutorial={setShowTutorial}
+                showTutorial={showTutorial}
+              />
+            </>
+          )}
           {userProfile ? (
             <Card className="bg-background/95 supports-[backdrop-filter]:bg-background/80 min-h-[140px] p-4 backdrop-blur">
               <div className="flex items-start justify-between gap-4">
@@ -716,6 +755,18 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
                   </p>
                 </div>
                 <div className="flex gap-1">
+<<<<<<< HEAD
+                  <div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={handleTutorialClick}
+                    >
+                      <BookOpenText className="h-4 w-4" />
+                    </Button>
+                  </div>
+=======
                   <Button
                     variant="ghost"
                     size="sm"
@@ -724,6 +775,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
                   >
                     <BookOpenText className="h-4 w-4" />
                   </Button>
+>>>>>>> 07b76c4 (tutorial completion status stored in the database)
                   <Link href="/">
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                       <Home className="h-4 w-4" />
