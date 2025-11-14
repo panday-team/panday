@@ -178,7 +178,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
       ? getCompletedLevels(userProfile.currentLevel)
       : [];
     const irrelevantNodeIds = userProfile
-      ? getIrrelevantNodes(userProfile.specialization)
+      ? getIrrelevantNodes(userProfile.specialization, userProfile.currentLevel)
       : [];
     const currentLevelNodeId = userProfile
       ? getCurrentLevelNodeId(
@@ -254,7 +254,24 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
       // Determine if this node should be auto-completed based on user profile
       const isCompletedByProfile = completedLevelIds.includes(graphNode.id);
       const isCurrentLevel = currentLevelNodeId === graphNode.id;
-      const isDimmed = irrelevantNodeIds.includes(graphNode.id);
+
+      // Cascade dimming from parent nodes
+      let isDimmed = irrelevantNodeIds.includes(graphNode.id);
+
+      // If node has a parent, check if parent is dimmed (cascade)
+      if (!isDimmed && graphNode.parentId) {
+        const parentNode = roadmap.graph.nodes.find(n => n.id === graphNode.parentId);
+        if (parentNode) {
+          // Check if parent hub is dimmed
+          if (irrelevantNodeIds.includes(parentNode.id)) {
+            isDimmed = true;
+          }
+          // Check if parent connector is dimmed (for checklist nodes)
+          else if (parentNode.parentId && irrelevantNodeIds.includes(parentNode.parentId)) {
+            isDimmed = true;
+          }
+        }
+      }
 
       // Prioritize user-set status over profile-based status
       let nodeStatus: NodeStatus = nodeStatuses[graphNode.id] ?? "base";

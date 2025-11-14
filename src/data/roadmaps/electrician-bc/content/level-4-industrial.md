@@ -8,7 +8,7 @@ glow: true
 duration: "10 weeks"
 layout:
   position: { x: 900, y: -6000 }
-  connectsTo: ["red-seal-certification"]
+  connectsTo: ["red-seal-industrial"]
 ---
 
 # Industrial Electrician Level 4

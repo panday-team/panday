@@ -1,7 +1,7 @@
 ---
-milestoneId: "red-seal-certification"
+milestoneId: "red-seal-construction"
 categories:
-  - id: "red-seal-certification-resources"
+  - id: "red-seal-construction-resources"
     type: "category"
     title: "Resources"
     description: "Essential resources and information to help you understand and navigate Red Seal Certification"
@@ -22,7 +22,7 @@ categories:
         title: "Electrician Profile"
         nodeType: "checklist"
         labelPosition: "bottom"
-  - id: "red-seal-certification-actions"
+  - id: "red-seal-construction-actions"
     type: "category"
     title: "Actions"
     description: "Key steps and requirements you need to complete to progress through Red Seal Certification"
@@ -68,7 +68,7 @@ categories:
         title: "Schedule Exam"
         nodeType: "checklist"
         labelPosition: "right"
-  - id: "red-seal-certification-roadblocks"
+  - id: "red-seal-construction-roadblocks"
     type: "category"
     title: "Roadblocks"
     description: "Common challenges and obstacles you may encounter during Red Seal Certification, and how to overcome them"

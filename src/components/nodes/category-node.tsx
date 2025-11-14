@@ -12,6 +12,7 @@ export type CategoryNodeData = {
   color?: string;
   isSelected?: boolean;
   isExpanded?: boolean;
+  isDimmed?: boolean;
 };
 
 export type CategoryNodeType = Node<CategoryNodeData, "category">;
@@ -33,6 +34,7 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
     color = "#0077CC",
     isSelected,
     isExpanded = false,
+    isDimmed = false,
   } = data;
 
   const hiddenHandleClass =
@@ -44,7 +46,7 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{
-        opacity: 1,
+        opacity: isDimmed ? 0.3 : 1,
         scale: 1,
       }}
       transition={{

@@ -209,28 +209,42 @@ export function getCompletedLevels(
 }
 
 /**
- * Get roadmap node IDs that should be dimmed based on specialization choice
+ * Get roadmap node IDs that should be dimmed based on specialization choice and current level
  */
 export function getIrrelevantNodes(
   specialization: ElectricianSpecialization,
+  currentLevel?: ApprenticeshipLevel,
 ): string[] {
+  const irrelevantNodes: string[] = [];
+
+  // Grey out irrelevant Level 4 specialization paths and their Red Seal endpoints
   const specializationMap: Record<ElectricianSpecialization, string[]> = {
     [ELECTRICIAN_SPECIALIZATION.CONSTRUCTION]: [
       "level-4-industrial",
-      "level-4-industrial-req-1",
-      "level-4-industrial-req-2",
-      "level-4-industrial-req-3",
+      "red-seal-industrial",
     ],
     [ELECTRICIAN_SPECIALIZATION.INDUSTRIAL]: [
       "level-4-construction",
-      "level-4-construction-req-1",
-      "level-4-construction-req-2",
-      "level-4-construction-req-3",
+      "red-seal-construction",
     ],
     [ELECTRICIAN_SPECIALIZATION.UNDECIDED]: [], // Show all paths
   };
 
-  return specializationMap[specialization] ?? [];
+  irrelevantNodes.push(...(specializationMap[specialization] ?? []));
+
+  // Grey out irrelevant entry paths based on current level
+  if (currentLevel) {
+    if (currentLevel === APPRENTICESHIP_LEVELS.LEVEL_1) {
+      // User at Level 1 took Direct Entry - grey out other entry paths
+      irrelevantNodes.push("ace-it-program", "foundation-program");
+    } else if (currentLevel !== APPRENTICESHIP_LEVELS.NOT_STARTED &&
+               currentLevel !== APPRENTICESHIP_LEVELS.FOUNDATION) {
+      // User at Level 2+ has passed entry stage - grey out all entry paths
+      irrelevantNodes.push("ace-it-program", "direct-entry", "foundation-program");
+    }
+  }
+
+  return irrelevantNodes;
 }
 
 /**
@@ -252,6 +266,18 @@ export function getCurrentLevelNodeId(
     return "level-4-construction";
   }
 
+  // For Red Seal, use specialization to determine which certification
+  if (currentLevel === APPRENTICESHIP_LEVELS.RED_SEAL && specialization) {
+    if (specialization === ELECTRICIAN_SPECIALIZATION.INDUSTRIAL) {
+      return "red-seal-industrial";
+    }
+    if (specialization === ELECTRICIAN_SPECIALIZATION.CONSTRUCTION) {
+      return "red-seal-construction";
+    }
+    // For undecided, default to construction
+    return "red-seal-construction";
+  }
+
   const levelNodeMap: Record<ApprenticeshipLevel, string | null> = {
     [APPRENTICESHIP_LEVELS.NOT_STARTED]: null,
     [APPRENTICESHIP_LEVELS.FOUNDATION]: "foundation-program",
@@ -259,7 +285,7 @@ export function getCurrentLevelNodeId(
     [APPRENTICESHIP_LEVELS.LEVEL_2]: "level-2",
     [APPRENTICESHIP_LEVELS.LEVEL_3]: "level-3",
     [APPRENTICESHIP_LEVELS.LEVEL_4]: "level-4-construction", // Default fallback
-    [APPRENTICESHIP_LEVELS.RED_SEAL]: "red-seal-certification",
+    [APPRENTICESHIP_LEVELS.RED_SEAL]: "red-seal-construction", // Default fallback
   };
 
   return levelNodeMap[currentLevel] ?? null;

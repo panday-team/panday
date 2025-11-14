@@ -55,6 +55,24 @@
       "targetPosition": "top"
     },
     {
+      "id": "red-seal-construction",
+      "position": {
+        "x": -600,
+        "y": -8000
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top"
+    },
+    {
+      "id": "red-seal-industrial",
+      "position": {
+        "x": 600,
+        "y": -8000
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top"
+    },
+    {
       "id": "level-4-construction",
       "position": {
         "x": -900,
@@ -73,13 +91,193 @@
       "targetPosition": "top"
     },
     {
-      "id": "red-seal-certification",
+      "id": "ace-it-program-resources",
       "position": {
-        "x": 0,
-        "y": -8000
+        "x": -218,
+        "y": -119
       },
       "sourcePosition": "bottom",
-      "targetPosition": "top"
+      "targetPosition": "top",
+      "parentId": "ace-it-program"
+    },
+    {
+      "id": "ace-it-resource-youthprograms",
+      "position": {
+        "x": -202,
+        "y": -253
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "ace-it-program-resources",
+      "categoryId": "ace-it-program-resources"
+    },
+    {
+      "id": "ace-it-program-actions",
+      "position": {
+        "x": 250,
+        "y": -119
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "ace-it-program"
+    },
+    {
+      "id": "ace-it-req-highschool",
+      "position": {
+        "x": 266,
+        "y": -253
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "ace-it-program-actions",
+      "categoryId": "ace-it-program-actions"
+    },
+    {
+      "id": "ace-it-benefit-dualcredit",
+      "position": {
+        "x": 266,
+        "y": 47
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "ace-it-program-actions",
+      "categoryId": "ace-it-program-actions"
+    },
+    {
+      "id": "ace-it-program-roadblocks",
+      "position": {
+        "x": 16,
+        "y": -254
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "ace-it-program"
+    },
+    {
+      "id": "direct-entry-resources",
+      "position": {
+        "x": 982,
+        "y": -119
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry"
+    },
+    {
+      "id": "direct-entry-resource-jobsearch",
+      "position": {
+        "x": 998,
+        "y": -253
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry-resources",
+      "categoryId": "direct-entry-resources"
+    },
+    {
+      "id": "direct-entry-actions",
+      "position": {
+        "x": 1450,
+        "y": -119
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry"
+    },
+    {
+      "id": "direct-entry-req-sponsor",
+      "position": {
+        "x": 1466,
+        "y": -253
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry-actions",
+      "categoryId": "direct-entry-actions"
+    },
+    {
+      "id": "direct-entry-benefit-earnings",
+      "position": {
+        "x": 1466,
+        "y": 47
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry-actions",
+      "categoryId": "direct-entry-actions"
+    },
+    {
+      "id": "direct-entry-roadblocks",
+      "position": {
+        "x": 1216,
+        "y": -254
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry"
+    },
+    {
+      "id": "foundation-program-resources",
+      "position": {
+        "x": -1418,
+        "y": -119
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "foundation-program"
+    },
+    {
+      "id": "foundation-resource-providers",
+      "position": {
+        "x": -1402,
+        "y": -253
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "foundation-program-resources",
+      "categoryId": "foundation-program-resources"
+    },
+    {
+      "id": "foundation-program-actions",
+      "position": {
+        "x": -950,
+        "y": -119
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "foundation-program"
+    },
+    {
+      "id": "foundation-req-education",
+      "position": {
+        "x": -934,
+        "y": -253
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "foundation-program-actions",
+      "categoryId": "foundation-program-actions"
+    },
+    {
+      "id": "foundation-benefit-credits",
+      "position": {
+        "x": -934,
+        "y": 47
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "foundation-program-actions",
+      "categoryId": "foundation-program-actions"
+    },
+    {
+      "id": "foundation-program-roadblocks",
+      "position": {
+        "x": -1184,
+        "y": -254
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "foundation-program"
     },
     {
       "id": "level-1-resources",
@@ -804,344 +1002,306 @@
       "parentId": "level-4-industrial"
     },
     {
-      "id": "foundation-program-resources",
+      "id": "red-seal-construction-resources",
       "position": {
-        "x": -1418,
-        "y": -119
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "foundation-program"
-    },
-    {
-      "id": "foundation-resource-providers",
-      "position": {
-        "x": -1402,
-        "y": -253
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "foundation-program-resources",
-      "categoryId": "foundation-program-resources"
-    },
-    {
-      "id": "foundation-program-actions",
-      "position": {
-        "x": -950,
-        "y": -119
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "foundation-program"
-    },
-    {
-      "id": "foundation-req-education",
-      "position": {
-        "x": -934,
-        "y": -253
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "foundation-program-actions",
-      "categoryId": "foundation-program-actions"
-    },
-    {
-      "id": "foundation-benefit-credits",
-      "position": {
-        "x": -934,
-        "y": 47
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "foundation-program-actions",
-      "categoryId": "foundation-program-actions"
-    },
-    {
-      "id": "foundation-program-roadblocks",
-      "position": {
-        "x": -1184,
-        "y": -254
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "foundation-program"
-    },
-    {
-      "id": "direct-entry-resources",
-      "position": {
-        "x": 982,
-        "y": -119
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry"
-    },
-    {
-      "id": "direct-entry-resource-jobsearch",
-      "position": {
-        "x": 998,
-        "y": -253
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry-resources",
-      "categoryId": "direct-entry-resources"
-    },
-    {
-      "id": "direct-entry-actions",
-      "position": {
-        "x": 1450,
-        "y": -119
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry"
-    },
-    {
-      "id": "direct-entry-req-sponsor",
-      "position": {
-        "x": 1466,
-        "y": -253
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry-actions",
-      "categoryId": "direct-entry-actions"
-    },
-    {
-      "id": "direct-entry-benefit-earnings",
-      "position": {
-        "x": 1466,
-        "y": 47
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry-actions",
-      "categoryId": "direct-entry-actions"
-    },
-    {
-      "id": "direct-entry-roadblocks",
-      "position": {
-        "x": 1216,
-        "y": -254
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry"
-    },
-    {
-      "id": "ace-it-program-resources",
-      "position": {
-        "x": -218,
-        "y": -119
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "ace-it-program"
-    },
-    {
-      "id": "ace-it-resource-youthprograms",
-      "position": {
-        "x": -202,
-        "y": -253
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "ace-it-program-resources",
-      "categoryId": "ace-it-program-resources"
-    },
-    {
-      "id": "ace-it-program-actions",
-      "position": {
-        "x": 250,
-        "y": -119
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "ace-it-program"
-    },
-    {
-      "id": "ace-it-req-highschool",
-      "position": {
-        "x": 266,
-        "y": -253
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "ace-it-program-actions",
-      "categoryId": "ace-it-program-actions"
-    },
-    {
-      "id": "ace-it-benefit-dualcredit",
-      "position": {
-        "x": 266,
-        "y": 47
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "ace-it-program-actions",
-      "categoryId": "ace-it-program-actions"
-    },
-    {
-      "id": "ace-it-program-roadblocks",
-      "position": {
-        "x": 16,
-        "y": -254
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "ace-it-program"
-    },
-    {
-      "id": "red-seal-certification-resources",
-      "position": {
-        "x": -218,
+        "x": -818,
         "y": -8119
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
-      "parentId": "red-seal-certification"
+      "parentId": "red-seal-construction"
     },
     {
       "id": "red-seal-resource-prep",
       "position": {
-        "x": -202,
+        "x": -802,
         "y": -8253
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
-      "parentId": "red-seal-certification-resources",
-      "categoryId": "red-seal-certification-resources"
+      "parentId": "red-seal-construction-resources",
+      "categoryId": "red-seal-construction-resources"
     },
     {
       "id": "red-seal-resource-exam",
       "position": {
-        "x": -72,
+        "x": -672,
         "y": -8028
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
-      "parentId": "red-seal-certification-resources",
-      "categoryId": "red-seal-certification-resources"
+      "parentId": "red-seal-construction-resources",
+      "categoryId": "red-seal-construction-resources"
     },
     {
       "id": "red-seal-resource-profile",
       "position": {
-        "x": -332,
+        "x": -932,
         "y": -8028
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
-      "parentId": "red-seal-certification-resources",
-      "categoryId": "red-seal-certification-resources"
+      "parentId": "red-seal-construction-resources",
+      "categoryId": "red-seal-construction-resources"
     },
     {
-      "id": "red-seal-certification-actions",
+      "id": "red-seal-construction-actions",
       "position": {
-        "x": 250,
+        "x": -350,
         "y": -8119
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
-      "parentId": "red-seal-certification"
+      "parentId": "red-seal-construction"
     },
     {
       "id": "red-seal-req-levels",
       "position": {
-        "x": 266,
+        "x": -334,
         "y": -8253
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
-      "parentId": "red-seal-certification-actions",
-      "categoryId": "red-seal-certification-actions"
+      "parentId": "red-seal-construction-actions",
+      "categoryId": "red-seal-construction-actions"
     },
     {
       "id": "red-seal-req-hours",
       "position": {
-        "x": 372,
+        "x": -228,
         "y": -8209
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
-      "parentId": "red-seal-certification-actions",
-      "categoryId": "red-seal-certification-actions"
+      "parentId": "red-seal-construction-actions",
+      "categoryId": "red-seal-construction-actions"
     },
     {
       "id": "red-seal-req-exams",
       "position": {
-        "x": 416,
+        "x": -184,
         "y": -8103
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
-      "parentId": "red-seal-certification-actions",
-      "categoryId": "red-seal-certification-actions"
+      "parentId": "red-seal-construction-actions",
+      "categoryId": "red-seal-construction-actions"
     },
     {
       "id": "red-seal-req-experience",
       "position": {
-        "x": 372,
+        "x": -228,
         "y": -7997
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
-      "parentId": "red-seal-certification-actions",
-      "categoryId": "red-seal-certification-actions"
+      "parentId": "red-seal-construction-actions",
+      "categoryId": "red-seal-construction-actions"
     },
     {
       "id": "red-seal-prep-guide",
       "position": {
-        "x": 266,
+        "x": -334,
         "y": -7953
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
-      "parentId": "red-seal-certification-actions",
-      "categoryId": "red-seal-certification-actions"
+      "parentId": "red-seal-construction-actions",
+      "categoryId": "red-seal-construction-actions"
     },
     {
       "id": "red-seal-prep-practice",
       "position": {
-        "x": 160,
+        "x": -440,
         "y": -7997
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
-      "parentId": "red-seal-certification-actions",
-      "categoryId": "red-seal-certification-actions"
+      "parentId": "red-seal-construction-actions",
+      "categoryId": "red-seal-construction-actions"
     },
     {
       "id": "red-seal-prep-code",
       "position": {
-        "x": 116,
+        "x": -484,
         "y": -8103
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
-      "parentId": "red-seal-certification-actions",
-      "categoryId": "red-seal-certification-actions"
+      "parentId": "red-seal-construction-actions",
+      "categoryId": "red-seal-construction-actions"
     },
     {
       "id": "red-seal-prep-schedule",
       "position": {
-        "x": 160,
+        "x": -440,
         "y": -8209
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
-      "parentId": "red-seal-certification-actions",
-      "categoryId": "red-seal-certification-actions"
+      "parentId": "red-seal-construction-actions",
+      "categoryId": "red-seal-construction-actions"
     },
     {
-      "id": "red-seal-certification-roadblocks",
+      "id": "red-seal-construction-roadblocks",
       "position": {
-        "x": 16,
+        "x": -584,
         "y": -8254
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
-      "parentId": "red-seal-certification"
+      "parentId": "red-seal-construction"
+    },
+    {
+      "id": "red-seal-industrial-resources",
+      "position": {
+        "x": 382,
+        "y": -8119
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "red-seal-industrial"
+    },
+    {
+      "id": "red-seal-resource-prep",
+      "position": {
+        "x": 398,
+        "y": -8253
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "red-seal-industrial-resources",
+      "categoryId": "red-seal-industrial-resources"
+    },
+    {
+      "id": "red-seal-resource-exam",
+      "position": {
+        "x": 528,
+        "y": -8028
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "red-seal-industrial-resources",
+      "categoryId": "red-seal-industrial-resources"
+    },
+    {
+      "id": "red-seal-resource-profile",
+      "position": {
+        "x": 268,
+        "y": -8028
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "red-seal-industrial-resources",
+      "categoryId": "red-seal-industrial-resources"
+    },
+    {
+      "id": "red-seal-industrial-actions",
+      "position": {
+        "x": 850,
+        "y": -8119
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "red-seal-industrial"
+    },
+    {
+      "id": "red-seal-req-levels",
+      "position": {
+        "x": 866,
+        "y": -8253
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "red-seal-industrial-actions",
+      "categoryId": "red-seal-industrial-actions"
+    },
+    {
+      "id": "red-seal-req-hours",
+      "position": {
+        "x": 972,
+        "y": -8209
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "red-seal-industrial-actions",
+      "categoryId": "red-seal-industrial-actions"
+    },
+    {
+      "id": "red-seal-req-exams",
+      "position": {
+        "x": 1016,
+        "y": -8103
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "red-seal-industrial-actions",
+      "categoryId": "red-seal-industrial-actions"
+    },
+    {
+      "id": "red-seal-req-experience",
+      "position": {
+        "x": 972,
+        "y": -7997
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "red-seal-industrial-actions",
+      "categoryId": "red-seal-industrial-actions"
+    },
+    {
+      "id": "red-seal-prep-guide",
+      "position": {
+        "x": 866,
+        "y": -7953
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "red-seal-industrial-actions",
+      "categoryId": "red-seal-industrial-actions"
+    },
+    {
+      "id": "red-seal-prep-practice",
+      "position": {
+        "x": 760,
+        "y": -7997
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "red-seal-industrial-actions",
+      "categoryId": "red-seal-industrial-actions"
+    },
+    {
+      "id": "red-seal-prep-code",
+      "position": {
+        "x": 716,
+        "y": -8103
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "red-seal-industrial-actions",
+      "categoryId": "red-seal-industrial-actions"
+    },
+    {
+      "id": "red-seal-prep-schedule",
+      "position": {
+        "x": 760,
+        "y": -8209
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "red-seal-industrial-actions",
+      "categoryId": "red-seal-industrial-actions"
+    },
+    {
+      "id": "red-seal-industrial-roadblocks",
+      "position": {
+        "x": 616,
+        "y": -8254
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "red-seal-industrial"
     }
   ],
   "edges": [
@@ -1202,19 +1362,163 @@
       "type": "default"
     },
     {
-      "id": "edge-level-4-construction-to-red-seal-certification",
+      "id": "edge-level-4-construction-to-red-seal-construction",
       "source": "level-4-construction",
-      "target": "red-seal-certification",
+      "target": "red-seal-construction",
       "sourceHandle": "top-source",
       "targetHandle": "bottom-target",
       "type": "default"
     },
     {
-      "id": "edge-level-4-industrial-to-red-seal-certification",
+      "id": "edge-level-4-industrial-to-red-seal-industrial",
       "source": "level-4-industrial",
-      "target": "red-seal-certification",
+      "target": "red-seal-industrial",
       "sourceHandle": "top-source",
       "targetHandle": "bottom-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-ace-it-program-ace-it-program-resources",
+      "source": "ace-it-program",
+      "target": "ace-it-program-resources",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-ace-it-program-resources-ace-it-resource-youthprograms",
+      "source": "ace-it-program-resources",
+      "target": "ace-it-resource-youthprograms",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-ace-it-program-ace-it-program-actions",
+      "source": "ace-it-program",
+      "target": "ace-it-program-actions",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-ace-it-program-actions-ace-it-req-highschool",
+      "source": "ace-it-program-actions",
+      "target": "ace-it-req-highschool",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-ace-it-program-actions-ace-it-benefit-dualcredit",
+      "source": "ace-it-program-actions",
+      "target": "ace-it-benefit-dualcredit",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-ace-it-program-ace-it-program-roadblocks",
+      "source": "ace-it-program",
+      "target": "ace-it-program-roadblocks",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-direct-entry-resources",
+      "source": "direct-entry",
+      "target": "direct-entry-resources",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-resources-direct-entry-resource-jobsearch",
+      "source": "direct-entry-resources",
+      "target": "direct-entry-resource-jobsearch",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-direct-entry-actions",
+      "source": "direct-entry",
+      "target": "direct-entry-actions",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-actions-direct-entry-req-sponsor",
+      "source": "direct-entry-actions",
+      "target": "direct-entry-req-sponsor",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-actions-direct-entry-benefit-earnings",
+      "source": "direct-entry-actions",
+      "target": "direct-entry-benefit-earnings",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-direct-entry-roadblocks",
+      "source": "direct-entry",
+      "target": "direct-entry-roadblocks",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-foundation-program-foundation-program-resources",
+      "source": "foundation-program",
+      "target": "foundation-program-resources",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-foundation-program-resources-foundation-resource-providers",
+      "source": "foundation-program-resources",
+      "target": "foundation-resource-providers",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-foundation-program-foundation-program-actions",
+      "source": "foundation-program",
+      "target": "foundation-program-actions",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-foundation-program-actions-foundation-req-education",
+      "source": "foundation-program-actions",
+      "target": "foundation-req-education",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-foundation-program-actions-foundation-benefit-credits",
+      "source": "foundation-program-actions",
+      "target": "foundation-benefit-credits",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-foundation-program-foundation-program-roadblocks",
+      "source": "foundation-program",
+      "target": "foundation-program-roadblocks",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
       "type": "default"
     },
     {
@@ -1754,257 +2058,225 @@
       "type": "default"
     },
     {
-      "id": "edge-foundation-program-foundation-program-resources",
-      "source": "foundation-program",
-      "target": "foundation-program-resources",
+      "id": "edge-red-seal-construction-red-seal-construction-resources",
+      "source": "red-seal-construction",
+      "target": "red-seal-construction-resources",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
       "type": "default"
     },
     {
-      "id": "edge-foundation-program-resources-foundation-resource-providers",
-      "source": "foundation-program-resources",
-      "target": "foundation-resource-providers",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-foundation-program-foundation-program-actions",
-      "source": "foundation-program",
-      "target": "foundation-program-actions",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-foundation-program-actions-foundation-req-education",
-      "source": "foundation-program-actions",
-      "target": "foundation-req-education",
-      "sourceHandle": "left-source",
-      "targetHandle": "right-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-foundation-program-actions-foundation-benefit-credits",
-      "source": "foundation-program-actions",
-      "target": "foundation-benefit-credits",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-foundation-program-foundation-program-roadblocks",
-      "source": "foundation-program",
-      "target": "foundation-program-roadblocks",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-direct-entry-direct-entry-resources",
-      "source": "direct-entry",
-      "target": "direct-entry-resources",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-direct-entry-resources-direct-entry-resource-jobsearch",
-      "source": "direct-entry-resources",
-      "target": "direct-entry-resource-jobsearch",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-direct-entry-direct-entry-actions",
-      "source": "direct-entry",
-      "target": "direct-entry-actions",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-direct-entry-actions-direct-entry-req-sponsor",
-      "source": "direct-entry-actions",
-      "target": "direct-entry-req-sponsor",
-      "sourceHandle": "left-source",
-      "targetHandle": "right-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-direct-entry-actions-direct-entry-benefit-earnings",
-      "source": "direct-entry-actions",
-      "target": "direct-entry-benefit-earnings",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-direct-entry-direct-entry-roadblocks",
-      "source": "direct-entry",
-      "target": "direct-entry-roadblocks",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-ace-it-program-ace-it-program-resources",
-      "source": "ace-it-program",
-      "target": "ace-it-program-resources",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-ace-it-program-resources-ace-it-resource-youthprograms",
-      "source": "ace-it-program-resources",
-      "target": "ace-it-resource-youthprograms",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-ace-it-program-ace-it-program-actions",
-      "source": "ace-it-program",
-      "target": "ace-it-program-actions",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-ace-it-program-actions-ace-it-req-highschool",
-      "source": "ace-it-program-actions",
-      "target": "ace-it-req-highschool",
-      "sourceHandle": "left-source",
-      "targetHandle": "right-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-ace-it-program-actions-ace-it-benefit-dualcredit",
-      "source": "ace-it-program-actions",
-      "target": "ace-it-benefit-dualcredit",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-ace-it-program-ace-it-program-roadblocks",
-      "source": "ace-it-program",
-      "target": "ace-it-program-roadblocks",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-red-seal-certification-red-seal-certification-resources",
-      "source": "red-seal-certification",
-      "target": "red-seal-certification-resources",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-red-seal-certification-resources-red-seal-resource-prep",
-      "source": "red-seal-certification-resources",
+      "id": "edge-red-seal-construction-resources-red-seal-resource-prep",
+      "source": "red-seal-construction-resources",
       "target": "red-seal-resource-prep",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-certification-resources-red-seal-resource-exam",
-      "source": "red-seal-certification-resources",
+      "id": "edge-red-seal-construction-resources-red-seal-resource-exam",
+      "source": "red-seal-construction-resources",
       "target": "red-seal-resource-exam",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-certification-resources-red-seal-resource-profile",
-      "source": "red-seal-certification-resources",
+      "id": "edge-red-seal-construction-resources-red-seal-resource-profile",
+      "source": "red-seal-construction-resources",
       "target": "red-seal-resource-profile",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-certification-red-seal-certification-actions",
-      "source": "red-seal-certification",
-      "target": "red-seal-certification-actions",
+      "id": "edge-red-seal-construction-red-seal-construction-actions",
+      "source": "red-seal-construction",
+      "target": "red-seal-construction-actions",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-certification-actions-red-seal-req-levels",
-      "source": "red-seal-certification-actions",
+      "id": "edge-red-seal-construction-actions-red-seal-req-levels",
+      "source": "red-seal-construction-actions",
       "target": "red-seal-req-levels",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-certification-actions-red-seal-req-hours",
-      "source": "red-seal-certification-actions",
+      "id": "edge-red-seal-construction-actions-red-seal-req-hours",
+      "source": "red-seal-construction-actions",
       "target": "red-seal-req-hours",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-certification-actions-red-seal-req-exams",
-      "source": "red-seal-certification-actions",
+      "id": "edge-red-seal-construction-actions-red-seal-req-exams",
+      "source": "red-seal-construction-actions",
       "target": "red-seal-req-exams",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-certification-actions-red-seal-req-experience",
-      "source": "red-seal-certification-actions",
+      "id": "edge-red-seal-construction-actions-red-seal-req-experience",
+      "source": "red-seal-construction-actions",
       "target": "red-seal-req-experience",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-certification-actions-red-seal-prep-guide",
-      "source": "red-seal-certification-actions",
+      "id": "edge-red-seal-construction-actions-red-seal-prep-guide",
+      "source": "red-seal-construction-actions",
       "target": "red-seal-prep-guide",
       "sourceHandle": "right-source",
       "targetHandle": "left-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-certification-actions-red-seal-prep-practice",
-      "source": "red-seal-certification-actions",
+      "id": "edge-red-seal-construction-actions-red-seal-prep-practice",
+      "source": "red-seal-construction-actions",
       "target": "red-seal-prep-practice",
       "sourceHandle": "right-source",
       "targetHandle": "left-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-certification-actions-red-seal-prep-code",
-      "source": "red-seal-certification-actions",
+      "id": "edge-red-seal-construction-actions-red-seal-prep-code",
+      "source": "red-seal-construction-actions",
       "target": "red-seal-prep-code",
       "sourceHandle": "right-source",
       "targetHandle": "left-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-certification-actions-red-seal-prep-schedule",
-      "source": "red-seal-certification-actions",
+      "id": "edge-red-seal-construction-actions-red-seal-prep-schedule",
+      "source": "red-seal-construction-actions",
       "target": "red-seal-prep-schedule",
       "sourceHandle": "right-source",
       "targetHandle": "left-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-certification-red-seal-certification-roadblocks",
-      "source": "red-seal-certification",
-      "target": "red-seal-certification-roadblocks",
+      "id": "edge-red-seal-construction-red-seal-construction-roadblocks",
+      "source": "red-seal-construction",
+      "target": "red-seal-construction-roadblocks",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-red-seal-industrial-red-seal-industrial-resources",
+      "source": "red-seal-industrial",
+      "target": "red-seal-industrial-resources",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-red-seal-industrial-resources-red-seal-resource-prep",
+      "source": "red-seal-industrial-resources",
+      "target": "red-seal-resource-prep",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-red-seal-industrial-resources-red-seal-resource-exam",
+      "source": "red-seal-industrial-resources",
+      "target": "red-seal-resource-exam",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-red-seal-industrial-resources-red-seal-resource-profile",
+      "source": "red-seal-industrial-resources",
+      "target": "red-seal-resource-profile",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-red-seal-industrial-red-seal-industrial-actions",
+      "source": "red-seal-industrial",
+      "target": "red-seal-industrial-actions",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-red-seal-industrial-actions-red-seal-req-levels",
+      "source": "red-seal-industrial-actions",
+      "target": "red-seal-req-levels",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-red-seal-industrial-actions-red-seal-req-hours",
+      "source": "red-seal-industrial-actions",
+      "target": "red-seal-req-hours",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-red-seal-industrial-actions-red-seal-req-exams",
+      "source": "red-seal-industrial-actions",
+      "target": "red-seal-req-exams",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-red-seal-industrial-actions-red-seal-req-experience",
+      "source": "red-seal-industrial-actions",
+      "target": "red-seal-req-experience",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-red-seal-industrial-actions-red-seal-prep-guide",
+      "source": "red-seal-industrial-actions",
+      "target": "red-seal-prep-guide",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-red-seal-industrial-actions-red-seal-prep-practice",
+      "source": "red-seal-industrial-actions",
+      "target": "red-seal-prep-practice",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-red-seal-industrial-actions-red-seal-prep-code",
+      "source": "red-seal-industrial-actions",
+      "target": "red-seal-prep-code",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-red-seal-industrial-actions-red-seal-prep-schedule",
+      "source": "red-seal-industrial-actions",
+      "target": "red-seal-prep-schedule",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-red-seal-industrial-red-seal-industrial-roadblocks",
+      "source": "red-seal-industrial",
+      "target": "red-seal-industrial-roadblocks",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
       "type": "default"
