@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
-import type { CSSProperties, SetStateAction } from "react";
+import type { CSSProperties } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -28,6 +28,7 @@ import {
   type HubNodeType,
   type ChecklistNodeType,
   type TerminalNodeType,
+  type CategoryNodeType,
 } from "@/components/nodes";
 import { NodeInfoPanel, type Category } from "@/components/node-info-panel";
 import { ChatWidget } from "@/components/chat/chat-widget";
@@ -57,13 +58,15 @@ import {
   LEVEL_METADATA,
 } from "@/lib/profile-types";
 import { calculateViewportForNode } from "@/lib/viewport-utils";
-import { nullable } from "zod";
 
 import useLocalStorage from "./local-storage";
 
 import RoadmapTutorialWidget from "./roadmap-tutorial";
-import { C } from "vitest/dist/chunks/reporters.d.BFLkQcL6.js";
-type FlowNode = HubNodeType | ChecklistNodeType | TerminalNodeType;
+type FlowNode =
+  | HubNodeType
+  | ChecklistNodeType
+  | TerminalNodeType
+  | CategoryNodeType;
 type FlowEdge = Edge;
 
 const flowColor = "#35C1B9";
@@ -156,6 +159,22 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
     void fetchNodeStatuses(roadmap.metadata.id).then(setNodeStatuses);
   }, [roadmap.metadata.id]);
 
+  // Pre-compute node relationships once for reuse across multiple memos
+  const nodeRelationships = useMemo(() => {
+    const hubNodeIds = new Set(
+      roadmap.graph.nodes.filter((n) => !n.parentId).map((n) => n.id)
+    );
+    const nodesByParent = new Map<string, typeof roadmap.graph.nodes>();
+    for (const node of roadmap.graph.nodes) {
+      if (node.parentId) {
+        const siblings = nodesByParent.get(node.parentId) ?? [];
+        siblings.push(node);
+        nodesByParent.set(node.parentId, siblings);
+      }
+    }
+    return { hubNodeIds, nodesByParent };
+  }, [roadmap]);
+
   // Calculate initial viewport based on user's current level
   const initialViewport = useMemo(() => {
     const currentNodeId = userProfile
@@ -180,28 +199,27 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         )
       : null;
 
+    // Use pre-computed node relationships from shared memo
+    const { hubNodeIds, nodesByParent } = nodeRelationships;
+
     //build nodes from graph/content
     const builtNodes: FlowNode[] = roadmap.graph.nodes
       .filter((graphNode) => {
         // Always show hub and category nodes
         if (!graphNode.parentId) return true; // Hub/terminal nodes
 
-        // Category nodes have a hub as parent
-        const hasHubParent = roadmap.graph.nodes.some(
-          n => n.id === graphNode.parentId && !n.parentId
-        );
-        if (hasHubParent) return true; // Category nodes
+        // Category nodes have a hub as parent (O(1) lookup)
+        if (graphNode.parentId && hubNodeIds.has(graphNode.parentId))
+          return true;
 
         // Checklist nodes: show if parent category is selected OR any sibling is selected
         if (graphNode.parentId) {
           // Show if the parent category itself is selected
           if (selectedNodeId === graphNode.parentId) return true;
 
-          // Show if any sibling (same parent) is selected
-          const hasSiblingSelected = roadmap.graph.nodes.some(
-            n => n.parentId === graphNode.parentId && n.id === selectedNodeId
-          );
-          if (hasSiblingSelected) return true;
+          // Show if any sibling (same parent) is selected (O(siblings) instead of O(all nodes))
+          const siblings = nodesByParent.get(graphNode.parentId) ?? [];
+          if (siblings.some((n) => n.id === selectedNodeId)) return true;
         }
 
         return false;
@@ -259,11 +277,9 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
       // Calculate animation index for checklist nodes (for cascade animation)
       let animationIndex: number | undefined;
       if (graphNode.parentId && !isMainNode && !isCategoryNode) {
-        // This is a checklist node - find its index among siblings
-        const siblings = roadmap.graph.nodes.filter(
-          n => n.parentId === graphNode.parentId
-        );
-        animationIndex = siblings.findIndex(n => n.id === graphNode.id);
+        // This is a checklist node - find its index among siblings (use pre-computed map)
+        const siblings = nodesByParent.get(graphNode.parentId) ?? [];
+        animationIndex = siblings.findIndex((n) => n.id === graphNode.id);
       }
 
       // For category nodes, determine if expanded based on selection
@@ -272,8 +288,8 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         // Category is expanded if it's selected OR any of its children is selected
         const isCategorySelected = selectedNodeId === graphNode.id;
         const hasChildSelected = selectedNodeId
-          ? roadmap.graph.nodes.some(
-              n => n.parentId === graphNode.id && n.id === selectedNodeId
+          ? (nodesByParent.get(graphNode.id) ?? []).some(
+              (n) => n.id === selectedNodeId
             )
           : false;
         isExpanded = isCategorySelected || hasChildSelected;
@@ -304,7 +320,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
     });
 
     return builtNodes;
-  }, [roadmap, nodeStatuses, userProfile, selectedNodeId]);
+  }, [roadmap, nodeStatuses, userProfile, selectedNodeId, nodeRelationships]);
 
   const initialEdges = useMemo<FlowEdge[]>(() => {
     return roadmap.graph.edges
@@ -541,7 +557,6 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
 
   const handleTutorialClick = (event: React.MouseEvent) => {
     event.preventDefault();
-    console.log("smash burger");
     setShowTutorial(true);
   };
 
@@ -574,16 +589,16 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
     const selectedNode = roadmap.graph.nodes.find((n) => n.id === selectedNodeId);
     if (!selectedNode) return undefined;
 
+    const { nodesByParent } = nodeRelationships;
+
     // Case 1: Selected node is a category node
     const isCategoryNode = selectedNode.id.includes("-resources") ||
                           selectedNode.id.includes("-actions") ||
                           selectedNode.id.includes("-roadblocks");
 
     if (isCategoryNode) {
-      // Show only this category's checklist items
-      const checklistNodes = roadmap.graph.nodes.filter(
-        (n) => n.parentId === selectedNodeId
-      );
+      // Show only this category's checklist items (use pre-computed map)
+      const checklistNodes = nodesByParent.get(selectedNodeId) ?? [];
 
       const categoryContent = roadmap.content.get(selectedNodeId);
 
@@ -601,19 +616,15 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
     // Case 2: Selected node is a hub node (no parentId)
     if (selectedNode.parentId) return undefined;
 
-    // Find all category nodes for this hub
-    const categoryNodes = roadmap.graph.nodes.filter(
-      (n) => n.parentId === selectedNodeId
-    );
+    // Find all category nodes for this hub (use pre-computed map)
+    const categoryNodes = nodesByParent.get(selectedNodeId) ?? [];
 
     // Build category data with their checklist items
     const categories: Category[] = categoryNodes.map((categoryNode) => {
       const categoryContent = roadmap.content.get(categoryNode.id);
 
-      // Find all checklist items for this category
-      const checklistNodes = roadmap.graph.nodes.filter(
-        (n) => n.parentId === categoryNode.id
-      );
+      // Find all checklist items for this category (use pre-computed map)
+      const checklistNodes = nodesByParent.get(categoryNode.id) ?? [];
 
       return {
         id: categoryNode.id,
@@ -627,7 +638,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
     });
 
     return categories;
-  }, [selectedNodeId, roadmap]);
+  }, [selectedNodeId, roadmap, nodeRelationships]);
 
   // Handle navigation from Quick Navigation dropdown
   const handleNavigateToNode = useCallback(

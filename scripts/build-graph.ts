@@ -12,9 +12,19 @@ import {
   validateParentReferences,
   validateConnectionTargets,
   validateNodePositions,
+  validateCategoryIds,
   logValidationErrors,
   type ValidationError,
 } from "../src/lib/graph-validation";
+
+// Node dimensions (must match component definitions in src/components/nodes/)
+const HUB_NODE_SIZE = 128; // h-32 w-32 = 128px (HubNode, TerminalNode)
+const CATEGORY_NODE_SIZE = 96; // h-24 w-24 = 96px (ResourcesNode, ActionsNode, RoadblocksNode)
+const CHECKLIST_NODE_SIZE = 64; // h-16 w-16 = 64px (ChecklistNode)
+
+// Layout spacing constants
+const CATEGORY_RADIUS = 270; // Distance from hub center to category node centers
+const CHECKLIST_RADIUS = 150; // Distance from category center to checklist node centers
 
 interface Position {
   x: number;
@@ -218,6 +228,8 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
   // Load checklist nodes (with backward compatibility for flat structure)
   const checklistRefs: Array<{ fileName: string; parentId: string }> = [];
   const categoriesByParent = new Map<string, CategoryConfig[]>();
+  const allCategories: Array<{ id: string; parentId: string; fileName: string }> =
+    [];
 
   for (const file of checklistFiles) {
     const checklist = await loadChecklistContent(roadmapId, file);
@@ -231,9 +243,10 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
     // Handle new nested categories format
     if (checklist.categories && checklist.categories.length > 0) {
       categoriesByParent.set(parentId, checklist.categories);
-      // Add category IDs to allNodeIds
+      // Add category IDs to allNodeIds and track for validation
       checklist.categories.forEach((category) => {
         allNodeIds.add(category.id);
+        allCategories.push({ id: category.id, parentId, fileName: file });
         // Add checklist node IDs
         category.nodes.forEach((node) => allNodeIds.add(node.id));
       });
@@ -246,11 +259,7 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
   }
 
   validationErrors.push(...validateParentReferences(checklistRefs, allNodeIds));
-
-  // Node dimensions (from component definitions)
-  const hubNodeSize = 128; // h-32 w-32 = 128px
-  const categoryNodeSize = 96; // h-24 w-24 = 96px
-  const checklistNodeSize = 64; // h-16 w-16 = 64px
+  validationErrors.push(...validateCategoryIds(allCategories));
 
   // Create category and checklist nodes with 3-level hierarchy
   for (const [parentId, categories] of categoriesByParent) {
@@ -258,11 +267,8 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
     if (!parentLayout) continue;
 
     // Calculate center of hub node (React Flow positions are top-left corner)
-    const parentCenterX = parentLayout.position.x + hubNodeSize / 2;
-    const parentCenterY = parentLayout.position.y + hubNodeSize / 2;
-
-    // Position categories around hub
-    const categoryRadius = 270; // Distance from hub center to category centers
+    const parentCenterX = parentLayout.position.x + HUB_NODE_SIZE / 2;
+    const parentCenterY = parentLayout.position.y + HUB_NODE_SIZE / 2;
 
     // Fixed angles for each category type (in degrees, converted to radians)
     // Note: In screen coordinates, 0° = right, 90° = down, 180° = left, 270° = up
@@ -283,12 +289,12 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
 
       // All categories use circular positioning around the hub
       const angle = categoryAngles[categoryKey] ?? 0;
-      const categoryCenterX = parentCenterX + categoryRadius * Math.cos(angle);
-      const categoryCenterY = parentCenterY + categoryRadius * Math.sin(angle);
+      const categoryCenterX = parentCenterX + CATEGORY_RADIUS * Math.cos(angle);
+      const categoryCenterY = parentCenterY + CATEGORY_RADIUS * Math.sin(angle);
 
       // Convert from center position to top-left position for React Flow
-      const categoryX = categoryCenterX - categoryNodeSize / 2;
-      const categoryY = categoryCenterY - categoryNodeSize / 2;
+      const categoryX = categoryCenterX - CATEGORY_NODE_SIZE / 2;
+      const categoryY = categoryCenterY - CATEGORY_NODE_SIZE / 2;
 
       simNodes.push({
         id: category.id,
@@ -308,7 +314,6 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
       });
 
       // Position checklist nodes in outer ring around each category
-      const checklistRadius = 150; // Distance from category center to checklist centers
       const totalChecklists = category.nodes.length;
       const angleStep = (2 * Math.PI) / totalChecklists; // Divide circle evenly
       const startAngle = -Math.PI / 2; // Start at top (12 o'clock position)
@@ -320,13 +325,13 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
 
         // Calculate position of checklist center on the circle
         const checklistCenterX =
-          categoryCenterX + checklistRadius * Math.cos(checklistAngle);
+          categoryCenterX + CHECKLIST_RADIUS * Math.cos(checklistAngle);
         const checklistCenterY =
-          categoryCenterY + checklistRadius * Math.sin(checklistAngle);
+          categoryCenterY + CHECKLIST_RADIUS * Math.sin(checklistAngle);
 
         // Convert from center position to top-left position for React Flow
-        const checklistX = checklistCenterX - checklistNodeSize / 2;
-        const checklistY = checklistCenterY - checklistNodeSize / 2;
+        const checklistX = checklistCenterX - CHECKLIST_NODE_SIZE / 2;
+        const checklistY = checklistCenterY - CHECKLIST_NODE_SIZE / 2;
 
         simNodes.push({
           id: checklistNode.id,
@@ -355,8 +360,8 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
     if (!parentLayout) continue;
 
     // Calculate center of hub node (React Flow positions are top-left corner)
-    const parentCenterX = parentLayout.position.x + hubNodeSize / 2;
-    const parentCenterY = parentLayout.position.y + hubNodeSize / 2;
+    const parentCenterX = parentLayout.position.x + HUB_NODE_SIZE / 2;
+    const parentCenterY = parentLayout.position.y + HUB_NODE_SIZE / 2;
 
     const radius = 280; // Distance from parent center to subnode centers
     const totalSubnodes = subnodes.length;
@@ -371,8 +376,8 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
       const subnodeCenterY = parentCenterY + radius * Math.sin(angle);
 
       // Convert from center position to top-left position for React Flow
-      const x = subnodeCenterX - checklistNodeSize / 2;
-      const y = subnodeCenterY - checklistNodeSize / 2;
+      const x = subnodeCenterX - CHECKLIST_NODE_SIZE / 2;
+      const y = subnodeCenterY - CHECKLIST_NODE_SIZE / 2;
 
       simNodes.push({
         id: subnode.id,
