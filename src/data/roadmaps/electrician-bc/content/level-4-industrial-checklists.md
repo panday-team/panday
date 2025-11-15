@@ -68,7 +68,17 @@ categories:
     title: "Roadblocks"
     description: "Common challenges and obstacles you may encounter during Level 4 Industrial Electrician training, and how to overcome them"
     icon: "traffic-cone"
-    nodes: []
+    nodes:
+      - id: "level-4-industrial-roadblock-specializationdepth"
+        type: "checklist"
+        title: "Specialization Depth"
+        nodeType: "checklist"
+        labelPosition: "left"
+      - id: "level-4-industrial-roadblock-codeupdates"
+        type: "checklist"
+        title: "Code Updates"
+        nodeType: "checklist"
+        labelPosition: "right"
 ---
 
 # Level 3 Completed
@@ -241,3 +251,73 @@ Access Level 4 Industrial Electrician exam preparation materials.
 
 - [Level 4 Exam Preparation](https://skilledtradesbc.ca/get-certified/about-exams)
 - [Red Seal Exam Info](https://skilledtradesbc.ca/get-certified/red-seal)
+
+---
+
+# Specialization Depth
+
+Level 4 Industrial specialization requires mastery of advanced topics specific to industrial electrical work and automation.
+
+## The Challenge
+
+- Complex industrial automation systems and SCADA integration
+- Pneumatic and hydraulic fluid power systems
+- Advanced PLC programming, SCADA, and HMI systems
+- Industrial communication protocols and networks
+- Process control and instrumentation systems
+- Industrial robotics and automated equipment
+- High-voltage industrial installations and maintenance
+- Predictive maintenance technologies and techniques
+- Keeping up with rapidly evolving industrial technology
+
+## Solutions
+
+- Seek additional training from equipment manufacturers (Rockwell, Siemens, Schneider)
+- Attend industrial automation conferences and trade shows
+- Gain hands-on experience with actual industrial control systems
+- Pursue additional certifications in industrial automation
+- Join professional organizations like ISA (International Society of Automation)
+- Network with experienced industrial electricians and maintenance professionals
+- Study industrial case studies and application examples
+- Stay current with industrial safety standards and best practices
+- Consider cross-training in mechanical systems to understand complete processes
+
+## Resources
+
+- [Industrial Electrician Program Outline](https://skilledtradesbc.ca)
+- [ISA Training and Certification](https://isa.org)
+- [PLC Training Resources](https://plctraining.ca)
+
+---
+
+# Code Updates
+
+The Canadian Electrical Code is updated regularly, and industrial applications have unique code requirements for hazardous locations and specialized installations.
+
+## The Challenge
+
+- 2024 CEC (26th Edition) came into force April 1, 2025 with significant changes
+- Hazardous location classifications and requirements (Section 18)
+- Industrial-specific code sections for high-voltage and specialized equipment
+- Keeping track of amendments and local interpretations
+- Different code requirements across provinces if working interprovincially
+- Integration with other industrial standards (CSA, IEEE, ANSI)
+- Time needed to study and understand code changes while managing work
+
+## Solutions
+
+- Purchase current CEC and code update handbook focusing on industrial sections
+- Attend code update seminars specifically covering industrial applications
+- Join study groups focused on industrial code interpretation
+- Use code change summary documents from CSA Group
+- Subscribe to industrial electrical publications for code news
+- Participate in online forums discussing industrial code applications
+- Keep detailed notes on code interpretations for future reference
+- Focus on Section 18 (Hazardous Locations) and other industrial-relevant sections
+- Understand the relationship between CEC and other industrial standards
+
+## Resources
+
+- [Canadian Electrical Code 2024](https://csa.ca)
+- [CSA Group Training](https://csagroup.org)
+- [Electrical Code Updates](https://skilledtradesbc.ca)

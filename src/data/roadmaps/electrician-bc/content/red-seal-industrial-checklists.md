@@ -73,7 +73,22 @@ categories:
     title: "Roadblocks"
     description: "Common challenges and obstacles you may encounter during Red Seal Certification, and how to overcome them"
     icon: "traffic-cone"
-    nodes: []
+    nodes:
+      - id: "red-seal-roadblock-examanxiety"
+        type: "checklist"
+        title: "Exam Anxiety & Prep"
+        nodeType: "checklist"
+        labelPosition: "left"
+      - id: "red-seal-roadblock-documentation"
+        type: "checklist"
+        title: "Work Experience Docs"
+        nodeType: "checklist"
+        labelPosition: "right"
+      - id: "red-seal-roadblock-financial"
+        type: "checklist"
+        title: "Financial Pressure"
+        nodeType: "checklist"
+        labelPosition: "left"
 ---
 
 # All Levels Completed
@@ -255,8 +270,114 @@ Review exam format, scheduling, and policies.
 
 # Electrician Profile
 
-Review the complete Construction Electrician program profile.
+Review the complete Industrial Electrician program profile.
 
 ## Resources
 
-- [Construction Electrician Profile](https://skilledtradesbc.ca/sites/default/files/2023-08/construction-electrician-program-profile-december-2022-harmonized_v1.pdf)
+- [Industrial Electrician Profile](https://skilledtradesbc.ca/trades/industrial-electrician)
+
+---
+
+# Exam Anxiety and Preparation
+
+The Red Seal exam is comprehensive and high-stakes, creating significant pressure and anxiety for many apprentices.
+
+## The Challenge
+
+- 100-question, 4-hour exam covering 4+ years of training
+- High pressure to pass within 4 attempts maximum
+- Cost of retakes ($100 after second attempt)
+- Time away from work and family for studying
+- Fear of failure after years of investment
+- Difficulty knowing when you're truly ready
+- Balancing study time with work and personal responsibilities
+
+## Solutions
+
+- Start studying 3-6 months before exam date
+- Create structured study schedule with daily/weekly goals
+- Use practice exams to gauge readiness (aim for 75-80%+ consistently)
+- Join study groups with other apprentices taking the exam
+- Focus on weak areas identified in practice tests
+- Take care of physical health: sleep, nutrition, exercise
+- Use relaxation techniques for test anxiety
+- Schedule exam when life circumstances allow adequate preparation
+- Consider prep courses if self-study isn't working
+- Remember: you can retake if needed, and most people pass within 2-3 attempts
+
+## Resources
+
+- [Red Seal Exam Preparation Guide](https://red-seal.ca/eng/resources/g.2tr.2.1dy.shtml)
+- [SkilledTradesBC Exam Study Support](https://skilledtradesbc.ca/get-certified/about-exams/exam-study-support)
+- [Mental Health Support for Apprentices](https://skilledtradesbc.ca)
+
+---
+
+# Work Experience Documentation
+
+Proving full-scope experience across all required areas can be challenging, especially if your employment has been specialized.
+
+## The Challenge
+
+- Employment may have been in specialized area (e.g., only manufacturing maintenance)
+- Gaps in experience for certain Red Seal competencies
+- Difficulty documenting diverse experience across 6,000 hours
+- Employer references may not verify all required areas
+- Challenge exam candidates may lack formal documentation
+- International experience requires translation and verification
+- Self-employment experience harder to verify
+- Industrial electricians may lack residential/commercial experience
+
+## Solutions
+
+- Maintain detailed log book throughout apprenticeship documenting all types of work
+- Request experience in diverse areas from employer before Level 4
+- Take initiative to learn different aspects of trade during work hours
+- Photograph completed work (with permission) for portfolio
+- Get employer signatures on competency checklists periodically
+- For challenge exam: gather detailed employment records, pay stubs, contracts
+- International experience: get translations done professionally, allow extra processing time
+- Self-employed: maintain detailed business records, client references, project documentation
+- If gaps exist, consider short-term employment or volunteer work to gain missing experience
+- Industrial electricians: seek opportunities for commercial/residential exposure if needed
+
+## Resources
+
+- [Red Seal Occupational Standard](https://red-seal.ca/eng/trades/electrician-construction.shtml)
+- [SkilledTradesBC Work Documentation](https://skilledtradesbc.ca/apprentices/work-based-training)
+- [Challenge Exam Requirements](https://skilledtradesbc.ca/get-certified/challenge-a-certification)
+
+---
+
+# Financial Pressure During Exam Prep
+
+Taking time off work to study and paying for exam resources can create financial strain.
+
+## The Challenge
+
+- Lost wages during study time (especially if unpaid time off)
+- Cost of study materials, code books, and prep courses ($370-$1,370)
+- Exam retake fees ($100 per attempt after second try)
+- Travel costs if exam location is far away
+- Potential need to take unpaid leave for exam day
+- Delayed income if exam failure requires additional study time
+- Pressure to pass quickly due to financial constraints
+
+## Solutions
+
+- Apply for Canada Apprentice Loan up to 3 months before exam for financial cushion
+- Use EI benefits if eligible during dedicated study periods
+- Budget for exam costs throughout your apprenticeship
+- Access free resources: Red Seal practice questions, SkilledTradesBC materials, library resources
+- Form study groups to share costs of prep courses or materials
+- Ask employer about paid study time or exam day leave (some unions offer this)
+- Schedule exam during slower work periods if possible
+- Consider online prep options which may be more affordable
+- Use tax deductions for education expenses and tools
+- Plan for potential retake costs in your budget
+
+## Resources
+
+- [Canada Apprentice Loan](https://www.pca-cal.ca/en/Home)
+- [Red Seal Free Resources](https://red-seal.ca/eng/resources/g.2tr.2.1dy.shtml)
+- [SkilledTradesBC Financial Benefits](https://skilledtradesbc.ca/apprentices/financial-benefits)

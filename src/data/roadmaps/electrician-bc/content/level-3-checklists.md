@@ -73,7 +73,22 @@ categories:
     title: "Roadblocks"
     description: "Common challenges and obstacles you may encounter during Level 3, and how to overcome them"
     icon: "traffic-cone"
-    nodes: []
+    nodes:
+      - id: "level-3-roadblock-specializationchoice"
+        type: "checklist"
+        title: "Specialization Decision"
+        nodeType: "checklist"
+        labelPosition: "left"
+      - id: "level-3-roadblock-advancedconcepts"
+        type: "checklist"
+        title: "Advanced Theory"
+        nodeType: "checklist"
+        labelPosition: "right"
+      - id: "level-3-roadblock-hourverification"
+        type: "checklist"
+        title: "Hour Verification"
+        nodeType: "checklist"
+        labelPosition: "left"
 ---
 
 # Level 2 Completed
@@ -263,3 +278,98 @@ Continue tracking hours and managing your apprenticeship progress online.
 
 - [SkilledTradesBC Portal](https://skilledtradesbc.ca)
 - [Portal User Guide](https://skilledtradesbc.ca/apprentices/work-based-training)
+
+---
+
+# Specialization Decision
+
+Choosing between Construction and Industrial electrician paths can be difficult without adequate exposure to both.
+
+## The Challenge
+
+- Limited work experience in both specializations before decision required
+- Employer needs may not align with personal career goals
+- Uncertainty about long-term career satisfaction in chosen path
+- Pressure to make decision before fully understanding differences
+- Concern about limiting future opportunities
+
+## Solutions
+
+- Discuss options extensively with employer, journeypersons, and training advisors
+- Request exposure to both types of work during Level 1-3 if possible
+- Research job market and opportunities in your region for both paths
+- Consider personal preferences: variety vs. specialization, indoor vs. outdoor work
+- Understand cross-credit options exist if you want to switch later (requires Level 4 of other stream)
+- Attend information sessions or job shadowing opportunities
+- Connect with electricians in both specializations for informational interviews
+- Evaluate your local job market demand for each specialization
+
+## Resources
+
+- [Construction vs Industrial Comparison](https://skilledtradesbc.ca)
+- [Red Seal Occupational Standards](https://red-seal.ca)
+- [Career Path Information](https://workbc.ca)
+
+---
+
+# Advanced Theory
+
+Level 3 introduces complex three-phase systems, transformers, and industrial applications that can be challenging to master.
+
+## The Challenge
+
+- Complex mathematical calculations for three-phase systems
+- Understanding transformer theory and connections (wye, delta)
+- Grasping industrial control systems and PLCs
+- Applying theoretical knowledge to practical troubleshooting
+- Volume of technical information to absorb in 10 weeks
+- Connecting concepts from previous levels to advanced topics
+
+## Solutions
+
+- Form study groups with classmates to work through complex problems together
+- Use online resources and video tutorials for visual learning
+- Practice calculations repeatedly until they become second nature
+- Ask instructors for additional examples or clarification
+- Create concept maps connecting new material to previously learned concepts
+- Use flashcards for memorizing formulas and code references
+- Seek tutoring or extra help early if struggling
+- Apply concepts during work hours to reinforce learning
+
+## Resources
+
+- [Level 3 Exam Breakdown](https://skilledtradesbc.ca/sites/default/files/2023-01/electrician-common-core-level-3-exam-breakdown-july-2023.pdf)
+- [Exam Study Support](https://skilledtradesbc.ca/get-certified/about-exams/exam-study-support)
+- [Khan Academy Electrical Engineering](https://www.khanacademy.org/science/electrical-engineering)
+
+---
+
+# Hour Verification
+
+Ensuring all work hours are properly documented and verified can be challenging, especially with multiple employers.
+
+## The Challenge
+
+- Employers may delay logging hours in the portal
+- Hours from previous employers may be missing or unverified
+- Discrepancies between your records and employer submissions
+- Maximum 2:1 apprentice-to-journeyperson ratio may limit available hours
+- Seasonal work interruptions affect consistent hour accumulation
+- Changing employers can create gaps in hour documentation
+
+## Solutions
+
+- Maintain personal log book as backup documentation
+- Politely remind employers to log hours every 2-3 months
+- Regularly check your SkilledTradesBC portal for accuracy
+- Keep copies of pay stubs and timesheets as evidence
+- Address discrepancies immediately with employer and SkilledTradesBC
+- Report hours from all employers, including short-term positions
+- Understand that some hours may be rejected if not properly supervised
+- Plan for seasonal slowdowns by securing employment early
+
+## Resources
+
+- [Work-Based Training Guide](https://skilledtradesbc.ca/apprentices/work-based-training)
+- [SkilledTradesBC Portal](https://portal.skilledtradesbc.ca)
+- [Apprentice Log Book](https://skilledtradesbc.ca)

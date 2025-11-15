@@ -68,7 +68,17 @@ categories:
     title: "Roadblocks"
     description: "Common challenges and obstacles you may encounter during Level 4 Construction Electrician training, and how to overcome them"
     icon: "traffic-cone"
-    nodes: []
+    nodes:
+      - id: "level-4-construction-roadblock-specializationdepth"
+        type: "checklist"
+        title: "Specialization Depth"
+        nodeType: "checklist"
+        labelPosition: "left"
+      - id: "level-4-construction-roadblock-codeupdates"
+        type: "checklist"
+        title: "Code Updates"
+        nodeType: "checklist"
+        labelPosition: "right"
 ---
 
 # Level 3 Completed
@@ -241,3 +251,70 @@ Access Level 4 Construction Electrician exam preparation materials.
 
 - [Level 4 Exam Preparation](https://skilledtradesbc.ca/get-certified/about-exams)
 - [Red Seal Exam Info](https://skilledtradesbc.ca/get-certified/red-seal)
+
+---
+
+# Specialization Depth
+
+Level 4 Construction specialization requires mastery of advanced topics specific to construction electrical work.
+
+## The Challenge
+
+- Complex building automation systems and controls
+- Fire alarm and life safety systems integration
+- Renewable energy systems (solar, wind, storage)
+- High-voltage installations and safety protocols
+- Specialized branch circuitry (airport lighting, traffic signals)
+- VDV (Voice/Data/Video) and communication systems
+- PLC programming for construction applications
+- Keeping up with rapidly evolving technology and code changes
+
+## Solutions
+
+- Take advantage of manufacturer training programs for specialized equipment
+- Attend industry conferences and trade shows for latest technology updates
+- Seek mentorship from experienced construction electricians
+- Practice with actual building automation and fire alarm systems when possible
+- Study case studies of complex construction projects
+- Join professional associations for networking and continuing education
+- Consider additional certifications in specialized areas (fire alarm, security systems)
+- Stay current with Canadian Electrical Code updates affecting construction
+
+## Resources
+
+- [Construction Electrician Program Outline](https://skilledtradesbc.ca)
+- [Canadian Electrical Code Updates](https://csa.ca)
+- [Fire Alarm Systems Training](https://cfaa.ca)
+
+---
+
+# Code Updates
+
+The Canadian Electrical Code is updated regularly, and Level 4 requires mastery of current and emerging code requirements.
+
+## The Challenge
+
+- 2024 CEC (26th Edition) came into force April 1, 2025 with significant changes
+- Keeping track of amendments and local interpretations
+- Understanding new requirements for renewable energy systems
+- Fire alarm and life safety code compliance complexities
+- Energy efficiency and green building code integration
+- Different code requirements across provinces if working interprovincially
+- Time needed to study and understand code changes while managing work
+
+## Solutions
+
+- Purchase current CEC and code update handbook
+- Attend code update seminars offered by training institutions
+- Join study groups focused on code interpretation
+- Use code change summary documents from CSA Group
+- Subscribe to electrical industry publications for code news
+- Participate in online forums discussing code applications
+- Keep detailed notes on code interpretations for future reference
+- Focus on sections most relevant to construction electrical work
+
+## Resources
+
+- [Canadian Electrical Code 2024](https://csa.ca)
+- [CSA Group Training](https://csagroup.org)
+- [Electrical Code Updates](https://skilledtradesbc.ca)
