@@ -199,8 +199,8 @@
     {
       "id": "level-3-resource-exam",
       "position": {
-        "x": -72,
-        "y": -4028
+        "x": -52,
+        "y": -4103
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -210,12 +210,27 @@
     {
       "id": "level-3-resource-portal",
       "position": {
-        "x": -332,
-        "y": -4028
+        "x": -202,
+        "y": -3953
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
       "parentId": "level-3-resources",
+      "categoryId": "level-3-resources"
+    },
+    {
+      "id": "shared-resource-financialaid",
+      "position": {
+        "x": -352,
+        "y": -4103
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentIds": [
+        "level-3-resources",
+        "level-1-resources",
+        "level-2-resources"
+      ],
       "categoryId": "level-3-resources"
     },
     {
@@ -500,25 +515,31 @@
       "parentId": "level-4-construction"
     },
     {
-      "id": "level-4-construction-roadblock-specializationdepth",
+      "id": "level-4-shared-roadblock-specializationdepth",
       "position": {
         "x": -868,
         "y": -6388
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
-      "parentId": "level-4-construction-roadblocks",
+      "parentIds": [
+        "level-4-construction-roadblocks",
+        "level-4-industrial-roadblocks"
+      ],
       "categoryId": "level-4-construction-roadblocks"
     },
     {
-      "id": "level-4-construction-roadblock-codeupdates",
+      "id": "level-4-shared-roadblock-codeupdates",
       "position": {
         "x": -868,
         "y": -6088
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
-      "parentId": "level-4-construction-roadblocks",
+      "parentIds": [
+        "level-4-construction-roadblocks",
+        "level-4-industrial-roadblocks"
+      ],
       "categoryId": "level-4-construction-roadblocks"
     },
     {
@@ -662,21 +683,10 @@
       "parentId": "level-4-industrial"
     },
     {
-      "id": "level-4-industrial-roadblock-specializationdepth",
+      "id": "level-4-industrial-roadblock-equipmentcomplexity",
       "position": {
-        "x": 932,
-        "y": -6388
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "level-4-industrial-roadblocks",
-      "categoryId": "level-4-industrial-roadblocks"
-    },
-    {
-      "id": "level-4-industrial-roadblock-codeupdates",
-      "position": {
-        "x": 932,
-        "y": -6088
+        "x": 802,
+        "y": -6163
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -694,7 +704,7 @@
       "parentId": "red-seal-construction"
     },
     {
-      "id": "red-seal-resource-prep",
+      "id": "red-seal-construction-resource-prep",
       "position": {
         "x": -802,
         "y": -8253
@@ -705,7 +715,7 @@
       "categoryId": "red-seal-construction-resources"
     },
     {
-      "id": "red-seal-resource-exam",
+      "id": "red-seal-construction-resource-exam",
       "position": {
         "x": -672,
         "y": -8028
@@ -716,7 +726,7 @@
       "categoryId": "red-seal-construction-resources"
     },
     {
-      "id": "red-seal-resource-profile",
+      "id": "red-seal-construction-resource-profile",
       "position": {
         "x": -932,
         "y": -8028
@@ -737,7 +747,7 @@
       "parentId": "red-seal-construction"
     },
     {
-      "id": "red-seal-req-levels",
+      "id": "red-seal-construction-req-levels",
       "position": {
         "x": -334,
         "y": -8253
@@ -748,7 +758,7 @@
       "categoryId": "red-seal-construction-actions"
     },
     {
-      "id": "red-seal-req-hours",
+      "id": "red-seal-construction-req-hours",
       "position": {
         "x": -228,
         "y": -8209
@@ -759,7 +769,7 @@
       "categoryId": "red-seal-construction-actions"
     },
     {
-      "id": "red-seal-req-exams",
+      "id": "red-seal-construction-req-exams",
       "position": {
         "x": -184,
         "y": -8103
@@ -770,7 +780,7 @@
       "categoryId": "red-seal-construction-actions"
     },
     {
-      "id": "red-seal-req-experience",
+      "id": "red-seal-construction-req-experience",
       "position": {
         "x": -228,
         "y": -7997
@@ -781,7 +791,7 @@
       "categoryId": "red-seal-construction-actions"
     },
     {
-      "id": "red-seal-prep-guide",
+      "id": "red-seal-construction-prep-guide",
       "position": {
         "x": -334,
         "y": -7953
@@ -792,7 +802,7 @@
       "categoryId": "red-seal-construction-actions"
     },
     {
-      "id": "red-seal-prep-practice",
+      "id": "red-seal-construction-prep-practice",
       "position": {
         "x": -440,
         "y": -7997
@@ -803,7 +813,7 @@
       "categoryId": "red-seal-construction-actions"
     },
     {
-      "id": "red-seal-prep-code",
+      "id": "red-seal-construction-prep-code",
       "position": {
         "x": -484,
         "y": -8103
@@ -814,7 +824,7 @@
       "categoryId": "red-seal-construction-actions"
     },
     {
-      "id": "red-seal-prep-schedule",
+      "id": "red-seal-construction-prep-schedule",
       "position": {
         "x": -440,
         "y": -8209
@@ -845,7 +855,7 @@
       "parentId": "red-seal-industrial"
     },
     {
-      "id": "red-seal-resource-prep",
+      "id": "red-seal-industrial-resource-prep",
       "position": {
         "x": 398,
         "y": -8253
@@ -856,7 +866,7 @@
       "categoryId": "red-seal-industrial-resources"
     },
     {
-      "id": "red-seal-resource-exam",
+      "id": "red-seal-industrial-resource-exam",
       "position": {
         "x": 528,
         "y": -8028
@@ -867,7 +877,7 @@
       "categoryId": "red-seal-industrial-resources"
     },
     {
-      "id": "red-seal-resource-profile",
+      "id": "red-seal-industrial-resource-profile",
       "position": {
         "x": 268,
         "y": -8028
@@ -888,7 +898,7 @@
       "parentId": "red-seal-industrial"
     },
     {
-      "id": "red-seal-req-levels",
+      "id": "red-seal-industrial-req-levels",
       "position": {
         "x": 866,
         "y": -8253
@@ -899,7 +909,7 @@
       "categoryId": "red-seal-industrial-actions"
     },
     {
-      "id": "red-seal-req-hours",
+      "id": "red-seal-industrial-req-hours",
       "position": {
         "x": 972,
         "y": -8209
@@ -910,7 +920,7 @@
       "categoryId": "red-seal-industrial-actions"
     },
     {
-      "id": "red-seal-req-exams",
+      "id": "red-seal-industrial-req-exams",
       "position": {
         "x": 1016,
         "y": -8103
@@ -921,7 +931,7 @@
       "categoryId": "red-seal-industrial-actions"
     },
     {
-      "id": "red-seal-req-experience",
+      "id": "red-seal-industrial-req-experience",
       "position": {
         "x": 972,
         "y": -7997
@@ -932,7 +942,7 @@
       "categoryId": "red-seal-industrial-actions"
     },
     {
-      "id": "red-seal-prep-guide",
+      "id": "red-seal-industrial-prep-guide",
       "position": {
         "x": 866,
         "y": -7953
@@ -943,7 +953,7 @@
       "categoryId": "red-seal-industrial-actions"
     },
     {
-      "id": "red-seal-prep-practice",
+      "id": "red-seal-industrial-prep-practice",
       "position": {
         "x": 760,
         "y": -7997
@@ -954,7 +964,7 @@
       "categoryId": "red-seal-industrial-actions"
     },
     {
-      "id": "red-seal-prep-code",
+      "id": "red-seal-industrial-prep-code",
       "position": {
         "x": 716,
         "y": -8103
@@ -965,7 +975,7 @@
       "categoryId": "red-seal-industrial-actions"
     },
     {
-      "id": "red-seal-prep-schedule",
+      "id": "red-seal-industrial-prep-schedule",
       "position": {
         "x": 760,
         "y": -8209
@@ -986,7 +996,7 @@
       "parentId": "red-seal-industrial"
     },
     {
-      "id": "red-seal-roadblock-examanxiety",
+      "id": "red-seal-industrial-roadblock-examanxiety",
       "position": {
         "x": 632,
         "y": -8388
@@ -997,7 +1007,7 @@
       "categoryId": "red-seal-industrial-roadblocks"
     },
     {
-      "id": "red-seal-roadblock-documentation",
+      "id": "red-seal-industrial-roadblock-documentation",
       "position": {
         "x": 762,
         "y": -8163
@@ -1008,7 +1018,7 @@
       "categoryId": "red-seal-industrial-roadblocks"
     },
     {
-      "id": "red-seal-roadblock-financial",
+      "id": "red-seal-industrial-roadblock-financial",
       "position": {
         "x": 502,
         "y": -8163
@@ -1042,8 +1052,8 @@
     {
       "id": "level-1-resource-exam",
       "position": {
-        "x": 1128,
-        "y": -1028
+        "x": 1148,
+        "y": -1103
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -1053,8 +1063,8 @@
     {
       "id": "level-1-resource-portal",
       "position": {
-        "x": 868,
-        "y": -1028
+        "x": 998,
+        "y": -953
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -1215,8 +1225,8 @@
     {
       "id": "level-2-resource-exam",
       "position": {
-        "x": -72,
-        "y": -2028
+        "x": -52,
+        "y": -2103
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -1226,8 +1236,8 @@
     {
       "id": "level-2-resource-code",
       "position": {
-        "x": -332,
-        "y": -2028
+        "x": -202,
+        "y": -1953
       },
       "sourcePosition": "bottom",
       "targetPosition": "top",
@@ -1771,6 +1781,14 @@
       "type": "default"
     },
     {
+      "id": "edge-level-3-resources-shared-resource-financialaid",
+      "source": "level-3-resources",
+      "target": "shared-resource-financialaid",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
       "id": "edge-level-3-level-3-actions",
       "source": "level-3",
       "target": "level-3-actions",
@@ -1979,17 +1997,17 @@
       "type": "default"
     },
     {
-      "id": "edge-level-4-construction-roadblocks-level-4-construction-roadblock-specializationdepth",
+      "id": "edge-level-4-construction-roadblocks-level-4-shared-roadblock-specializationdepth",
       "source": "level-4-construction-roadblocks",
-      "target": "level-4-construction-roadblock-specializationdepth",
+      "target": "level-4-shared-roadblock-specializationdepth",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
       "type": "default"
     },
     {
-      "id": "edge-level-4-construction-roadblocks-level-4-construction-roadblock-codeupdates",
+      "id": "edge-level-4-construction-roadblocks-level-4-shared-roadblock-codeupdates",
       "source": "level-4-construction-roadblocks",
-      "target": "level-4-construction-roadblock-codeupdates",
+      "target": "level-4-shared-roadblock-codeupdates",
       "sourceHandle": "right-source",
       "targetHandle": "left-target",
       "type": "default"
@@ -2099,19 +2117,27 @@
       "type": "default"
     },
     {
-      "id": "edge-level-4-industrial-roadblocks-level-4-industrial-roadblock-specializationdepth",
+      "id": "edge-level-4-industrial-roadblocks-level-4-shared-roadblock-specializationdepth",
       "source": "level-4-industrial-roadblocks",
-      "target": "level-4-industrial-roadblock-specializationdepth",
+      "target": "level-4-shared-roadblock-specializationdepth",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
       "type": "default"
     },
     {
-      "id": "edge-level-4-industrial-roadblocks-level-4-industrial-roadblock-codeupdates",
+      "id": "edge-level-4-industrial-roadblocks-level-4-shared-roadblock-codeupdates",
       "source": "level-4-industrial-roadblocks",
-      "target": "level-4-industrial-roadblock-codeupdates",
+      "target": "level-4-shared-roadblock-codeupdates",
       "sourceHandle": "right-source",
       "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level-4-industrial-roadblocks-level-4-industrial-roadblock-equipmentcomplexity",
+      "source": "level-4-industrial-roadblocks",
+      "target": "level-4-industrial-roadblock-equipmentcomplexity",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
       "type": "default"
     },
     {
@@ -2123,25 +2149,25 @@
       "type": "default"
     },
     {
-      "id": "edge-red-seal-construction-resources-red-seal-resource-prep",
+      "id": "edge-red-seal-construction-resources-red-seal-construction-resource-prep",
       "source": "red-seal-construction-resources",
-      "target": "red-seal-resource-prep",
+      "target": "red-seal-construction-resource-prep",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-construction-resources-red-seal-resource-exam",
+      "id": "edge-red-seal-construction-resources-red-seal-construction-resource-exam",
       "source": "red-seal-construction-resources",
-      "target": "red-seal-resource-exam",
+      "target": "red-seal-construction-resource-exam",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-construction-resources-red-seal-resource-profile",
+      "id": "edge-red-seal-construction-resources-red-seal-construction-resource-profile",
       "source": "red-seal-construction-resources",
-      "target": "red-seal-resource-profile",
+      "target": "red-seal-construction-resource-profile",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
       "type": "default"
@@ -2155,65 +2181,65 @@
       "type": "default"
     },
     {
-      "id": "edge-red-seal-construction-actions-red-seal-req-levels",
+      "id": "edge-red-seal-construction-actions-red-seal-construction-req-levels",
       "source": "red-seal-construction-actions",
-      "target": "red-seal-req-levels",
+      "target": "red-seal-construction-req-levels",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-construction-actions-red-seal-req-hours",
+      "id": "edge-red-seal-construction-actions-red-seal-construction-req-hours",
       "source": "red-seal-construction-actions",
-      "target": "red-seal-req-hours",
+      "target": "red-seal-construction-req-hours",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-construction-actions-red-seal-req-exams",
+      "id": "edge-red-seal-construction-actions-red-seal-construction-req-exams",
       "source": "red-seal-construction-actions",
-      "target": "red-seal-req-exams",
+      "target": "red-seal-construction-req-exams",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-construction-actions-red-seal-req-experience",
+      "id": "edge-red-seal-construction-actions-red-seal-construction-req-experience",
       "source": "red-seal-construction-actions",
-      "target": "red-seal-req-experience",
+      "target": "red-seal-construction-req-experience",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-construction-actions-red-seal-prep-guide",
+      "id": "edge-red-seal-construction-actions-red-seal-construction-prep-guide",
       "source": "red-seal-construction-actions",
-      "target": "red-seal-prep-guide",
+      "target": "red-seal-construction-prep-guide",
       "sourceHandle": "right-source",
       "targetHandle": "left-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-construction-actions-red-seal-prep-practice",
+      "id": "edge-red-seal-construction-actions-red-seal-construction-prep-practice",
       "source": "red-seal-construction-actions",
-      "target": "red-seal-prep-practice",
+      "target": "red-seal-construction-prep-practice",
       "sourceHandle": "right-source",
       "targetHandle": "left-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-construction-actions-red-seal-prep-code",
+      "id": "edge-red-seal-construction-actions-red-seal-construction-prep-code",
       "source": "red-seal-construction-actions",
-      "target": "red-seal-prep-code",
+      "target": "red-seal-construction-prep-code",
       "sourceHandle": "right-source",
       "targetHandle": "left-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-construction-actions-red-seal-prep-schedule",
+      "id": "edge-red-seal-construction-actions-red-seal-construction-prep-schedule",
       "source": "red-seal-construction-actions",
-      "target": "red-seal-prep-schedule",
+      "target": "red-seal-construction-prep-schedule",
       "sourceHandle": "right-source",
       "targetHandle": "left-target",
       "type": "default"
@@ -2235,25 +2261,25 @@
       "type": "default"
     },
     {
-      "id": "edge-red-seal-industrial-resources-red-seal-resource-prep",
+      "id": "edge-red-seal-industrial-resources-red-seal-industrial-resource-prep",
       "source": "red-seal-industrial-resources",
-      "target": "red-seal-resource-prep",
+      "target": "red-seal-industrial-resource-prep",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-industrial-resources-red-seal-resource-exam",
+      "id": "edge-red-seal-industrial-resources-red-seal-industrial-resource-exam",
       "source": "red-seal-industrial-resources",
-      "target": "red-seal-resource-exam",
+      "target": "red-seal-industrial-resource-exam",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-industrial-resources-red-seal-resource-profile",
+      "id": "edge-red-seal-industrial-resources-red-seal-industrial-resource-profile",
       "source": "red-seal-industrial-resources",
-      "target": "red-seal-resource-profile",
+      "target": "red-seal-industrial-resource-profile",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
       "type": "default"
@@ -2267,65 +2293,65 @@
       "type": "default"
     },
     {
-      "id": "edge-red-seal-industrial-actions-red-seal-req-levels",
+      "id": "edge-red-seal-industrial-actions-red-seal-industrial-req-levels",
       "source": "red-seal-industrial-actions",
-      "target": "red-seal-req-levels",
+      "target": "red-seal-industrial-req-levels",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-industrial-actions-red-seal-req-hours",
+      "id": "edge-red-seal-industrial-actions-red-seal-industrial-req-hours",
       "source": "red-seal-industrial-actions",
-      "target": "red-seal-req-hours",
+      "target": "red-seal-industrial-req-hours",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-industrial-actions-red-seal-req-exams",
+      "id": "edge-red-seal-industrial-actions-red-seal-industrial-req-exams",
       "source": "red-seal-industrial-actions",
-      "target": "red-seal-req-exams",
+      "target": "red-seal-industrial-req-exams",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-industrial-actions-red-seal-req-experience",
+      "id": "edge-red-seal-industrial-actions-red-seal-industrial-req-experience",
       "source": "red-seal-industrial-actions",
-      "target": "red-seal-req-experience",
+      "target": "red-seal-industrial-req-experience",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-industrial-actions-red-seal-prep-guide",
+      "id": "edge-red-seal-industrial-actions-red-seal-industrial-prep-guide",
       "source": "red-seal-industrial-actions",
-      "target": "red-seal-prep-guide",
+      "target": "red-seal-industrial-prep-guide",
       "sourceHandle": "right-source",
       "targetHandle": "left-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-industrial-actions-red-seal-prep-practice",
+      "id": "edge-red-seal-industrial-actions-red-seal-industrial-prep-practice",
       "source": "red-seal-industrial-actions",
-      "target": "red-seal-prep-practice",
+      "target": "red-seal-industrial-prep-practice",
       "sourceHandle": "right-source",
       "targetHandle": "left-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-industrial-actions-red-seal-prep-code",
+      "id": "edge-red-seal-industrial-actions-red-seal-industrial-prep-code",
       "source": "red-seal-industrial-actions",
-      "target": "red-seal-prep-code",
+      "target": "red-seal-industrial-prep-code",
       "sourceHandle": "right-source",
       "targetHandle": "left-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-industrial-actions-red-seal-prep-schedule",
+      "id": "edge-red-seal-industrial-actions-red-seal-industrial-prep-schedule",
       "source": "red-seal-industrial-actions",
-      "target": "red-seal-prep-schedule",
+      "target": "red-seal-industrial-prep-schedule",
       "sourceHandle": "right-source",
       "targetHandle": "left-target",
       "type": "default"
@@ -2339,25 +2365,25 @@
       "type": "default"
     },
     {
-      "id": "edge-red-seal-industrial-roadblocks-red-seal-roadblock-examanxiety",
+      "id": "edge-red-seal-industrial-roadblocks-red-seal-industrial-roadblock-examanxiety",
       "source": "red-seal-industrial-roadblocks",
-      "target": "red-seal-roadblock-examanxiety",
+      "target": "red-seal-industrial-roadblock-examanxiety",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-industrial-roadblocks-red-seal-roadblock-documentation",
+      "id": "edge-red-seal-industrial-roadblocks-red-seal-industrial-roadblock-documentation",
       "source": "red-seal-industrial-roadblocks",
-      "target": "red-seal-roadblock-documentation",
+      "target": "red-seal-industrial-roadblock-documentation",
       "sourceHandle": "right-source",
       "targetHandle": "left-target",
       "type": "default"
     },
     {
-      "id": "edge-red-seal-industrial-roadblocks-red-seal-roadblock-financial",
+      "id": "edge-red-seal-industrial-roadblocks-red-seal-industrial-roadblock-financial",
       "source": "red-seal-industrial-roadblocks",
-      "target": "red-seal-roadblock-financial",
+      "target": "red-seal-industrial-roadblock-financial",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
       "type": "default"
@@ -2390,6 +2416,14 @@
       "id": "edge-level-1-resources-level-1-resource-portal",
       "source": "level-1-resources",
       "target": "level-1-resource-portal",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level-1-resources-shared-resource-financialaid",
+      "source": "level-1-resources",
+      "target": "shared-resource-financialaid",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
       "type": "default"
@@ -2518,6 +2552,14 @@
       "id": "edge-level-2-resources-level-2-resource-code",
       "source": "level-2-resources",
       "target": "level-2-resource-code",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-level-2-resources-shared-resource-financialaid",
+      "source": "level-2-resources",
+      "target": "shared-resource-financialaid",
       "sourceHandle": "bottom-source",
       "targetHandle": "top-target",
       "type": "default"

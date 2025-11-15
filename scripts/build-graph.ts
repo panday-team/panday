@@ -47,6 +47,7 @@ interface SubnodeConfig {
   title: string;
   nodeType: string;
   labelPosition?: "left" | "right" | "top" | "bottom";
+  sharedWith?: string[]; // IDs of other category nodes that should also parent this node
 }
 
 interface CategoryConfig {
@@ -69,6 +70,7 @@ interface GraphNode {
   sourcePosition?: "top" | "bottom" | "left" | "right";
   targetPosition?: "top" | "bottom" | "left" | "right";
   parentId?: string;
+  parentIds?: string[]; // Multiple parents for shared nodes
   categoryId?: string;
 }
 
@@ -91,6 +93,7 @@ interface SimNode extends SimulationNodeDatum {
   isMainNode: boolean;
   isCategoryNode?: boolean;
   parentId?: string;
+  parentIds?: string[]; // Multiple parents for shared nodes
   categoryId?: string;
   labelPosition?: string;
   icon?: string;
@@ -228,8 +231,11 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
   // Load checklist nodes (with backward compatibility for flat structure)
   const checklistRefs: Array<{ fileName: string; parentId: string }> = [];
   const categoriesByParent = new Map<string, CategoryConfig[]>();
-  const allCategories: Array<{ id: string; parentId: string; fileName: string }> =
-    [];
+  const allCategories: Array<{
+    id: string;
+    parentId: string;
+    fileName: string;
+  }> = [];
 
   for (const file of checklistFiles) {
     const checklist = await loadChecklistContent(roadmapId, file);
@@ -260,6 +266,29 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
 
   validationErrors.push(...validateParentReferences(checklistRefs, allNodeIds));
   validationErrors.push(...validateCategoryIds(allCategories));
+
+  // Track shared nodes (nodes that appear under multiple categories)
+  const sharedNodeParents = new Map<string, Set<string>>(); // nodeId -> Set of parent category IDs
+  const createdNodes = new Set<string>(); // Track which nodes have been created
+
+  // First pass: identify all shared nodes and their parents
+  for (const [, categories] of categoriesByParent) {
+    for (const category of categories) {
+      for (const checklistNode of category.nodes) {
+        if (!sharedNodeParents.has(checklistNode.id)) {
+          sharedNodeParents.set(checklistNode.id, new Set());
+        }
+        sharedNodeParents.get(checklistNode.id)!.add(category.id);
+
+        // Also add sharedWith categories if specified
+        if (checklistNode.sharedWith) {
+          for (const sharedCategoryId of checklistNode.sharedWith) {
+            sharedNodeParents.get(checklistNode.id)!.add(sharedCategoryId);
+          }
+        }
+      }
+    }
+  }
 
   // Create category and checklist nodes with 3-level hierarchy
   for (const [parentId, categories] of categoriesByParent) {
@@ -333,19 +362,30 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
         const checklistX = checklistCenterX - CHECKLIST_NODE_SIZE / 2;
         const checklistY = checklistCenterY - CHECKLIST_NODE_SIZE / 2;
 
-        simNodes.push({
-          id: checklistNode.id,
-          isMainNode: false,
-          isCategoryNode: false,
-          parentId: category.id, // Parent is the category
-          categoryId: category.id, // Track which category this belongs to
-          labelPosition: checklistNode.labelPosition,
-          x: checklistX,
-          y: checklistY,
-          fx: checklistX, // Fix position
-          fy: checklistY, // Fix position
-        });
+        // Only create the node once (at first parent's position)
+        if (!createdNodes.has(checklistNode.id)) {
+          const allParents = sharedNodeParents.get(checklistNode.id);
+          const parentsList = allParents
+            ? Array.from(allParents)
+            : [category.id];
 
+          simNodes.push({
+            id: checklistNode.id,
+            isMainNode: false,
+            isCategoryNode: false,
+            parentId: parentsList.length === 1 ? parentsList[0] : undefined, // Legacy single parent
+            parentIds: parentsList.length > 1 ? parentsList : undefined, // New multi-parent support
+            categoryId: category.id, // Track which category this belongs to (primary)
+            labelPosition: checklistNode.labelPosition,
+            x: checklistX,
+            y: checklistY,
+            fx: checklistX, // Fix position
+            fy: checklistY, // Fix position
+          });
+          createdNodes.add(checklistNode.id);
+        }
+
+        // Always create edges from this category to the checklist node
         simLinks.push({
           source: category.id,
           target: checklistNode.id,
@@ -456,6 +496,7 @@ async function buildGraph(roadmapId: string): Promise<RoadmapGraph> {
     sourcePosition: "bottom" as const,
     targetPosition: "top" as const,
     parentId: simNode.parentId,
+    parentIds: simNode.parentIds,
     categoryId: simNode.categoryId,
   }));
 

@@ -289,17 +289,17 @@ Complete Level 2 with mastery of intermediate electrical concepts...
 
 The system supports multiple node types, each with distinct visual styling:
 
-| Type          | Purpose                                  | Color              | Example                 | Status |
-| ------------- | ---------------------------------------- | ------------------ | ----------------------- | ------ |
-| `hub`         | Main training/education milestones       | Yellow (`#FFD84D`) | Level 2, Level 3        | ✓ Active |
-| `terminal`    | Final goal/endpoint                      | Purple (`purple-500`) | Red Seal             | ✓ Active |
-| `resources`   | Connector node for resource checklists   | Blue (`#0077CC`)   | Study materials, guides | ✓ Active |
-| `actions`     | Connector node for action item checklists| Green (`#00A67E`)  | Safety training, exams  | ✓ Active |
-| `roadblocks`  | Connector node for challenge checklists  | Orange (`#FF6B35`) | Common issues           | ✓ Active |
-| `checklist`   | Individual task/requirement items        | Teal               | "Complete safety training" | ✓ Active |
-| `requirement` | Prerequisites/conditions (alias for hub) | Lime Green         | Foundation Requirements | Registered, not used |
-| `portal`      | External systems (alias for hub)         | Light Blue         | SkilledTradesBC Portal  | Registered, not used |
-| `checkpoint`  | Milestones/waiting periods (alias for hub)| Purple            | Waiting Period          | Registered, not used |
+| Type          | Purpose                                    | Color                 | Example                    | Status               |
+| ------------- | ------------------------------------------ | --------------------- | -------------------------- | -------------------- |
+| `hub`         | Main training/education milestones         | Yellow (`#FFD84D`)    | Level 2, Level 3           | ✓ Active             |
+| `terminal`    | Final goal/endpoint                        | Purple (`purple-500`) | Red Seal                   | ✓ Active             |
+| `resources`   | Connector node for resource checklists     | Blue (`#0077CC`)      | Study materials, guides    | ✓ Active             |
+| `actions`     | Connector node for action item checklists  | Green (`#00A67E`)     | Safety training, exams     | ✓ Active             |
+| `roadblocks`  | Connector node for challenge checklists    | Orange (`#FF6B35`)    | Common issues              | ✓ Active             |
+| `checklist`   | Individual task/requirement items          | Teal                  | "Complete safety training" | ✓ Active             |
+| `requirement` | Prerequisites/conditions (alias for hub)   | Lime Green            | Foundation Requirements    | Registered, not used |
+| `portal`      | External systems (alias for hub)           | Light Blue            | SkilledTradesBC Portal     | Registered, not used |
+| `checkpoint`  | Milestones/waiting periods (alias for hub) | Purple                | Waiting Period             | Registered, not used |
 
 ### Connector Nodes (New Design - Nov 2025)
 
@@ -427,6 +427,142 @@ bun run roadmap:build
 ```
 
 4. **Verify**: Check dev server - the new node appears with automatic edges!
+
+### Creating Shared Nodes (Multi-Parent Nodes)
+
+**New Feature (Nov 2025)**: Nodes can now be shared across multiple parent categories, reducing duplication for common resources, roadblocks, or requirements that apply to multiple levels.
+
+#### Use Cases
+
+- **Financial Aid Resources**: Show the same financial aid node under Level 1, Level 2, and Level 3
+- **Common Roadblocks**: Share roadblock nodes between Construction and Industrial paths (e.g., "Code Updates", "Specialization Depth")
+- **Universal Requirements**: Share prerequisite nodes that apply to multiple specializations
+
+#### How It Works
+
+1. **Define the node in one checklist file** with the `sharedWith` property listing other parent category IDs
+2. **Reference the same node ID in other checklist files** (without `sharedWith`)
+3. **The builder creates one node** with multiple parent IDs and edges from all parents
+4. **The node appears** when ANY of its parent categories is selected
+
+#### Example: Shared Financial Aid Resource
+
+**In `level-1-checklists.md`** (primary definition):
+
+```yaml
+---
+milestoneId: "level-1"
+categories:
+  - id: "level-1-resources"
+    nodes:
+      - id: "shared-resource-financialaid"
+        type: "checklist"
+        title: "Financial Aid"
+        nodeType: "checklist"
+        labelPosition: "bottom"
+        sharedWith: ["level-2-resources", "level-3-resources"]
+---
+```
+
+**In `level-2-checklists.md` and `level-3-checklists.md`** (references):
+
+```yaml
+---
+milestoneId: "level-2" # or "level-3"
+categories:
+  - id: "level-2-resources" # or "level-3-resources"
+    nodes:
+      - id: "shared-resource-financialaid"
+        type: "checklist"
+        title: "Financial Aid"
+        nodeType: "checklist"
+        labelPosition: "bottom"
+        # No sharedWith needed in reference files
+---
+```
+
+#### Example: Shared Roadblocks Between Specializations
+
+**In `level-4-industrial-checklists.md`**:
+
+```yaml
+categories:
+  - id: "level-4-industrial-roadblocks"
+    nodes:
+      - id: "level-4-shared-roadblock-specializationdepth"
+        type: "checklist"
+        title: "Specialization Depth"
+        nodeType: "checklist"
+        labelPosition: "left"
+        sharedWith: ["level-4-construction-roadblocks"]
+      - id: "level-4-shared-roadblock-codeupdates"
+        type: "checklist"
+        title: "Code Updates"
+        nodeType: "checklist"
+        labelPosition: "right"
+        sharedWith: ["level-4-construction-roadblocks"]
+      - id: "level-4-industrial-roadblock-equipmentcomplexity"
+        type: "checklist"
+        title: "Equipment Complexity"
+        nodeType: "checklist"
+        labelPosition: "left"
+        # This one is NOT shared - only appears under industrial
+```
+
+**In `level-4-construction-checklists.md`**:
+
+```yaml
+categories:
+  - id: "level-4-construction-roadblocks"
+    nodes:
+      - id: "level-4-shared-roadblock-specializationdepth"
+        type: "checklist"
+        title: "Specialization Depth"
+        nodeType: "checklist"
+        labelPosition: "left"
+      - id: "level-4-shared-roadblock-codeupdates"
+        type: "checklist"
+        title: "Code Updates"
+        nodeType: "checklist"
+        labelPosition: "right"
+```
+
+#### Node Content
+
+Create markdown content for shared nodes in **one file only** (typically where you define `sharedWith`):
+
+```markdown
+---
+# In level-1-checklists.md or as a separate markdown file
+---
+
+# Financial Aid
+
+Access financial support options for apprenticeship training...
+
+## Available Support
+
+- Apprenticeship Incentive Grant: $1,000 per level
+- BC Training Grant: up to $1,200
+  ...
+```
+
+#### Technical Details
+
+- **Node IDs**: Shared nodes should use a prefix like `shared-resource-` or `level-4-shared-roadblock-` to make them easily identifiable
+- **Position**: The node is positioned at the **first parent** (where `sharedWith` is defined) and will only appear once in the graph
+- **Edges**: Multiple edges are created from all parent categories to the shared node
+- **Visibility**: The node becomes visible when ANY parent category or sibling is selected
+- **Data Structure**: The graph node stores `parentIds: ["parent1", "parent2", ...]` array instead of single `parentId`
+
+#### Best Practices
+
+1. **Name clearly**: Use descriptive IDs with `shared-` prefix for easy identification
+2. **Define once**: Set `sharedWith` in only ONE checklist file (the primary definition)
+3. **Reference consistently**: Use the exact same `id`, `type`, `title`, and `nodeType` in all reference files
+4. **Content once**: Write markdown content in only one location (avoid duplication)
+5. **Logical grouping**: Only share nodes that truly apply to all parents (e.g., common roadblocks, universal resources)
+6. **Test visibility**: Verify the node appears under all expected parents after running `bun run roadmap:build`
 
 ### Adding a New Roadmap (Career/Province)
 
@@ -618,6 +754,7 @@ The `loadNodeContent()` function automatically searches checklist files when a s
    - `level-4-construction-training-controls` → searches `level-4-construction-checklists.md`
 
 If loading fails:
+
 1. Verify the node exists in the appropriate checklist file's frontmatter
 2. Check the node ID matches exactly (case-sensitive)
 3. Ensure checklist file naming follows the pattern `{prefix}-checklists.md`

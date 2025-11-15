@@ -148,14 +148,18 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   // Pre-compute node relationships once for reuse across multiple memos
   const nodeRelationships = useMemo(() => {
     const hubNodeIds = new Set(
-      roadmap.graph.nodes.filter((n) => !n.parentId).map((n) => n.id),
+      roadmap.graph.nodes
+        .filter((n) => !n.parentId && !n.parentIds)
+        .map((n) => n.id),
     );
     const nodesByParent = new Map<string, typeof roadmap.graph.nodes>();
     for (const node of roadmap.graph.nodes) {
-      if (node.parentId) {
-        const siblings = nodesByParent.get(node.parentId) ?? [];
+      // Handle both single parent and multiple parents
+      const parents = node.parentIds ?? (node.parentId ? [node.parentId] : []);
+      for (const parentId of parents) {
+        const siblings = nodesByParent.get(parentId) ?? [];
         siblings.push(node);
-        nodesByParent.set(node.parentId, siblings);
+        nodesByParent.set(parentId, siblings);
       }
     }
     return { hubNodeIds, nodesByParent };
@@ -197,20 +201,23 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
     //build nodes from graph/content
     const builtNodes: FlowNode[] = roadmap.graph.nodes
       .filter((graphNode) => {
-        // Always show hub and category nodes
-        if (!graphNode.parentId) return true; // Hub/terminal nodes
+        const parents =
+          graphNode.parentIds ??
+          (graphNode.parentId ? [graphNode.parentId] : []);
+
+        // Always show hub and category nodes (nodes with no parents)
+        if (parents.length === 0) return true; // Hub/terminal nodes
 
         // Category nodes have a hub as parent (O(1) lookup)
-        if (graphNode.parentId && hubNodeIds.has(graphNode.parentId))
-          return true;
+        if (parents.some((parentId) => hubNodeIds.has(parentId))) return true;
 
-        // Checklist nodes: show if parent category is selected OR any sibling is selected
-        if (graphNode.parentId) {
+        // Checklist nodes: show if ANY parent category is selected OR any sibling is selected
+        for (const parentId of parents) {
           // Show if the parent category itself is selected
-          if (selectedNodeId === graphNode.parentId) return true;
+          if (selectedNodeId === parentId) return true;
 
           // Show if any sibling (same parent) is selected (O(siblings) instead of O(all nodes))
-          const siblings = nodesByParent.get(graphNode.parentId) ?? [];
+          const siblings = nodesByParent.get(parentId) ?? [];
           if (siblings.some((n) => n.id === selectedNodeId)) return true;
         }
 
@@ -263,22 +270,32 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         // Cascade dimming from parent nodes
         let isDimmed = irrelevantNodeIds.includes(graphNode.id);
 
-        // If node has a parent, check if parent is dimmed (cascade)
-        if (!isDimmed && graphNode.parentId) {
-          const parentNode = roadmap.graph.nodes.find(
-            (n) => n.id === graphNode.parentId,
-          );
-          if (parentNode) {
-            // Check if parent hub is dimmed
-            if (irrelevantNodeIds.includes(parentNode.id)) {
-              isDimmed = true;
-            }
-            // Check if parent connector is dimmed (for checklist nodes)
-            else if (
-              parentNode.parentId &&
-              irrelevantNodeIds.includes(parentNode.parentId)
-            ) {
-              isDimmed = true;
+        // If node has parent(s), check if ANY parent is dimmed (cascade)
+        if (!isDimmed) {
+          const parents =
+            graphNode.parentIds ??
+            (graphNode.parentId ? [graphNode.parentId] : []);
+
+          for (const parentId of parents) {
+            const parentNode = roadmap.graph.nodes.find(
+              (n) => n.id === parentId,
+            );
+            if (parentNode) {
+              // Check if parent hub is dimmed
+              if (irrelevantNodeIds.includes(parentNode.id)) {
+                isDimmed = true;
+                break;
+              }
+              // Check if parent connector is dimmed (for checklist nodes)
+              const parentParents =
+                parentNode.parentIds ??
+                (parentNode.parentId ? [parentNode.parentId] : []);
+              if (
+                parentParents.some((ppId) => irrelevantNodeIds.includes(ppId))
+              ) {
+                isDimmed = true;
+                break;
+              }
             }
           }
         }
@@ -291,10 +308,17 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
 
         // Calculate animation index for checklist nodes (for cascade animation)
         let animationIndex: number | undefined;
-        if (graphNode.parentId && !isMainNode && !isCategoryNode) {
+        const parents =
+          graphNode.parentIds ??
+          (graphNode.parentId ? [graphNode.parentId] : []);
+        if (parents.length > 0 && !isMainNode && !isCategoryNode) {
           // This is a checklist node - find its index among siblings (use pre-computed map)
-          const siblings = nodesByParent.get(graphNode.parentId) ?? [];
-          animationIndex = siblings.findIndex((n) => n.id === graphNode.id);
+          // For shared nodes, use the first parent for animation index
+          const firstParent = parents[0];
+          if (firstParent) {
+            const siblings = nodesByParent.get(firstParent) ?? [];
+            animationIndex = siblings.findIndex((n) => n.id === graphNode.id);
+          }
         }
 
         // For category nodes, determine if expanded based on selection
@@ -320,7 +344,8 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
             glow: content?.frontmatter.glow ?? isCurrentLevel,
             labelPosition: content?.frontmatter.labelPosition,
             showLabelDot: content?.frontmatter.showLabelDot,
-            parentId: graphNode.parentId,
+            parentId: graphNode.parentId, // Keep for backward compatibility
+            parentIds: graphNode.parentIds, // New multi-parent support
             status: nodeStatus,
             isCurrentLevel,
             isDimmed,

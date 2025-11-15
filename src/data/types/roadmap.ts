@@ -84,7 +84,8 @@ export interface GraphNode {
   position: { x: number; y: number };
   sourcePosition?: Position;
   targetPosition?: Position;
-  parentId?: string | null;
+  parentId?: string | null; // Single parent (legacy, maintained for backward compatibility)
+  parentIds?: string[]; // Multiple parents (for shared nodes)
   categoryId?: string | null;
 }
 

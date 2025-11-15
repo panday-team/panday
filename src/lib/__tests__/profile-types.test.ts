@@ -77,22 +77,12 @@ describe("profile-types utilities", () => {
       const result = getIrrelevantNodes(
         ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
       );
-      expect(result).toEqual([
-        "level-4-industrial",
-        "level-4-industrial-req-1",
-        "level-4-industrial-req-2",
-        "level-4-industrial-req-3",
-      ]);
+      expect(result).toEqual(["level-4-industrial", "red-seal-industrial"]);
     });
 
     it("should return construction nodes for INDUSTRIAL specialization", () => {
       const result = getIrrelevantNodes(ELECTRICIAN_SPECIALIZATION.INDUSTRIAL);
-      expect(result).toEqual([
-        "level-4-construction",
-        "level-4-construction-req-1",
-        "level-4-construction-req-2",
-        "level-4-construction-req-3",
-      ]);
+      expect(result).toEqual(["level-4-construction", "red-seal-construction"]);
     });
 
     it("should return empty array for UNDECIDED specialization", () => {
@@ -156,9 +146,25 @@ describe("profile-types utilities", () => {
       expect(result).toBe("level-4-construction");
     });
 
-    it("should return red-seal-certification for RED_SEAL", () => {
+    it("should return red-seal-construction for RED_SEAL without specialization (defaults to construction)", () => {
       const result = getCurrentLevelNodeId(APPRENTICESHIP_LEVELS.RED_SEAL);
-      expect(result).toBe("red-seal-certification");
+      expect(result).toBe("red-seal-construction");
+    });
+
+    it("should return red-seal-construction for RED_SEAL with CONSTRUCTION specialization", () => {
+      const result = getCurrentLevelNodeId(
+        APPRENTICESHIP_LEVELS.RED_SEAL,
+        ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
+      );
+      expect(result).toBe("red-seal-construction");
+    });
+
+    it("should return red-seal-industrial for RED_SEAL with INDUSTRIAL specialization", () => {
+      const result = getCurrentLevelNodeId(
+        APPRENTICESHIP_LEVELS.RED_SEAL,
+        ELECTRICIAN_SPECIALIZATION.INDUSTRIAL,
+      );
+      expect(result).toBe("red-seal-industrial");
     });
   });
 

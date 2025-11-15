@@ -69,16 +69,23 @@ categories:
     description: "Common challenges and obstacles you may encounter during Level 4 Industrial Electrician training, and how to overcome them"
     icon: "traffic-cone"
     nodes:
-      - id: "level-4-industrial-roadblock-specializationdepth"
+      - id: "level-4-shared-roadblock-specializationdepth"
         type: "checklist"
         title: "Specialization Depth"
         nodeType: "checklist"
         labelPosition: "left"
-      - id: "level-4-industrial-roadblock-codeupdates"
+        sharedWith: ["level-4-construction-roadblocks"]
+      - id: "level-4-shared-roadblock-codeupdates"
         type: "checklist"
         title: "Code Updates"
         nodeType: "checklist"
         labelPosition: "right"
+        sharedWith: ["level-4-construction-roadblocks"]
+      - id: "level-4-industrial-roadblock-equipmentcomplexity"
+        type: "checklist"
+        title: "Equipment Complexity"
+        nodeType: "checklist"
+        labelPosition: "left"
 ---
 
 # Level 3 Completed
@@ -321,3 +328,39 @@ The Canadian Electrical Code is updated regularly, and industrial applications h
 - [Canadian Electrical Code 2024](https://csa.ca)
 - [CSA Group Training](https://csagroup.org)
 - [Electrical Code Updates](https://skilledtradesbc.ca)
+
+---
+
+# Equipment Complexity
+
+Industrial electrical work involves complex specialized equipment, advanced control systems, and requires understanding of multiple integrated systems.
+
+## The Challenge
+
+- Multi-system integration (electrical, mechanical, pneumatic, hydraulic)
+- Complex machinery troubleshooting across various systems
+- High-voltage equipment with serious safety implications
+- Sophisticated instrumentation and control devices
+- Variable frequency drives (VFDs) and soft starters
+- Industrial communication networks and protocols
+- Programmable controllers and automation systems
+- Process monitoring and control systems
+- Equipment-specific technical manuals and documentation
+
+## Solutions
+
+- Take manufacturer-specific training courses for key equipment
+- Shadow experienced technicians during complex troubleshooting
+- Build systematic troubleshooting approaches and document processes
+- Study system integration diagrams and P&IDs
+- Practice with simulation software for complex systems
+- Develop strong foundation in control theory and process principles
+- Maintain organized technical reference library
+- Join equipment-specific user groups and forums
+- Request mentorship for unfamiliar equipment types
+
+## Resources
+
+- [Industrial Maintenance Training](https://skilledtradesbc.ca)
+- [Automation Equipment Training](https://www.rockwellautomation.com/en-us/support/training.html)
+- [Process Control Fundamentals](https://isa.org)

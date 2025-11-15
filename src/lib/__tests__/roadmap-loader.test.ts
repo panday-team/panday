@@ -59,17 +59,30 @@ describe("roadmap-loader", () => {
   });
 
   describe("loadNodeContent", () => {
-    it("should load content for red-seal-certification node", async () => {
+    it("should load content for red-seal-construction node", async () => {
       const content = await loadNodeContent(
         "electrician-bc",
-        "red-seal-certification",
+        "red-seal-construction",
       );
 
       expect(content).toBeDefined();
       expect(content.frontmatter).toBeDefined();
-      expect(content.frontmatter.id).toBe("red-seal-certification");
+      expect(content.frontmatter.id).toBe("red-seal-construction");
       expect(content.frontmatter.type).toBe("terminal");
-      expect(content.frontmatter.title).toBe("Red Seal Certification");
+      expect(content.content).toBeDefined();
+      expect(content.content.length).toBeGreaterThan(0);
+    });
+
+    it("should load content for red-seal-industrial node", async () => {
+      const content = await loadNodeContent(
+        "electrician-bc",
+        "red-seal-industrial",
+      );
+
+      expect(content).toBeDefined();
+      expect(content.frontmatter).toBeDefined();
+      expect(content.frontmatter.id).toBe("red-seal-industrial");
+      expect(content.frontmatter.type).toBe("terminal");
       expect(content.content).toBeDefined();
       expect(content.content.length).toBeGreaterThan(0);
     });
@@ -89,12 +102,21 @@ describe("roadmap-loader", () => {
       expect(contentMap.size).toBeGreaterThan(0);
     });
 
-    it("should have content for red-seal-certification", async () => {
+    it("should have content for red-seal nodes", async () => {
       const contentMap = await loadAllNodeContent("electrician-bc");
-      const redSealContent = contentMap.get("red-seal-certification");
+      const redSealConstructionContent = contentMap.get(
+        "red-seal-construction",
+      );
+      const redSealIndustrialContent = contentMap.get("red-seal-industrial");
 
-      expect(redSealContent).toBeDefined();
-      expect(redSealContent?.frontmatter.id).toBe("red-seal-certification");
+      expect(redSealConstructionContent).toBeDefined();
+      expect(redSealConstructionContent?.frontmatter.id).toBe(
+        "red-seal-construction",
+      );
+      expect(redSealIndustrialContent).toBeDefined();
+      expect(redSealIndustrialContent?.frontmatter.id).toBe(
+        "red-seal-industrial",
+      );
     });
 
     it("should have content for all nodes in graph", async () => {
