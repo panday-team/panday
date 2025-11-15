@@ -27,6 +27,16 @@ const Typewriter = memo(function Typewriter({
     }
   }, [currentIndex, content, scrollContainerRef]);
 
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [displayedContent, scrollContainerRef]);
+
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}

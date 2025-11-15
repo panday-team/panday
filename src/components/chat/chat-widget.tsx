@@ -633,6 +633,20 @@ export function ChatWidget({
   }, [isExpanded]);
 
   useEffect(() => {
+    if (!isExpanded) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const { scrollHeight } = container;
+    container.scrollTo({
+      top: scrollHeight,
+      behavior: didMountRef.current ? "smooth" : "auto",
+    });
+
+    didMountRef.current = true;
+  }, [isExpanded, messages.length]);
+
+  useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
@@ -1154,7 +1168,7 @@ export function ChatWidget({
   return (
     <div className="fixed right-6 bottom-6 z-40 flex flex-col items-end gap-3">
       {isExpanded && (
-        <div className="flex max-h-[75vh] w-[min(960px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur dark:border-white/10 dark:bg-[#1f2a37]/95">
+        <div className="flex h-[75vh] max-h-[75vh] w-[min(960px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur dark:border-white/10 dark:bg-[#1f2a37]/95">
           <div className="flex h-full w-full flex-col">
             <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-white/10">
               <div>
@@ -1191,9 +1205,31 @@ export function ChatWidget({
             <div className="flex h-full flex-1 overflow-hidden">
               {isDesktop && historySidebar}
               <div className="relative flex flex-1 flex-col">
+                <div ref={containerRef} className="flex-1 overflow-y-auto">
+                  {threadMessagesLoading && isSignedIn ? (
+                    <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-white/70">
+                      Loading conversation…
+                    </div>
+                  ) : (
+                    renderMessages()
+                  )}
+                </div>
+
+                {showScrollButton && messages.length > 0 && (
+                  <div className="flex justify-center bg-transparent py-2">
+                    <button
+                      onClick={scrollToBottom}
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5A829A] text-white shadow-lg transition-all hover:bg-[#6A92AA]"
+                      aria-label="Scroll to bottom"
+                    >
+                      <ArrowDown size={16} />
+                    </button>
+                  </div>
+                )}
+
                 <form
                   onSubmit={onSubmit}
-                  className="border-b border-gray-200 p-4 dark:border-white/10"
+                  className="border-t border-gray-200 p-4 dark:border-white/10"
                 >
                   <div className="flex items-center gap-2 rounded-3xl bg-white px-3 py-1 shadow-sm dark:bg-white/10">
                     <Input
@@ -1232,28 +1268,6 @@ export function ChatWidget({
                     </p>
                   )}
                 </form>
-
-                <div ref={containerRef} className="flex-1 overflow-y-auto">
-                  {threadMessagesLoading && isSignedIn ? (
-                    <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-white/70">
-                      Loading conversation…
-                    </div>
-                  ) : (
-                    renderMessages()
-                  )}
-                </div>
-
-                {showScrollButton && messages.length > 0 && (
-                  <div className="flex justify-center bg-transparent py-2">
-                    <button
-                      onClick={scrollToBottom}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5A829A] text-white shadow-lg transition-all hover:bg-[#6A92AA]"
-                      aria-label="Scroll to bottom"
-                    >
-                      <ArrowDown size={16} />
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           </div>
