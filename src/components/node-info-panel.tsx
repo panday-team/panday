@@ -128,12 +128,15 @@ export function NodeInfoPanel({
         ) : null}
 
         {categories?.length && onNavigateToNode ? (
-          <CategoryNav categories={categories} onNavigateToNode={onNavigateToNode} />
+          <CategoryNav
+            categories={categories}
+            onNavigateToNode={onNavigateToNode}
+          />
         ) : null}
 
         {resources?.length ? (
-          <section className="space-y-2 text-sm text-white/75">
-            <h2 className="font-semibold text-white">Resources</h2>
+          <section className="space-y-2 text-sm text-black/80">
+            <h2 className="font-semibold text-black">Resources</h2>
             <ul className="space-y-1">
               {resources.map((resource) => (
                 <li key={resource.href}>
@@ -157,8 +160,8 @@ export function NodeInfoPanel({
 
 function Section({ title, items }: { title: string; items: string[] }) {
   return (
-    <section className="space-y-2 text-sm leading-relaxed text-white/75">
-      <h2 className="font-semibold text-white">{title}</h2>
+    <section className="space-y-2 text-sm leading-relaxed text-black/80">
+      <h2 className="font-semibold text-black">{title}</h2>
       <ul className="mt-1 list-disc space-y-1 pl-5">
         {items.map((item) => (
           <li key={item}>{item}</li>
@@ -201,12 +204,12 @@ function CategoryNav({
               open={isOpen}
               onOpenChange={() => toggleCategory(category.id)}
             >
-              <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg bg-white/20 px-3 py-2 text-left text-sm font-medium text-black hover:bg-white/30 transition-colors">
+              <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg bg-white/20 px-3 py-2 text-left text-sm font-medium text-black transition-colors hover:bg-white/30">
                 <span>{category.title}</span>
                 <ChevronDown
                   className={cn(
                     "h-4 w-4 transition-transform",
-                    isOpen && "rotate-180"
+                    isOpen && "rotate-180",
                   )}
                 />
               </CollapsibleTrigger>
@@ -215,7 +218,7 @@ function CategoryNav({
                   <button
                     key={item.id}
                     onClick={() => onNavigateToNode(item.id)}
-                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-black/80 hover:bg-white/20 hover:text-black transition-colors"
+                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-black/80 transition-colors hover:bg-white/20 hover:text-black"
                   >
                     <span className="text-xs">→</span>
                     <span>{item.title}</span>

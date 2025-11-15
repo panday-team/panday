@@ -1019,91 +1019,6 @@
       "categoryId": "red-seal-industrial-roadblocks"
     },
     {
-      "id": "direct-entry-resources",
-      "position": {
-        "x": 982,
-        "y": -119
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry"
-    },
-    {
-      "id": "direct-entry-resource-jobsearch",
-      "position": {
-        "x": 998,
-        "y": -253
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry-resources",
-      "categoryId": "direct-entry-resources"
-    },
-    {
-      "id": "direct-entry-actions",
-      "position": {
-        "x": 1450,
-        "y": -119
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry"
-    },
-    {
-      "id": "direct-entry-req-sponsor",
-      "position": {
-        "x": 1466,
-        "y": -253
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry-actions",
-      "categoryId": "direct-entry-actions"
-    },
-    {
-      "id": "direct-entry-benefit-earnings",
-      "position": {
-        "x": 1466,
-        "y": 47
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry-actions",
-      "categoryId": "direct-entry-actions"
-    },
-    {
-      "id": "direct-entry-roadblocks",
-      "position": {
-        "x": 1216,
-        "y": -254
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry"
-    },
-    {
-      "id": "direct-entry-roadblock-finding-sponsor",
-      "position": {
-        "x": 1232,
-        "y": -388
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry-roadblocks",
-      "categoryId": "direct-entry-roadblocks"
-    },
-    {
-      "id": "direct-entry-roadblock-no-experience",
-      "position": {
-        "x": 1232,
-        "y": -88
-      },
-      "sourcePosition": "bottom",
-      "targetPosition": "top",
-      "parentId": "direct-entry-roadblocks",
-      "categoryId": "direct-entry-roadblocks"
-    },
-    {
       "id": "level-1-resources",
       "position": {
         "x": 982,
@@ -1522,6 +1437,168 @@
       "targetPosition": "top",
       "parentId": "foundation-program-roadblocks",
       "categoryId": "foundation-program-roadblocks"
+    },
+    {
+      "id": "direct-entry-resources",
+      "position": {
+        "x": 982,
+        "y": -119
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry"
+    },
+    {
+      "id": "direct-entry-resource-jobsearch",
+      "position": {
+        "x": 998,
+        "y": -253
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry-resources",
+      "categoryId": "direct-entry-resources"
+    },
+    {
+      "id": "direct-entry-resource-contractors",
+      "position": {
+        "x": 1141,
+        "y": -149
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry-resources",
+      "categoryId": "direct-entry-resources"
+    },
+    {
+      "id": "direct-entry-resource-networking",
+      "position": {
+        "x": 1086,
+        "y": 18
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry-resources",
+      "categoryId": "direct-entry-resources"
+    },
+    {
+      "id": "direct-entry-resource-applications",
+      "position": {
+        "x": 910,
+        "y": 18
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry-resources",
+      "categoryId": "direct-entry-resources"
+    },
+    {
+      "id": "direct-entry-resource-prep-checklist",
+      "position": {
+        "x": 856,
+        "y": -149
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry-resources",
+      "categoryId": "direct-entry-resources"
+    },
+    {
+      "id": "direct-entry-actions",
+      "position": {
+        "x": 1450,
+        "y": -119
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry"
+    },
+    {
+      "id": "direct-entry-req-sponsor",
+      "position": {
+        "x": 1466,
+        "y": -253
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry-actions",
+      "categoryId": "direct-entry-actions"
+    },
+    {
+      "id": "direct-entry-benefit-earnings",
+      "position": {
+        "x": 1596,
+        "y": -28
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry-actions",
+      "categoryId": "direct-entry-actions"
+    },
+    {
+      "id": "direct-entry-action-registration",
+      "position": {
+        "x": 1336,
+        "y": -28
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry-actions",
+      "categoryId": "direct-entry-actions"
+    },
+    {
+      "id": "direct-entry-roadblocks",
+      "position": {
+        "x": 1216,
+        "y": -254
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry"
+    },
+    {
+      "id": "direct-entry-roadblock-finding-sponsor",
+      "position": {
+        "x": 1232,
+        "y": -388
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry-roadblocks",
+      "categoryId": "direct-entry-roadblocks"
+    },
+    {
+      "id": "direct-entry-roadblock-no-experience",
+      "position": {
+        "x": 1382,
+        "y": -238
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry-roadblocks",
+      "categoryId": "direct-entry-roadblocks"
+    },
+    {
+      "id": "direct-entry-roadblock-costs",
+      "position": {
+        "x": 1232,
+        "y": -88
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry-roadblocks",
+      "categoryId": "direct-entry-roadblocks"
+    },
+    {
+      "id": "direct-entry-roadblock-registration",
+      "position": {
+        "x": 1082,
+        "y": -238
+      },
+      "sourcePosition": "bottom",
+      "targetPosition": "top",
+      "parentId": "direct-entry-roadblocks",
+      "categoryId": "direct-entry-roadblocks"
     }
   ],
   "edges": [
@@ -2286,70 +2363,6 @@
       "type": "default"
     },
     {
-      "id": "edge-direct-entry-direct-entry-resources",
-      "source": "direct-entry",
-      "target": "direct-entry-resources",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-direct-entry-resources-direct-entry-resource-jobsearch",
-      "source": "direct-entry-resources",
-      "target": "direct-entry-resource-jobsearch",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-direct-entry-direct-entry-actions",
-      "source": "direct-entry",
-      "target": "direct-entry-actions",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-direct-entry-actions-direct-entry-req-sponsor",
-      "source": "direct-entry-actions",
-      "target": "direct-entry-req-sponsor",
-      "sourceHandle": "left-source",
-      "targetHandle": "right-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-direct-entry-actions-direct-entry-benefit-earnings",
-      "source": "direct-entry-actions",
-      "target": "direct-entry-benefit-earnings",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-direct-entry-direct-entry-roadblocks",
-      "source": "direct-entry",
-      "target": "direct-entry-roadblocks",
-      "sourceHandle": "bottom-source",
-      "targetHandle": "top-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-direct-entry-roadblocks-direct-entry-roadblock-finding-sponsor",
-      "source": "direct-entry-roadblocks",
-      "target": "direct-entry-roadblock-finding-sponsor",
-      "sourceHandle": "left-source",
-      "targetHandle": "right-target",
-      "type": "default"
-    },
-    {
-      "id": "edge-direct-entry-roadblocks-direct-entry-roadblock-no-experience",
-      "source": "direct-entry-roadblocks",
-      "target": "direct-entry-roadblock-no-experience",
-      "sourceHandle": "right-source",
-      "targetHandle": "left-target",
-      "type": "default"
-    },
-    {
       "id": "edge-level-1-level-1-resources",
       "source": "level-1",
       "target": "level-1-resources",
@@ -2659,6 +2672,126 @@
       "target": "foundation-roadblock-wait-lists",
       "sourceHandle": "left-source",
       "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-direct-entry-resources",
+      "source": "direct-entry",
+      "target": "direct-entry-resources",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-resources-direct-entry-resource-jobsearch",
+      "source": "direct-entry-resources",
+      "target": "direct-entry-resource-jobsearch",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-resources-direct-entry-resource-contractors",
+      "source": "direct-entry-resources",
+      "target": "direct-entry-resource-contractors",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-resources-direct-entry-resource-networking",
+      "source": "direct-entry-resources",
+      "target": "direct-entry-resource-networking",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-resources-direct-entry-resource-applications",
+      "source": "direct-entry-resources",
+      "target": "direct-entry-resource-applications",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-resources-direct-entry-resource-prep-checklist",
+      "source": "direct-entry-resources",
+      "target": "direct-entry-resource-prep-checklist",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-direct-entry-actions",
+      "source": "direct-entry",
+      "target": "direct-entry-actions",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-actions-direct-entry-req-sponsor",
+      "source": "direct-entry-actions",
+      "target": "direct-entry-req-sponsor",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-actions-direct-entry-benefit-earnings",
+      "source": "direct-entry-actions",
+      "target": "direct-entry-benefit-earnings",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-actions-direct-entry-action-registration",
+      "source": "direct-entry-actions",
+      "target": "direct-entry-action-registration",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-direct-entry-roadblocks",
+      "source": "direct-entry",
+      "target": "direct-entry-roadblocks",
+      "sourceHandle": "bottom-source",
+      "targetHandle": "top-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-roadblocks-direct-entry-roadblock-finding-sponsor",
+      "source": "direct-entry-roadblocks",
+      "target": "direct-entry-roadblock-finding-sponsor",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-roadblocks-direct-entry-roadblock-no-experience",
+      "source": "direct-entry-roadblocks",
+      "target": "direct-entry-roadblock-no-experience",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-roadblocks-direct-entry-roadblock-costs",
+      "source": "direct-entry-roadblocks",
+      "target": "direct-entry-roadblock-costs",
+      "sourceHandle": "left-source",
+      "targetHandle": "right-target",
+      "type": "default"
+    },
+    {
+      "id": "edge-direct-entry-roadblocks-direct-entry-roadblock-registration",
+      "source": "direct-entry-roadblocks",
+      "target": "direct-entry-roadblock-registration",
+      "sourceHandle": "right-source",
+      "targetHandle": "left-target",
       "type": "default"
     }
   ]

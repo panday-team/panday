@@ -1,8 +1,8 @@
 {
   "model": "text-embedding-3-small",
   "roadmapId": "electrician-bc",
-  "generatedAt": "2025-11-15T02:34:51.904771+00:00",
-  "documentCount": 287,
+  "generatedAt": "2025-11-15T03:15:49.197776+00:00",
+  "documentCount": 215,
   "files": {
     "electrician-foundation-program.md": {
       "hash": "88097d9142d7bc4a188bb4c0ec28c41682d9a05e2a4dcd6eb708779c36f0163b",
