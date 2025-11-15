@@ -551,9 +551,11 @@ Access financial support options for apprenticeship training...
 
 - **Node IDs**: Shared nodes should use a prefix like `shared-resource-` or `level-4-shared-roadblock-` to make them easily identifiable
 - **Position**: The node is positioned at the **first parent** (where `sharedWith` is defined) and will only appear once in the graph
-- **Edges**: Multiple edges are created from all parent categories to the shared node
+- **Edges**: Multiple edges are created from all parent categories to the shared node in `graph.json`, but these connector arrows are filtered out during rendering (they serve to establish parent-child relationships in the data structure)
 - **Visibility**: The node becomes visible when ANY parent category or sibling is selected
 - **Data Structure**: The graph node stores `parentIds: ["parent1", "parent2", ...]` array instead of single `parentId`
+- **Dimming Logic**: Shared nodes are only dimmed if **ALL** of their parent categories are irrelevant (e.g., both Construction and Industrial paths are dimmed). If at least one parent is relevant, the shared node remains visible and accessible.
+- **Connector Arrows**: Edges from parent category nodes to their checklist children are hidden during rendering to reduce visual clutter. The nodes appear in proximity to their parent categories without explicit arrows.
 
 #### Best Practices
 

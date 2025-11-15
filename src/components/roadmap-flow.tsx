@@ -271,31 +271,59 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         // Cascade dimming from parent nodes
         let isDimmed = irrelevantNodeIds.includes(graphNode.id);
 
-        // If node has parent(s), check if ANY parent is dimmed (cascade)
+        // If node has parent(s), check dimming logic
         if (!isDimmed) {
           const parents =
             graphNode.parentIds ??
             (graphNode.parentId ? [graphNode.parentId] : []);
 
-          for (const parentId of parents) {
-            const parentNode = roadmap.graph.nodes.find(
-              (n) => n.id === parentId,
-            );
-            if (parentNode) {
-              // Check if parent hub is dimmed
-              if (irrelevantNodeIds.includes(parentNode.id)) {
-                isDimmed = true;
-                break;
-              }
-              // Check if parent connector is dimmed (for checklist nodes)
+          // For shared nodes (multiple parents), only dim if ALL parents are dimmed
+          // For regular nodes (single parent), dim if that parent is dimmed
+          const isSharedNode = parents.length > 1;
+
+          if (isSharedNode) {
+            // Shared node: dim only if ALL parents are irrelevant
+            const allParentsDimmed = parents.every((parentId) => {
+              const parentNode = roadmap.graph.nodes.find(
+                (n) => n.id === parentId,
+              );
+              if (!parentNode) return false;
+
+              // Check if parent category is dimmed
+              if (irrelevantNodeIds.includes(parentNode.id)) return true;
+
+              // Check if parent's hub is dimmed
               const parentParents =
                 parentNode.parentIds ??
                 (parentNode.parentId ? [parentNode.parentId] : []);
-              if (
-                parentParents.some((ppId) => irrelevantNodeIds.includes(ppId))
-              ) {
-                isDimmed = true;
-                break;
+              return parentParents.some((ppId) =>
+                irrelevantNodeIds.includes(ppId),
+              );
+            });
+
+            isDimmed = allParentsDimmed;
+          } else {
+            // Regular node: dim if ANY parent in chain is dimmed
+            for (const parentId of parents) {
+              const parentNode = roadmap.graph.nodes.find(
+                (n) => n.id === parentId,
+              );
+              if (parentNode) {
+                // Check if parent hub is dimmed
+                if (irrelevantNodeIds.includes(parentNode.id)) {
+                  isDimmed = true;
+                  break;
+                }
+                // Check if parent connector is dimmed (for checklist nodes)
+                const parentParents =
+                  parentNode.parentIds ??
+                  (parentNode.parentId ? [parentNode.parentId] : []);
+                if (
+                  parentParents.some((ppId) => irrelevantNodeIds.includes(ppId))
+                ) {
+                  isDimmed = true;
+                  break;
+                }
               }
             }
           }
@@ -364,6 +392,11 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   }, [roadmap, nodeStatuses, userProfile, selectedNodeId, nodeRelationships]);
 
   const initialEdges = useMemo<FlowEdge[]>(() => {
+    // Get personalization data for edge filtering
+    const irrelevantNodeIds = userProfile
+      ? getIrrelevantNodes(userProfile.specialization, userProfile.currentLevel)
+      : [];
+
     return roadmap.graph.edges
       .filter((graphEdge) => {
         const targetNode = roadmap.graph.nodes.find(
@@ -372,31 +405,65 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         const sourceNode = roadmap.graph.nodes.find(
           (n) => n.id === graphEdge.source,
         );
+
+        // Hide edges from parent categories to their checklist children
+        // (these connector arrows are not needed visually)
         if (targetNode?.parentId === sourceNode?.id) {
           return false;
         }
+        // Also check parentIds array for shared nodes
+        if (targetNode?.parentIds?.includes(sourceNode?.id ?? "")) {
+          return false;
+        }
+
+        // Filter edges from dimmed category nodes (respecting specialization)
+        // For shared nodes with multiple parents, hide edges from irrelevant parents
+        if (sourceNode) {
+          // Check if source category is dimmed
+          const isSourceDimmed = irrelevantNodeIds.includes(sourceNode.id);
+          if (isSourceDimmed) return false;
+
+          // Check if source's parent hub is dimmed (for category nodes)
+          if (sourceNode.parentId) {
+            const isSourceParentDimmed = irrelevantNodeIds.includes(
+              sourceNode.parentId,
+            );
+            if (isSourceParentDimmed) return false;
+          }
+        }
 
         // Hide edges to checklist nodes whose category is not selected
-        if (targetNode?.parentId) {
-          // Check if target is a checklist node (parent is a category)
-          const parentNode = roadmap.graph.nodes.find(
-            (n) => n.id === targetNode.parentId,
-          );
-          const isCategoryParent =
-            parentNode?.parentId !== undefined && parentNode?.parentId !== null;
+        if (targetNode?.parentId || targetNode?.parentIds) {
+          // Check if target is a checklist node (has category parent(s))
+          const targetParents =
+            targetNode.parentIds ??
+            (targetNode.parentId ? [targetNode.parentId] : []);
 
-          if (isCategoryParent) {
-            // Show edge if parent category is selected
-            if (selectedNodeId === targetNode.parentId) return true;
-
-            // Show edge if any sibling is selected
-            const hasSiblingSelected = roadmap.graph.nodes.some(
-              (n) =>
-                n.parentId === targetNode.parentId && n.id === selectedNodeId,
+          // For each parent, check if it's a category node
+          for (const parentId of targetParents) {
+            const parentNode = roadmap.graph.nodes.find(
+              (n) => n.id === parentId,
             );
-            if (hasSiblingSelected) return true;
+            const isCategoryParent =
+              parentNode?.parentId !== undefined &&
+              parentNode?.parentId !== null;
 
-            return false; // Hide edge if category not selected
+            if (isCategoryParent) {
+              // For shared nodes, only show edges from the selected parent
+              // or if the edge source matches this parent
+              if (graphEdge.source === parentId) {
+                // Show edge if parent category is selected
+                if (selectedNodeId === parentId) return true;
+
+                // Show edge if any sibling is selected
+                const hasSiblingSelected = roadmap.graph.nodes.some(
+                  (n) => n.parentId === parentId && n.id === selectedNodeId,
+                );
+                if (hasSiblingSelected) return true;
+
+                return false; // Hide edge if category not selected
+              }
+            }
           }
         }
 
@@ -412,7 +479,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         style: baseEdgeStyle,
         markerEnd: arrowMarker,
       }));
-  }, [roadmap, selectedNodeId]);
+  }, [roadmap, selectedNodeId, userProfile]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges] = useEdgesState(initialEdges);

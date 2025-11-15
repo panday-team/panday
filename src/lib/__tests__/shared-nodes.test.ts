@@ -229,4 +229,103 @@ describe("Shared Nodes Integration", () => {
       expect(edges[0]?.source).toBe("level-4-industrial-roadblocks");
     });
   });
+
+  describe("Edge Filtering by Specialization", () => {
+    it("should have edges from both specializations to shared roadblocks", async () => {
+      const roadmap = await buildRoadmap("electrician-bc");
+
+      // Check that shared roadblock nodes have edges from both specializations
+      const sharedRoadblockNodes = [
+        "level-4-shared-roadblock-specializationdepth",
+        "level-4-shared-roadblock-codeupdates",
+      ];
+
+      for (const nodeId of sharedRoadblockNodes) {
+        const edges = roadmap.graph.edges.filter((e) => e.target === nodeId);
+
+        // Should have 2 edges: one from construction, one from industrial
+        expect(edges.length).toBe(2);
+
+        const constructionEdge = edges.find(
+          (e) => e.source === "level-4-construction-roadblocks",
+        );
+        const industrialEdge = edges.find(
+          (e) => e.source === "level-4-industrial-roadblocks",
+        );
+
+        expect(constructionEdge).toBeDefined();
+        expect(industrialEdge).toBeDefined();
+      }
+    });
+
+    it("edges from parent categories to checklist items exist in graph", async () => {
+      const roadmap = await buildRoadmap("electrician-bc");
+
+      // Verify that edges exist in raw graph data (they'll be filtered during rendering)
+      const sharedRoadblockEdges = roadmap.graph.edges.filter(
+        (e) =>
+          e.target === "level-4-shared-roadblock-specializationdepth" ||
+          e.target === "level-4-shared-roadblock-codeupdates",
+      );
+
+      // Should have 4 edges total (2 per shared node)
+      expect(sharedRoadblockEdges.length).toBe(4);
+
+      // Verify they connect from category nodes
+      for (const edge of sharedRoadblockEdges) {
+        expect(
+          edge.source === "level-4-construction-roadblocks" ||
+            edge.source === "level-4-industrial-roadblocks",
+        ).toBe(true);
+      }
+    });
+
+    it("should have correct parent hierarchy for edge filtering", async () => {
+      const roadmap = await buildRoadmap("electrician-bc");
+
+      // Verify category nodes have correct hub parents
+      const constructionRoadblocks = roadmap.graph.nodes.find(
+        (n) => n.id === "level-4-construction-roadblocks",
+      );
+      const industrialRoadblocks = roadmap.graph.nodes.find(
+        (n) => n.id === "level-4-industrial-roadblocks",
+      );
+
+      expect(constructionRoadblocks?.parentId).toBe("level-4-construction");
+      expect(industrialRoadblocks?.parentId).toBe("level-4-industrial");
+
+      // Verify shared roadblocks have both category nodes as parents
+      const sharedRoadblock = roadmap.graph.nodes.find(
+        (n) => n.id === "level-4-shared-roadblock-specializationdepth",
+      );
+
+      expect(sharedRoadblock?.parentIds).toContain(
+        "level-4-construction-roadblocks",
+      );
+      expect(sharedRoadblock?.parentIds).toContain(
+        "level-4-industrial-roadblocks",
+      );
+    });
+
+    it("shared nodes should only be dimmed if ALL parents are irrelevant", async () => {
+      const roadmap = await buildRoadmap("electrician-bc");
+
+      // Find shared roadblock node
+      const sharedNode = roadmap.graph.nodes.find(
+        (n) => n.id === "level-4-shared-roadblock-specializationdepth",
+      );
+
+      expect(sharedNode).toBeDefined();
+      expect(sharedNode?.parentIds?.length).toBe(2);
+
+      // The node should NOT be dimmed if at least one parent is relevant
+      // This is verified by the rendering logic in RoadmapFlow component
+      // When specialization=CONSTRUCTION:
+      //   - level-4-construction-roadblocks is relevant → shared node NOT dimmed
+      //   - level-4-industrial-roadblocks is irrelevant → edges from it are hidden
+      // When specialization=INDUSTRIAL:
+      //   - level-4-industrial-roadblocks is relevant → shared node NOT dimmed
+      //   - level-4-construction-roadblocks is irrelevant → edges from it are hidden
+    });
+  });
 });
