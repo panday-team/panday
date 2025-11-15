@@ -110,13 +110,17 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
 
   // Track which category nodes are expanded (showing their checklist children)
   // Always initialize with empty Set to avoid hydration mismatch
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Load from sessionStorage after mount (client-only)
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const stored = sessionStorage.getItem(`roadmap-expanded-${roadmap.metadata.id}`);
+      const stored = sessionStorage.getItem(
+        `roadmap-expanded-${roadmap.metadata.id}`,
+      );
       if (stored) {
         setExpandedCategories(new Set(JSON.parse(stored) as string[]));
       }
@@ -130,7 +134,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
     if (typeof window === "undefined") return;
     sessionStorage.setItem(
       `roadmap-expanded-${roadmap.metadata.id}`,
-      JSON.stringify(Array.from(expandedCategories))
+      JSON.stringify(Array.from(expandedCategories)),
     );
   }, [expandedCategories, roadmap.metadata.id]);
 
@@ -144,7 +148,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   // Pre-compute node relationships once for reuse across multiple memos
   const nodeRelationships = useMemo(() => {
     const hubNodeIds = new Set(
-      roadmap.graph.nodes.filter((n) => !n.parentId).map((n) => n.id)
+      roadmap.graph.nodes.filter((n) => !n.parentId).map((n) => n.id),
     );
     const nodesByParent = new Map<string, typeof roadmap.graph.nodes>();
     for (const node of roadmap.graph.nodes) {
@@ -213,116 +217,122 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         return false;
       })
       .map((graphNode) => {
-      const content = roadmap.content.get(graphNode.id);
+        const content = roadmap.content.get(graphNode.id);
 
-      // Category nodes don't have markdown content files
-      const isCategoryNode = graphNode.id.includes("-resources") ||
-                            graphNode.id.includes("-actions") ||
-                            graphNode.id.includes("-roadblocks");
+        // Category nodes don't have markdown content files
+        const isCategoryNode =
+          graphNode.id.includes("-resources") ||
+          graphNode.id.includes("-actions") ||
+          graphNode.id.includes("-roadblocks");
 
-      if (!content && !isCategoryNode) {
-        throw new Error(`Content not found for node: ${graphNode.id}`);
-      }
+        if (!content && !isCategoryNode) {
+          throw new Error(`Content not found for node: ${graphNode.id}`);
+        }
 
-      const isMainNode = !graphNode.parentId;
+        const isMainNode = !graphNode.parentId;
 
-      // For category nodes, determine type and label from ID
-      let nodeType: string;
-      let nodeLabel: string;
-      let nodeIcon: "brain" | "clipboard-list" | "traffic-cone" | undefined;
+        // For category nodes, determine type and label from ID
+        let nodeType: string;
+        let nodeLabel: string;
+        let nodeIcon: "brain" | "clipboard-list" | "traffic-cone" | undefined;
 
-      if (isCategoryNode) {
-        if (graphNode.id.includes("-resources")) {
-          nodeType = "resources";
-          nodeLabel = "Resources";
-          nodeIcon = "brain";
-        } else if (graphNode.id.includes("-actions")) {
-          nodeType = "actions";
-          nodeLabel = "Actions";
-          nodeIcon = "clipboard-list";
+        if (isCategoryNode) {
+          if (graphNode.id.includes("-resources")) {
+            nodeType = "resources";
+            nodeLabel = "Resources";
+            nodeIcon = "brain";
+          } else if (graphNode.id.includes("-actions")) {
+            nodeType = "actions";
+            nodeLabel = "Actions";
+            nodeIcon = "clipboard-list";
+          } else {
+            nodeType = "roadblocks";
+            nodeLabel = "Roadblocks";
+            nodeIcon = "traffic-cone";
+          }
         } else {
-          nodeType = "roadblocks";
-          nodeLabel = "Roadblocks";
-          nodeIcon = "traffic-cone";
+          const { frontmatter } = content!;
+          nodeType = frontmatter.type;
+          nodeLabel = frontmatter.title;
         }
-      } else {
-        const { frontmatter } = content!;
-        nodeType = frontmatter.type;
-        nodeLabel = frontmatter.title;
-      }
 
-      // Determine if this node should be auto-completed based on user profile
-      const isCompletedByProfile = completedLevelIds.includes(graphNode.id);
-      const isCurrentLevel = currentLevelNodeId === graphNode.id;
+        // Determine if this node should be auto-completed based on user profile
+        const isCompletedByProfile = completedLevelIds.includes(graphNode.id);
+        const isCurrentLevel = currentLevelNodeId === graphNode.id;
 
-      // Cascade dimming from parent nodes
-      let isDimmed = irrelevantNodeIds.includes(graphNode.id);
+        // Cascade dimming from parent nodes
+        let isDimmed = irrelevantNodeIds.includes(graphNode.id);
 
-      // If node has a parent, check if parent is dimmed (cascade)
-      if (!isDimmed && graphNode.parentId) {
-        const parentNode = roadmap.graph.nodes.find(n => n.id === graphNode.parentId);
-        if (parentNode) {
-          // Check if parent hub is dimmed
-          if (irrelevantNodeIds.includes(parentNode.id)) {
-            isDimmed = true;
-          }
-          // Check if parent connector is dimmed (for checklist nodes)
-          else if (parentNode.parentId && irrelevantNodeIds.includes(parentNode.parentId)) {
-            isDimmed = true;
+        // If node has a parent, check if parent is dimmed (cascade)
+        if (!isDimmed && graphNode.parentId) {
+          const parentNode = roadmap.graph.nodes.find(
+            (n) => n.id === graphNode.parentId,
+          );
+          if (parentNode) {
+            // Check if parent hub is dimmed
+            if (irrelevantNodeIds.includes(parentNode.id)) {
+              isDimmed = true;
+            }
+            // Check if parent connector is dimmed (for checklist nodes)
+            else if (
+              parentNode.parentId &&
+              irrelevantNodeIds.includes(parentNode.parentId)
+            ) {
+              isDimmed = true;
+            }
           }
         }
-      }
 
-      // Prioritize user-set status over profile-based status
-      let nodeStatus: NodeStatus = nodeStatuses[graphNode.id] ?? "base";
-      if (!nodeStatuses[graphNode.id] && isCompletedByProfile) {
-        nodeStatus = "completed";
-      }
+        // Prioritize user-set status over profile-based status
+        let nodeStatus: NodeStatus = nodeStatuses[graphNode.id] ?? "base";
+        if (!nodeStatuses[graphNode.id] && isCompletedByProfile) {
+          nodeStatus = "completed";
+        }
 
-      // Calculate animation index for checklist nodes (for cascade animation)
-      let animationIndex: number | undefined;
-      if (graphNode.parentId && !isMainNode && !isCategoryNode) {
-        // This is a checklist node - find its index among siblings (use pre-computed map)
-        const siblings = nodesByParent.get(graphNode.parentId) ?? [];
-        animationIndex = siblings.findIndex((n) => n.id === graphNode.id);
-      }
+        // Calculate animation index for checklist nodes (for cascade animation)
+        let animationIndex: number | undefined;
+        if (graphNode.parentId && !isMainNode && !isCategoryNode) {
+          // This is a checklist node - find its index among siblings (use pre-computed map)
+          const siblings = nodesByParent.get(graphNode.parentId) ?? [];
+          animationIndex = siblings.findIndex((n) => n.id === graphNode.id);
+        }
 
-      // For category nodes, determine if expanded based on selection
-      let isExpanded: boolean | undefined = undefined;
-      if (isCategoryNode) {
-        // Category is expanded if it's selected OR any of its children is selected
-        const isCategorySelected = selectedNodeId === graphNode.id;
-        const hasChildSelected = selectedNodeId
-          ? (nodesByParent.get(graphNode.id) ?? []).some(
-              (n) => n.id === selectedNodeId
-            )
-          : false;
-        isExpanded = isCategorySelected || hasChildSelected;
-      }
+        // For category nodes, determine if expanded based on selection
+        let isExpanded: boolean | undefined = undefined;
+        if (isCategoryNode) {
+          // Category is expanded if it's selected OR any of its children is selected
+          const isCategorySelected = selectedNodeId === graphNode.id;
+          const hasChildSelected = selectedNodeId
+            ? (nodesByParent.get(graphNode.id) ?? []).some(
+                (n) => n.id === selectedNodeId,
+              )
+            : false;
+          isExpanded = isCategorySelected || hasChildSelected;
+        }
 
-      return {
-        id: graphNode.id,
-        type: nodeType,
-        position: graphNode.position,
-        data: {
-          label: nodeLabel,
-          icon: nodeIcon,
-          glow: content?.frontmatter.glow ?? isCurrentLevel,
-          labelPosition: content?.frontmatter.labelPosition,
-          showLabelDot: content?.frontmatter.showLabelDot,
-          parentId: graphNode.parentId,
-          status: nodeStatus,
-          isCurrentLevel,
-          isDimmed,
-          isExpanded,
-          animationIndex,
-        },
-        sourcePosition: stringToPosition(graphNode.sourcePosition),
-        targetPosition: stringToPosition(graphNode.targetPosition),
-        draggable: isMainNode,
-        style: isDimmed ? { opacity: 0.3 } : undefined,
-      } as FlowNode;
-    });
+        return {
+          id: graphNode.id,
+          type: nodeType,
+          position: graphNode.position,
+          data: {
+            label: nodeLabel,
+            icon: nodeIcon,
+            glow: content?.frontmatter.glow ?? isCurrentLevel,
+            labelPosition: content?.frontmatter.labelPosition,
+            showLabelDot: content?.frontmatter.showLabelDot,
+            parentId: graphNode.parentId,
+            status: nodeStatus,
+            isCurrentLevel,
+            isDimmed,
+            isExpanded,
+            animationIndex,
+          },
+          sourcePosition: stringToPosition(graphNode.sourcePosition),
+          targetPosition: stringToPosition(graphNode.targetPosition),
+          draggable: isMainNode,
+          style: isDimmed ? { opacity: 0.3 } : undefined,
+        } as FlowNode;
+      });
 
     return builtNodes;
   }, [roadmap, nodeStatuses, userProfile, selectedNodeId, nodeRelationships]);
@@ -344,9 +354,10 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         if (targetNode?.parentId) {
           // Check if target is a checklist node (parent is a category)
           const parentNode = roadmap.graph.nodes.find(
-            (n) => n.id === targetNode.parentId
+            (n) => n.id === targetNode.parentId,
           );
-          const isCategoryParent = parentNode?.parentId !== undefined && parentNode?.parentId !== null;
+          const isCategoryParent =
+            parentNode?.parentId !== undefined && parentNode?.parentId !== null;
 
           if (isCategoryParent) {
             // Show edge if parent category is selected
@@ -354,7 +365,8 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
 
             // Show edge if any sibling is selected
             const hasSiblingSelected = roadmap.graph.nodes.some(
-              n => n.parentId === targetNode.parentId && n.id === selectedNodeId
+              (n) =>
+                n.parentId === targetNode.parentId && n.id === selectedNodeId,
             );
             if (hasSiblingSelected) return true;
 
@@ -410,10 +422,14 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   const updateChildrenPositions = useCallback(
     (parentId: string, parentX: number, parentY: number, smooth = false) => {
       setNodes((currentNodes) => {
-        const updatedNodes = new Map(currentNodes.map(n => [n.id, n]));
+        const updatedNodes = new Map(currentNodes.map((n) => [n.id, n]));
 
         // Recursively update children and their descendants
-        const updateNodeAndDescendants = (nodeId: string, newX: number, newY: number) => {
+        const updateNodeAndDescendants = (
+          nodeId: string,
+          newX: number,
+          newY: number,
+        ) => {
           // Find all direct children of this node
           currentNodes.forEach((node) => {
             const offset = childOffsets.get(node.id);
@@ -483,7 +499,11 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
       isDraggingRef.current = null;
 
       // Recursively animate all descendants
-      const animateNodeAndDescendants = (nodeId: string, nodeX: number, nodeY: number) => {
+      const animateNodeAndDescendants = (
+        nodeId: string,
+        nodeX: number,
+        nodeY: number,
+      ) => {
         nodes.forEach((childNode) => {
           const offset = childOffsets.get(childNode.id);
           if (offset && offset.parentId === nodeId) {
@@ -605,15 +625,18 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   const selectedNodeCategories = useMemo<Category[] | undefined>(() => {
     if (!selectedNodeId) return undefined;
 
-    const selectedNode = roadmap.graph.nodes.find((n) => n.id === selectedNodeId);
+    const selectedNode = roadmap.graph.nodes.find(
+      (n) => n.id === selectedNodeId,
+    );
     if (!selectedNode) return undefined;
 
     const { nodesByParent } = nodeRelationships;
 
     // Case 1: Selected node is a category node
-    const isCategoryNode = selectedNode.id.includes("-resources") ||
-                          selectedNode.id.includes("-actions") ||
-                          selectedNode.id.includes("-roadblocks");
+    const isCategoryNode =
+      selectedNode.id.includes("-resources") ||
+      selectedNode.id.includes("-actions") ||
+      selectedNode.id.includes("-roadblocks");
 
     if (isCategoryNode) {
       // Show only this category's checklist items (use pre-computed map)
@@ -621,15 +644,17 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
 
       const categoryContent = roadmap.content.get(selectedNodeId);
 
-      return [{
-        id: selectedNodeId,
-        title: categoryContent?.frontmatter.title ?? "Category",
-        description: categoryContent?.content,
-        items: checklistNodes.map((node) => ({
-          id: node.id,
-          title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
-        })),
-      }];
+      return [
+        {
+          id: selectedNodeId,
+          title: categoryContent?.frontmatter.title ?? "Category",
+          description: categoryContent?.content,
+          items: checklistNodes.map((node) => ({
+            id: node.id,
+            title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
+          })),
+        },
+      ];
     }
 
     // Case 2: Selected node is a hub node (no parentId)
@@ -716,7 +741,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
       <div className="pointer-events-none absolute top-0 right-0 flex w-full justify-end p-4 md:pt-10 md:pr-10 md:pl-0">
         <div className="pointer-events-auto">
           {userProfile ? (
-            <Card className="bg-background/95 supports-[backdrop-filter]:bg-background/80 min-h-[140px] p-4 backdrop-blur">
+            <Card className="bg-background/95 supports-[backdrop-filter]:bg-background/80 p-4 backdrop-blur">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
@@ -755,7 +780,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
               </div>
             </Card>
           ) : (
-            <Card className="bg-background/95 supports-[backdrop-filter]:bg-background/80 min-h-[140px] p-4 backdrop-blur">
+            <Card className="bg-background/95 supports-[backdrop-filter]:bg-background/80 p-4 backdrop-blur">
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
                   <Badge
@@ -841,7 +866,10 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         }
       />
 
-      <RoadmapTutorial open={showTutorial} onComplete={handleTutorialComplete} />
+      <RoadmapTutorial
+        open={showTutorial}
+        onComplete={handleTutorialComplete}
+      />
     </div>
   );
 }
