@@ -59,6 +59,7 @@ import {
   LEVEL_METADATA,
 } from "@/lib/profile-types";
 import { calculateViewportForNode } from "@/lib/viewport-utils";
+import { calculateNodeProgress } from "@/lib/progress-utils";
 
 type FlowNode =
   | HubNodeType
@@ -677,6 +678,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
           items: checklistNodes.map((node) => ({
             id: node.id,
             title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
+            status: nodeStatuses[node.id] ?? "base",
           })),
         },
       ];
@@ -702,12 +704,29 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         items: checklistNodes.map((node) => ({
           id: node.id,
           title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
+          status: nodeStatuses[node.id] ?? "base",
         })),
       };
     });
 
     return categories;
-  }, [selectedNodeId, roadmap, nodeRelationships]);
+  }, [selectedNodeId, roadmap, nodeRelationships, nodeStatuses]);
+
+  // Calculate progress for selected node
+  const selectedNodeProgress = useMemo(() => {
+    if (!selectedNodeId) return null;
+
+    const selectedContent = roadmap.content.get(selectedNodeId);
+    if (!selectedContent) return null;
+
+    return calculateNodeProgress(
+      selectedNodeId,
+      selectedContent.frontmatter.type,
+      nodeStatuses,
+      roadmap.graph.nodes,
+      roadmap.content,
+    );
+  }, [selectedNodeId, roadmap, nodeStatuses]);
 
   // Handle navigation from Quick Navigation dropdown
   const handleNavigateToNode = useCallback(
@@ -849,7 +868,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         <div className="pointer-events-none absolute top-0 left-0 flex w-full justify-start p-4 md:pt-10 md:pr-0 md:pl-10">
           <div className="pointer-events-auto">
             <NodeInfoPanel
-              badge={selectedContent.frontmatter.badge ?? "Node"}
+              badge={selectedContent.frontmatter.badge}
               subtitle={
                 selectedContent.frontmatter.subtitle ??
                 selectedContent.frontmatter.duration
@@ -867,10 +886,12 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
               nodeType={selectedContent.frontmatter.type}
               nodeId={selectedNodeId}
               nodeStatus={nodeStatuses[selectedNodeId] ?? "base"}
+              progress={selectedNodeProgress}
               onStatusChange={(status) =>
                 handleStatusChange(selectedNodeId, status)
               }
               onNavigateToNode={handleNavigateToNode}
+              onChecklistStatusChange={handleStatusChange}
             />
           </div>
         </div>

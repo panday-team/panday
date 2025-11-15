@@ -12,7 +12,7 @@ export type HubNodeData = {
 export type HubNodeType = Node<HubNodeData, "hub">;
 
 function HubNodeComponent(props: NodeProps<HubNodeType>) {
-  return <MainPathNode {...props} color="#FE5000" colorName="orange-500" />;
+  return <MainPathNode {...props} color="#FDE047" colorName="yellow-300" />;
 }
 
 export const HubNode = memo(HubNodeComponent);

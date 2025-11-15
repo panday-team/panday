@@ -9,7 +9,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Check } from "lucide-react";
+import { ProgressBar } from "@/components/ui/progress-bar";
+import type { ProgressData } from "@/lib/progress-utils";
 
 export type ResourceLink = {
   label: string;
@@ -19,6 +21,7 @@ export type ResourceLink = {
 export type ChecklistItem = {
   id: string;
   title: string;
+  status?: "base" | "in-progress" | "completed";
 };
 
 export type Category = {
@@ -41,12 +44,17 @@ export interface NodeInfoPanelProps extends ComponentPropsWithoutRef<"aside"> {
   nodeType?: string;
   nodeId?: string;
   nodeStatus?: "base" | "in-progress" | "completed";
+  progress?: ProgressData | null;
   onStatusChange?: (status: "base" | "in-progress" | "completed") => void;
   onNavigateToNode?: (nodeId: string) => void;
+  onChecklistStatusChange?: (
+    nodeId: string,
+    status: "base" | "in-progress" | "completed"
+  ) => void;
 }
 
 export function NodeInfoPanel({
-  badge = "Start",
+  badge,
   title,
   subtitle,
   description,
@@ -58,26 +66,37 @@ export function NodeInfoPanel({
   nodeType,
   nodeId: _nodeId,
   nodeStatus = "base",
+  progress,
   onStatusChange,
   onNavigateToNode,
+  onChecklistStatusChange,
   className,
   ...props
 }: NodeInfoPanelProps) {
+  // Use title as badge if badge is not provided
+  const displayBadge = badge ?? title;
   return (
     <aside
       className={cn(
-        "w-full rounded-3xl border border-white/10 bg-[#98B3F9]/95 px-8 pt-8 pb-10 text-black shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur md:max-w-lg",
+        "w-full max-h-[calc(100vh-2rem)] overflow-y-auto rounded-3xl border border-white/10 bg-[#98B3F9]/95 px-8 pt-8 pb-10 text-black shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur md:max-w-lg md:max-h-[calc(100vh-5rem)]",
         className,
       )}
       {...props}
     >
       <div className="flex items-center justify-between gap-4">
         <span className="inline-flex items-center gap-2 rounded-full bg-[#76E54A] px-3 py-1 text-xs font-semibold tracking-wide text-[#1D2740] uppercase">
-          {badge}
+          {displayBadge}
         </span>
-        {subtitle ? (
-          <span className="text-xs font-medium text-black/60">{subtitle}</span>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {subtitle ? (
+            <span className="text-xs font-medium text-black/60">{subtitle}</span>
+          ) : null}
+          {nodeStatus === "completed" ? (
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#61FF05]">
+              <Check className="h-4 w-4 text-white" strokeWidth={3} />
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <div className="mt-6 space-y-5">
@@ -91,6 +110,14 @@ export function NodeInfoPanel({
             </p>
           ) : null}
         </header>
+
+        {progress && progress.total > 0 ? (
+          <ProgressBar
+            completed={progress.completed}
+            total={progress.total}
+            percentage={progress.percentage}
+          />
+        ) : null}
 
         {eligibility?.length ? (
           <Section title="Eligibility" items={eligibility} />
@@ -131,6 +158,7 @@ export function NodeInfoPanel({
           <CategoryNav
             categories={categories}
             onNavigateToNode={onNavigateToNode}
+            onChecklistStatusChange={onChecklistStatusChange}
           />
         ) : null}
 
@@ -174,9 +202,14 @@ function Section({ title, items }: { title: string; items: string[] }) {
 function CategoryNav({
   categories,
   onNavigateToNode,
+  onChecklistStatusChange,
 }: {
   categories: Category[];
   onNavigateToNode: (nodeId: string) => void;
+  onChecklistStatusChange?: (
+    nodeId: string,
+    status: "base" | "in-progress" | "completed"
+  ) => void;
 }) {
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
 
@@ -215,14 +248,31 @@ function CategoryNav({
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-1 space-y-1 pl-3">
                 {category.items.map((item) => (
-                  <button
+                  <div
                     key={item.id}
-                    onClick={() => onNavigateToNode(item.id)}
-                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-black/80 transition-colors hover:bg-white/20 hover:text-black"
+                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 transition-colors hover:bg-white/20"
                   >
-                    <span className="text-xs">→</span>
-                    <span>{item.title}</span>
-                  </button>
+                    {onChecklistStatusChange ? (
+                      <Checkbox
+                        checked={item.status === "completed"}
+                        onCheckedChange={(checked) => {
+                          onChecklistStatusChange(
+                            item.id,
+                            checked ? "completed" : "base"
+                          );
+                        }}
+                        className="h-4 w-4 shrink-0 border-2 border-black/30 bg-white/10 data-[state=checked]:border-[#61FF05] data-[state=checked]:bg-[#61FF05] data-[state=checked]:text-white"
+                      />
+                    ) : (
+                      <span className="text-xs text-black/60">→</span>
+                    )}
+                    <button
+                      onClick={() => onNavigateToNode(item.id)}
+                      className="flex-1 text-left text-sm text-black/80 transition-colors hover:text-black"
+                    >
+                      {item.title}
+                    </button>
+                  </div>
                 ))}
               </CollapsibleContent>
             </Collapsible>

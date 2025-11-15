@@ -2,6 +2,7 @@ import { memo, useMemo } from "react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { motion, AnimatePresence } from "motion/react";
 import Image from "next/image";
+import { type LucideIcon } from "lucide-react";
 
 import { BaseNode } from "@/components/base-node";
 import { NodeAppendix } from "@/components/node-appendix";
@@ -16,6 +17,7 @@ export type MainPathNodeData = {
 export type MainPathNodeProps = NodeProps<Node<MainPathNodeData>> & {
   color: string;
   colorName: string;
+  icon?: LucideIcon;
 };
 
 /**
@@ -27,6 +29,7 @@ function MainPathNodeComponent({
   data,
   color,
   colorName,
+  icon: Icon,
 }: MainPathNodeProps) {
   const { label, glow, isSelected } = data;
   const hiddenHandleClass =
@@ -114,21 +117,28 @@ function MainPathNodeComponent({
         }}
       />
 
-      {/* Center dot with shimmer effect */}
-      <motion.span
-        aria-hidden
-        className="pointer-events-none absolute z-10 h-4 w-4 rounded-full bg-white"
-        animate={{
-          scale: [1, 1.2, 1],
-          opacity: [1, 0.8, 1],
-        }}
-        transition={{
-          duration: animationParams.shimmerDuration,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: animationParams.phaseOffset * 2,
-        }}
-      />
+      {/* Center icon or dot */}
+      {Icon ? (
+        <Icon
+          className="pointer-events-none relative z-10 h-12 w-12 text-white"
+          strokeWidth={2}
+        />
+      ) : (
+        <motion.span
+          aria-hidden
+          className="pointer-events-none absolute z-10 h-4 w-4 rounded-full bg-white"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [1, 0.8, 1],
+          }}
+          transition={{
+            duration: animationParams.shimmerDuration,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: animationParams.phaseOffset * 2,
+          }}
+        />
+      )}
 
       {/* Mascot - only shown when node is selected */}
       <AnimatePresence mode="wait">
