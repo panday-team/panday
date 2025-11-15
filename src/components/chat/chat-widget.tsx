@@ -27,7 +27,7 @@ interface ChatWidgetProps {
   };
 }
 
-const STORAGE_KEY = "panday_chat_messages";
+const STORAGE_KEY = CHAT_CONFIG.STORAGE_KEY;
 
 type StreamStatusEvent = {
   type: "status";
@@ -56,6 +56,22 @@ const isMetadataEvent = (value: unknown): value is StreamMetadataEvent => {
   if (!isRecord(value)) return false;
   const typeValue = value.type;
   return typeof typeValue === "string" && typeValue === "metadata";
+};
+
+type MinimalMessage = { content: string };
+
+const filterEmptyMessages = <T extends MinimalMessage>(messages: T[]): T[] => {
+  return messages.filter((message) => message.content.trim().length > 0);
+};
+
+const isSourceDocument = (value: unknown): value is SourceDocument => {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.node_id === "string" &&
+    typeof value.title === "string" &&
+    typeof value.score === "number" &&
+    typeof value.text_snippet === "string"
+  );
 };
 
 export function ChatWidget({
@@ -89,18 +105,19 @@ export function ChatWidget({
     data: streamData,
   } = useChat({
     api: "/api/chat",
+    streamProtocol: "data",
     onError: (error) => {
-      logger.error("Chat error", error);
+      console.error("Chat error:", error);
       setIsLoading(false);
       setStatusMessage(null);
     },
     onResponse: (response) => {
-      logger.debug("Chat response received", { status: response.status });
+      console.log("Chat response received:", response.status);
       setIsLoading(true);
       setStatusMessage(null); // Clear status once response starts
     },
     onFinish: (message) => {
-      logger.debug("Message finished", { messageId: message.id });
+      console.log("Message finished:", message);
       setIsLoading(false);
       setStatusMessage(null);
       setStreamingMessageId(null);
@@ -110,6 +127,13 @@ export function ChatWidget({
       selected_node_id: selectedNodeId ?? undefined,
       user_profile: userProfile,
     },
+    experimental_prepareRequestBody: ({ messages: outgoingMessages, ...rest }) => {
+      const filtered = filterEmptyMessages(outgoingMessages);
+      return {
+        ...rest,
+        messages: filtered.length > 0 ? filtered : outgoingMessages,
+      };
+    },
   });
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -117,15 +141,18 @@ export function ChatWidget({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const stored = localStorage.getItem(CHAT_CONFIG.STORAGE_KEY);
+    const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as unknown;
         if (Array.isArray(parsed)) {
-          setMessages(parsed as Parameters<typeof setMessages>[0]);
+          const sanitized = filterEmptyMessages(
+            parsed as Array<{ content: string }>,
+          ) as Parameters<typeof setMessages>[0];
+          setMessages(sanitized);
         }
       } catch (e) {
-        logger.error("Failed to restore chat history", e instanceof Error ? e : new Error(String(e)));
+        console.error("Failed to restore chat history:", e);
       }
     }
     setIsHydrated(true);
@@ -134,14 +161,19 @@ export function ChatWidget({
   // Save messages to localStorage with size limits and error handling
   useEffect(() => {
     if (isHydrated && messages.length > 0) {
+      const sanitized = filterEmptyMessages(messages);
+      if (sanitized.length === 0) return;
+
       // Trim old messages if exceeding limit
-      const trimmedMessages = messages.slice(-CHAT_CONFIG.MAX_CACHED_MESSAGES);
+      const trimmedMessages = sanitized.slice(
+        -CHAT_CONFIG.MAX_CACHED_MESSAGES,
+      );
       const serialized = JSON.stringify(trimmedMessages);
 
       // Check size before saving to prevent QuotaExceededError
       if (serialized.length < CHAT_CONFIG.MAX_STORAGE_SIZE_BYTES) {
         try {
-          localStorage.setItem(CHAT_CONFIG.STORAGE_KEY, serialized);
+          localStorage.setItem(STORAGE_KEY, serialized);
         } catch (e) {
           if (e instanceof DOMException && e.name === "QuotaExceededError") {
             logger.warn("localStorage quota exceeded, clearing old messages", {
@@ -149,15 +181,12 @@ export function ChatWidget({
               size: serialized.length,
             });
             // Clear old data and retry with fewer messages
-            localStorage.removeItem(CHAT_CONFIG.STORAGE_KEY);
-            const reducedMessages = messages.slice(
+            localStorage.removeItem(STORAGE_KEY);
+            const reducedMessages = sanitized.slice(
               -CHAT_CONFIG.FALLBACK_MESSAGE_COUNT,
             );
             try {
-              localStorage.setItem(
-                CHAT_CONFIG.STORAGE_KEY,
-                JSON.stringify(reducedMessages),
-              );
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(reducedMessages));
             } catch (retryError) {
               logger.error(
                 "Failed to save reduced messages to localStorage",
@@ -187,6 +216,12 @@ export function ChatWidget({
 
     if (isMetadataEvent(latestEvent)) {
       console.debug("Chat metadata", latestEvent);
+      if (Array.isArray(latestEvent.sources)) {
+        const parsedSources = latestEvent.sources.filter(isSourceDocument);
+        if (parsedSources.length > 0) {
+          setSources(parsedSources);
+        }
+      }
     }
   }, [streamData]);
 
@@ -214,7 +249,7 @@ export function ChatWidget({
 
   const handleClearChat = () => {
     setMessages([]);
-    localStorage.removeItem(CHAT_CONFIG.STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEY);
   };
 
   const scrollToBottom = () => {
@@ -251,7 +286,7 @@ export function ChatWidget({
 
   // Sources component to display citations
   function SourcesDisplay({ sources }: { sources: SourceDocument[] }) {
-    // Filter for moderate-to-high relevance (>50%) and remove duplicates
+    // Filter for high relevance (>70%) and remove duplicates
 
     const filteredSources = sources
       .filter((source) => source.score > CHAT_CONFIG.RELEVANCE_THRESHOLD)
