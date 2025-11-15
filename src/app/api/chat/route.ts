@@ -1,14 +1,20 @@
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { streamText, type LanguageModel } from "ai";
+import { StreamData, streamText } from "ai";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
+import type { ChatThread } from "@prisma/client";
 
 import { queryEmbeddings, getActiveBackend } from "@/lib/embeddings-hybrid";
+import { env } from "@/env";
+import { getChatModel } from "@/lib/ai-model";
 import { logger } from "@/lib/logger";
 import { chatRateLimit } from "@/lib/rate-limit";
-import { env } from "@/env";
 import { getCookieName } from "@/lib/user-identifier";
 import { loadNodeContent } from "@/lib/roadmap-loader";
+import { db } from "@/server/db";
+import {
+  buildMessagePreview,
+  deriveThreadTitle,
+} from "@/lib/chat-threads";
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -21,6 +27,7 @@ const ChatRequestSchema = z.object({
   messages: z.array(ChatMessageSchema).min(1).max(50),
   roadmap_id: z.string().optional(),
   selected_node_id: z.string().optional(),
+  thread_id: z.string().optional(),
   user_profile: z
     .object({
       trade: z.string().optional(),
@@ -32,48 +39,19 @@ const ChatRequestSchema = z.object({
   top_k: z.number().int().min(1).max(20).optional(),
 });
 
-function getAIModel(): LanguageModel {
-  switch (env.AI_PROVIDER) {
-    case "google": {
-      const google = createGoogleGenerativeAI({
-        apiKey: env.GOOGLE_API_KEY,
-      });
-      return google(env.AI_MODEL);
-    }
-    default:
-      throw new Error(`Unsupported AI provider: ${env.AI_PROVIDER as string}`);
-  }
-}
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
+
+const SESSION_IDLE_TIMEOUT_MS = 1000 * 60 * 30; // 30 minutes
+const MAX_MESSAGES_PER_SESSION = 30;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/**
- * Get request identifier for rate limiting and error logging.
- * Prefers authenticated userId, falls back to IP address for unauthenticated requests.
- */
-function getRequestIdentifier(
-  req: NextRequest,
-  userId?: string | null,
-): string {
-  if (userId) {
-    return userId;
-  }
-
-  // Fallback to IP address for rate limiting unauthenticated requests
-  const forwardedFor = req.headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    return forwardedFor.split(",")[0]?.trim() ?? "anonymous";
-  }
-
-  const realIp = req.headers.get("x-real-ip");
-  if (realIp) {
-    return realIp;
-  }
-
-  // Last resort - use cookie-based identifier for error logging only
+function getRequestIdentifier(req: NextRequest): string {
   const cookieName = getCookieName();
   const userIdCookie = req.cookies.get(cookieName)?.value;
+
   if (userIdCookie) {
     return userIdCookie;
   }
@@ -81,14 +59,88 @@ function getRequestIdentifier(
   return "anonymous";
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    const { userId } = await auth();
+function formatStreamErrorMessage(
+  error: unknown,
+  userId: string | null,
+): string {
+  if (error instanceof Error) {
+    logger.error("Chat stream error", error, { userId });
+    return error.message;
+  }
 
-    // Apply rate limiting BEFORE authentication check to prevent abuse
-    const identifier = getRequestIdentifier(req, userId);
+  if (typeof error === "string") {
+    logger.error("Chat stream error", undefined, {
+      userId,
+      rawError: error,
+    });
+    return error;
+  }
+
+  logger.error("Chat stream error", undefined, { userId, rawError: error });
+  return "An unexpected error occurred";
+}
+
+async function getOrCreateChatSession(
+  userId: string,
+  roadmapId?: string | null,
+) {
+  const existingSession = await db.chatSession.findFirst({
+    where: { userId, endedAt: null },
+    orderBy: { startedAt: "desc" },
+    include: {
+      messages: {
+        select: { createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
+    },
+  });
+
+  if (existingSession) {
+    const lastInteraction =
+      existingSession.messages[0]?.createdAt ?? existingSession.startedAt;
+    const isFresh =
+      lastInteraction &&
+      Date.now() - lastInteraction.getTime() <= SESSION_IDLE_TIMEOUT_MS;
+
+    if (isFresh) {
+      if (!existingSession.roadmapId && roadmapId) {
+        await db.chatSession.update({
+          where: { id: existingSession.id },
+          data: { roadmapId },
+        });
+        return { ...existingSession, roadmapId };
+      }
+      return existingSession;
+    }
+
+    await db.chatSession.update({
+      where: { id: existingSession.id },
+      data: { endedAt: new Date() },
+    });
+  }
+
+  return db.chatSession.create({
+    data: {
+      userId,
+      roadmapId: roadmapId ?? null,
+    },
+  });
+}
+
+export async function POST(req: NextRequest) {
+  let dataStream: StreamData | null = null;
+  let currentUserId: string | null = null;
+
+  try {
+    const { userId, isAuthenticated } = await auth();
+    currentUserId = userId;
+    if (!isAuthenticated) throw new Error("user not logged in");
+
     const { success, limit, reset, remaining } =
-      await chatRateLimit.limit(identifier);
+      await chatRateLimit.limit(userId);
+
+    logger.debug(`User ID: ${userId}`);
 
     if (!success) {
       return Response.json(
@@ -109,16 +161,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Require authentication for chat
-    if (!userId) {
-      return Response.json(
-        { error: "Authentication required to use chat" },
-        { status: 401 },
-      );
-    }
-
-    logger.debug(`User ID: ${userId}`);
-
     const body: unknown = await req.json();
 
     const validationResult = ChatRequestSchema.safeParse(body);
@@ -133,6 +175,24 @@ export async function POST(req: NextRequest) {
     }
 
     const validatedBody = validationResult.data;
+    const threadId = validatedBody.thread_id ?? null;
+    let threadForPersistence:
+      | (ChatThread & { _count: { messages: number } })
+      | null = null;
+
+    if (threadId) {
+      threadForPersistence = await db.chatThread.findFirst({
+        where: { id: threadId, userId, deletedAt: null },
+        include: { _count: { select: { messages: true } } },
+      });
+
+      if (!threadForPersistence) {
+        return Response.json(
+          { error: "Chat thread not found" },
+          { status: 404 },
+        );
+      }
+    }
 
     const lastUserMessage = validatedBody.messages
       .filter((msg) => msg.role === "user")
@@ -142,186 +202,248 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "No user message found" }, { status: 400 });
     }
 
-    // Create a custom streaming response with status updates
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          const activeBackend = getActiveBackend();
-          logger.info("Using embeddings backend", {
-            backend: activeBackend,
-            roadmapId: validatedBody.roadmap_id,
-          });
-          // Send initial status update
-          const statusUpdate1 = {
-            type: "status",
-            message: "Retrieving Augmented info",
-          };
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(statusUpdate1)}\n\n`),
-          );
-          // Query embeddings
-          const embeddingsResponse = await queryEmbeddings({
-            query: lastUserMessage.content,
-            roadmap_id: validatedBody.roadmap_id,
-            top_k: validatedBody.top_k ?? 5,
-          });
-          logger.info("Retrieved embeddings successfully", {
-            backend: activeBackend,
-            sourcesCount: embeddingsResponse.sources.length,
-          });
-          // Send second status update
-          const statusUpdate2 = {
-            type: "status",
-            message: "Generating response",
-          };
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(statusUpdate2)}\n\n`),
-          );
-          // Build user context string
-          let userContext = "";
-          if (validatedBody.user_profile) {
-            const { trade, currentLevel, specialization, residencyStatus } =
-              validatedBody.user_profile;
-            const contextParts = [];
+    const defaultRoadmapId = validatedBody.roadmap_id ?? "global";
+    const session = await getOrCreateChatSession(userId, defaultRoadmapId);
+    const sessionId = session.id;
 
-            if (trade) contextParts.push(`Trade: ${trade}`);
-            if (currentLevel)
-              contextParts.push(`Current Level: ${currentLevel}`);
-            if (specialization)
-              contextParts.push(`Specialization: ${specialization}`);
-            if (residencyStatus)
-              contextParts.push(`Residency Status: ${residencyStatus}`);
+    await db.chatMessage.create({
+      data: {
+        sessionId,
+        role: "user",
+        content: lastUserMessage.content,
+        metadata: {
+          roadmapId: validatedBody.roadmap_id,
+          selectedNodeId: validatedBody.selected_node_id,
+          userProfile: validatedBody.user_profile ?? null,
+        },
+      },
+    });
 
-            if (contextParts.length > 0) {
-              userContext = `User Profile:\n${contextParts.join("\n")}\n\n`;
-            }
-          }
+    if (threadForPersistence) {
+      const createdThreadMessage = await db.chatThreadMessage.create({
+        data: {
+          threadId: threadForPersistence.id,
+          role: "user",
+          content: lastUserMessage.content,
+        },
+      });
 
-          // Build node context string
-          let nodeContext = "";
-          if (validatedBody.selected_node_id && validatedBody.roadmap_id) {
-            try {
-              const nodeContent = await loadNodeContent(
-                validatedBody.roadmap_id,
-                validatedBody.selected_node_id,
-              );
-              if (nodeContent) {
-                nodeContext = `Current Step Information:\nTitle: ${nodeContent.frontmatter.title}\n${
-                  nodeContent.content
-                    .split("\n")
-                    .find(
-                      (line) => line.startsWith("#") === false && line.trim(),
-                    )
-                    ?.trim() ?? ""
-                }\n\n`;
-              }
-            } catch (error) {
-              logger.warn("Failed to load node content for context", {
-                error: error as Error,
-                nodeId: validatedBody.selected_node_id,
-                roadmapId: validatedBody.roadmap_id,
-              });
-            }
-          }
+      const shouldAutoRename =
+        (threadForPersistence._count?.messages ?? 0) === 0;
 
-          const systemPrompt = `You are a helpful career guidance assistant for skilled trades in British Columbia, Canada.
+      await db.chatThread.update({
+        where: { id: threadForPersistence.id },
+        data: {
+          lastMessageAt: createdThreadMessage.createdAt,
+          messagePreview: buildMessagePreview(lastUserMessage.content),
+          ...(shouldAutoRename
+            ? { title: deriveThreadTitle(lastUserMessage.content) }
+            : {}),
+          ...(validatedBody.selected_node_id &&
+          !threadForPersistence.selectedNodeId
+            ? { selectedNodeId: validatedBody.selected_node_id }
+            : {}),
+          ...(validatedBody.roadmap_id && !threadForPersistence.roadmapId
+            ? { roadmapId: validatedBody.roadmap_id }
+            : {}),
+        },
+      });
+
+      threadForPersistence = {
+        ...threadForPersistence,
+        roadmapId:
+          threadForPersistence.roadmapId ?? validatedBody.roadmap_id ?? null,
+        selectedNodeId:
+          threadForPersistence.selectedNodeId ??
+          validatedBody.selected_node_id ??
+          null,
+        _count: {
+          messages: (threadForPersistence._count?.messages ?? 0) + 1,
+        },
+      };
+    }
+
+    const activeBackend = getActiveBackend();
+    logger.info("Using embeddings backend", {
+      backend: activeBackend,
+      roadmapId: validatedBody.roadmap_id,
+    });
+
+    dataStream = new StreamData();
+    dataStream.append({
+      type: "status",
+      message: "Preparing roadmap context...",
+    });
+
+    const embeddingsResponse = await queryEmbeddings({
+      query: lastUserMessage.content,
+      roadmap_id: validatedBody.roadmap_id,
+      top_k: validatedBody.top_k ?? 5,
+    });
+
+    logger.info("Retrieved embeddings successfully", {
+      backend: activeBackend,
+      sourcesCount: embeddingsResponse.sources.length,
+    });
+
+    const normalizedSources = embeddingsResponse.sources.map((source) => ({
+      node_id: source.node_id,
+      title: source.title,
+      score: source.score,
+      text_snippet: source.text_snippet,
+    }));
+
+    const metadataPayload: JsonValue = {
+      type: "metadata",
+      roadmapId: embeddingsResponse.roadmap_id,
+      sources: normalizedSources,
+    };
+    dataStream.append(metadataPayload);
+    dataStream.append({
+      type: "status",
+      message: "Generating response...",
+    });
+    await dataStream.close();
+
+    let userContext = "";
+    if (validatedBody.user_profile) {
+      const { trade, currentLevel, specialization, residencyStatus } =
+        validatedBody.user_profile;
+      const contextParts = [];
+
+      if (trade) contextParts.push(`Trade: ${trade}`);
+      if (currentLevel) contextParts.push(`Current Level: ${currentLevel}`);
+      if (specialization) contextParts.push(`Specialization: ${specialization}`);
+      if (residencyStatus)
+        contextParts.push(`Residency Status: ${residencyStatus}`);
+
+      if (contextParts.length > 0) {
+        userContext = `User Profile:\n${contextParts.join("\n")}\n\n`;
+      }
+    }
+
+    let nodeContext = "";
+    if (validatedBody.selected_node_id && validatedBody.roadmap_id) {
+      try {
+        const nodeContent = await loadNodeContent(
+          validatedBody.roadmap_id,
+          validatedBody.selected_node_id,
+        );
+        if (nodeContent) {
+          nodeContext = `Current Step Information:\nTitle: ${nodeContent.frontmatter.title}\n${
+            nodeContent.content
+              .split("\n")
+              .find((line) => line.startsWith("#") === false && line.trim())
+              ?.trim() ?? ""
+          }\n\n`;
+        }
+      } catch (error) {
+        logger.warn("Failed to load node content for context", {
+          error: error as Error,
+          nodeId: validatedBody.selected_node_id,
+          roadmapId: validatedBody.roadmap_id,
+        });
+      }
+    }
+
+    const systemPrompt = `You are a helpful career guidance assistant for skilled trades in British Columbia, Canada.
 
 ${userContext}${nodeContext}You have access to the following relevant information from the career roadmap database:
 
 ${embeddingsResponse.context}
 
-CRITICAL INSTRUCTIONS:
-1. ONLY use information from the provided context above. Do not use any external knowledge or make assumptions.
-2. If the context does not contain sufficient information to answer the user's question, explicitly state: "I don't have enough information in the provided sources to answer this question."
-3. Cite your sources using the format [Source: Title] when referencing specific information.
-4. When multiple sources are relevant, cite each one appropriately.
-5. Do not provide general guidance or advice that is not directly supported by the provided context.
-6. Be precise and accurate - if you're not certain about information from the context, acknowledge the limitation.
+Use this information to provide personalized guidance based on the user's current situation and the step they're asking about. If the information doesn't contain a direct answer, say so honestly and provide general guidance based on what you know about skilled trades in BC.
 
-Example citation format:
-- "According to the Foundation Program [Source: Electrician Foundation], students receive 375 work-based training hours."
-- "The requirements include [Source: Level 1] completion of technical training."
+Always cite which specific sections or documents your answer comes from when possible.`;
 
-Provide personalized guidance based strictly on the user's current situation and the step they're asking about, using only the information provided in the context.`;
-
-          // start the AI response stream
-          const result = streamText({
-            model: getAIModel(),
-            system: systemPrompt,
-            messages: validatedBody.messages.map((msg) => ({
-              role: msg.role,
-              content: msg.content,
-            })),
-            maxTokens: 1024,
-            onFinish: async () => {
-              logger.info("Chat completion finished", {
-                provider: env.AI_PROVIDER,
-                model: env.AI_MODEL,
-                userId,
-              });
+    const result = streamText({
+      model: getChatModel(),
+      system: systemPrompt,
+      messages: validatedBody.messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      })),
+      maxTokens: 1024,
+      onFinish: async ({ text, sources, usage, finishReason }) => {
+        try {
+          await db.chatMessage.create({
+            data: {
+              sessionId,
+              role: "assistant",
+              content: text ?? "",
+              metadata: {
+                roadmapId: embeddingsResponse.roadmap_id,
+                retrievedSources: normalizedSources,
+                modelSources: sources ?? null,
+                usage,
+                finishReason,
+              },
             },
           });
 
-          // send metadata before streaming starts
-          const metadataUpdate = {
-            type: "metadata",
-            sources: embeddingsResponse.sources,
-            roadmapId: embeddingsResponse.roadmap_id,
-          };
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(metadataUpdate)}\n\n`),
-          );
+          if (threadForPersistence) {
+            const assistantThreadMessage = await db.chatThreadMessage.create({
+              data: {
+                threadId: threadForPersistence.id,
+                role: "assistant",
+                content: text ?? "",
+                sources: normalizedSources,
+              },
+            });
 
-          // stream the AI response
-          const reader = result.toDataStream().getReader();
-
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              controller.enqueue(value);
-            }
-          } finally {
-            reader.releaseLock();
+            await db.chatThread.update({
+              where: { id: threadForPersistence.id },
+              data: {
+                lastMessageAt: assistantThreadMessage.createdAt,
+                messagePreview: buildMessagePreview(text ?? ""),
+              },
+            });
           }
 
-          controller.close();
-        } catch (error) {
-          const errorUpdate = {
-            type: "error",
-            message:
-              error instanceof Error
-                ? error.message
-                : "An unexpected error occurred",
-          };
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(errorUpdate)}\n\n`),
-          );
-          controller.close();
+          if (!session.endedAt && validatedBody.messages.length >= MAX_MESSAGES_PER_SESSION) {
+            await db.chatSession.update({
+              where: { id: sessionId },
+              data: { endedAt: new Date() },
+            });
+          }
+        } catch (persistenceError) {
+          logger.error("Failed to persist assistant response", persistenceError, {
+            sessionId,
+          });
         }
+
+        logger.info("Chat completion finished", {
+          provider: env.AI_PROVIDER,
+          model: env.AI_MODEL,
+          userId,
+        });
       },
     });
 
-    const response = new Response(stream, {
+    const response = result.toDataStreamResponse({
+      data: dataStream ?? undefined,
       headers: {
         "X-RateLimit-Limit": limit.toString(),
         "X-RateLimit-Remaining": remaining.toString(),
         "X-RateLimit-Reset": reset.toString(),
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
       },
+      getErrorMessage: (streamError) =>
+        formatStreamErrorMessage(streamError, currentUserId),
     });
 
-    // for debugging
     response.headers.set("X-User-Id", userId);
-
     return response;
   } catch (error) {
-    const { userId } = await auth();
+    if (dataStream) {
+      try {
+        await dataStream.close();
+      } catch {
+        // ignore - stream might already be closed
+      }
+    }
+
     logger.error("Chat API error", error, {
-      identifier: getRequestIdentifier(req, userId),
+      identifier: getRequestIdentifier(req),
     });
 
     if (error instanceof Error) {
@@ -331,27 +453,6 @@ Provide personalized guidance based strictly on the user's current situation and
           { status: 504 },
         );
       }
-
-      // Handle Redis/connection errors
-      if (
-        error.message.includes("ECONNREFUSED") ||
-        error.message.includes("Redis") ||
-        error.message.includes("Connection refused")
-      ) {
-        return Response.json(
-          { error: "Service temporarily unavailable. Please try again later." },
-          { status: 503 },
-        );
-      }
-
-      // Handle rate limit errors
-      if (error.message.includes("rate limit")) {
-        return Response.json(
-          { error: "Too many requests. Please try again later." },
-          { status: 429 },
-        );
-      }
-
       return Response.json({ error: error.message }, { status: 500 });
     }
 
