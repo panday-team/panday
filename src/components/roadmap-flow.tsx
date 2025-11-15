@@ -59,7 +59,6 @@ import {
   LEVEL_METADATA,
 } from "@/lib/profile-types";
 import { calculateViewportForNode } from "@/lib/viewport-utils";
-import { calculateNodeProgress } from "@/lib/progress-utils";
 
 type FlowNode =
   | HubNodeType
@@ -156,18 +155,14 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   // Pre-compute node relationships once for reuse across multiple memos
   const nodeRelationships = useMemo(() => {
     const hubNodeIds = new Set(
-      roadmap.graph.nodes
-        .filter((n) => !n.parentId && !n.parentIds)
-        .map((n) => n.id),
+      roadmap.graph.nodes.filter((n) => !n.parentId).map((n) => n.id),
     );
     const nodesByParent = new Map<string, typeof roadmap.graph.nodes>();
     for (const node of roadmap.graph.nodes) {
-      // Handle both single parent and multiple parents
-      const parents = node.parentIds ?? (node.parentId ? [node.parentId] : []);
-      for (const parentId of parents) {
-        const siblings = nodesByParent.get(parentId) ?? [];
+      if (node.parentId) {
+        const siblings = nodesByParent.get(node.parentId) ?? [];
         siblings.push(node);
-        nodesByParent.set(parentId, siblings);
+        nodesByParent.set(node.parentId, siblings);
       }
     }
     return { hubNodeIds, nodesByParent };
@@ -209,23 +204,20 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
     //build nodes from graph/content
     const builtNodes: FlowNode[] = roadmap.graph.nodes
       .filter((graphNode) => {
-        const parents =
-          graphNode.parentIds ??
-          (graphNode.parentId ? [graphNode.parentId] : []);
-
-        // Always show hub and category nodes (nodes with no parents)
-        if (parents.length === 0) return true; // Hub/terminal nodes
+        // Always show hub and category nodes
+        if (!graphNode.parentId) return true; // Hub/terminal nodes
 
         // Category nodes have a hub as parent (O(1) lookup)
-        if (parents.some((parentId) => hubNodeIds.has(parentId))) return true;
+        if (graphNode.parentId && hubNodeIds.has(graphNode.parentId))
+          return true;
 
-        // Checklist nodes: show if ANY parent category is selected OR any sibling is selected
-        for (const parentId of parents) {
+        // Checklist nodes: show if parent category is selected OR any sibling is selected
+        if (graphNode.parentId) {
           // Show if the parent category itself is selected
-          if (selectedNodeId === parentId) return true;
+          if (selectedNodeId === graphNode.parentId) return true;
 
           // Show if any sibling (same parent) is selected (O(siblings) instead of O(all nodes))
-          const siblings = nodesByParent.get(parentId) ?? [];
+          const siblings = nodesByParent.get(graphNode.parentId) ?? [];
           if (siblings.some((n) => n.id === selectedNodeId)) return true;
         }
 
@@ -278,60 +270,22 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         // Cascade dimming from parent nodes
         let isDimmed = irrelevantNodeIds.includes(graphNode.id);
 
-        // If node has parent(s), check dimming logic
-        if (!isDimmed) {
-          const parents =
-            graphNode.parentIds ??
-            (graphNode.parentId ? [graphNode.parentId] : []);
-
-          // For shared nodes (multiple parents), only dim if ALL parents are dimmed
-          // For regular nodes (single parent), dim if that parent is dimmed
-          const isSharedNode = parents.length > 1;
-
-          if (isSharedNode) {
-            // Shared node: dim only if ALL parents are irrelevant
-            const allParentsDimmed = parents.every((parentId) => {
-              const parentNode = roadmap.graph.nodes.find(
-                (n) => n.id === parentId,
-              );
-              if (!parentNode) return false;
-
-              // Check if parent category is dimmed
-              if (irrelevantNodeIds.includes(parentNode.id)) return true;
-
-              // Check if parent's hub is dimmed
-              const parentParents =
-                parentNode.parentIds ??
-                (parentNode.parentId ? [parentNode.parentId] : []);
-              return parentParents.some((ppId) =>
-                irrelevantNodeIds.includes(ppId),
-              );
-            });
-
-            isDimmed = allParentsDimmed;
-          } else {
-            // Regular node: dim if ANY parent in chain is dimmed
-            for (const parentId of parents) {
-              const parentNode = roadmap.graph.nodes.find(
-                (n) => n.id === parentId,
-              );
-              if (parentNode) {
-                // Check if parent hub is dimmed
-                if (irrelevantNodeIds.includes(parentNode.id)) {
-                  isDimmed = true;
-                  break;
-                }
-                // Check if parent connector is dimmed (for checklist nodes)
-                const parentParents =
-                  parentNode.parentIds ??
-                  (parentNode.parentId ? [parentNode.parentId] : []);
-                if (
-                  parentParents.some((ppId) => irrelevantNodeIds.includes(ppId))
-                ) {
-                  isDimmed = true;
-                  break;
-                }
-              }
+        // If node has a parent, check if parent is dimmed (cascade)
+        if (!isDimmed && graphNode.parentId) {
+          const parentNode = roadmap.graph.nodes.find(
+            (n) => n.id === graphNode.parentId,
+          );
+          if (parentNode) {
+            // Check if parent hub is dimmed
+            if (irrelevantNodeIds.includes(parentNode.id)) {
+              isDimmed = true;
+            }
+            // Check if parent connector is dimmed (for checklist nodes)
+            else if (
+              parentNode.parentId &&
+              irrelevantNodeIds.includes(parentNode.parentId)
+            ) {
+              isDimmed = true;
             }
           }
         }
@@ -344,17 +298,10 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
 
         // Calculate animation index for checklist nodes (for cascade animation)
         let animationIndex: number | undefined;
-        const parents =
-          graphNode.parentIds ??
-          (graphNode.parentId ? [graphNode.parentId] : []);
-        if (parents.length > 0 && !isMainNode && !isCategoryNode) {
+        if (graphNode.parentId && !isMainNode && !isCategoryNode) {
           // This is a checklist node - find its index among siblings (use pre-computed map)
-          // For shared nodes, use the first parent for animation index
-          const firstParent = parents[0];
-          if (firstParent) {
-            const siblings = nodesByParent.get(firstParent) ?? [];
-            animationIndex = siblings.findIndex((n) => n.id === graphNode.id);
-          }
+          const siblings = nodesByParent.get(graphNode.parentId) ?? [];
+          animationIndex = siblings.findIndex((n) => n.id === graphNode.id);
         }
 
         // For category nodes, determine if expanded based on selection
@@ -380,8 +327,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
             glow: content?.frontmatter.glow ?? isCurrentLevel,
             labelPosition: content?.frontmatter.labelPosition,
             showLabelDot: content?.frontmatter.showLabelDot,
-            parentId: graphNode.parentId, // Keep for backward compatibility
-            parentIds: graphNode.parentIds, // New multi-parent support
+            parentId: graphNode.parentId,
             status: nodeStatus,
             isCurrentLevel,
             isDimmed,
@@ -399,11 +345,6 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   }, [roadmap, nodeStatuses, userProfile, selectedNodeId, nodeRelationships]);
 
   const initialEdges = useMemo<FlowEdge[]>(() => {
-    // Get personalization data for edge filtering
-    const irrelevantNodeIds = userProfile
-      ? getIrrelevantNodes(userProfile.specialization, userProfile.currentLevel)
-      : [];
-
     return roadmap.graph.edges
       .filter((graphEdge) => {
         const targetNode = roadmap.graph.nodes.find(
@@ -412,65 +353,31 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         const sourceNode = roadmap.graph.nodes.find(
           (n) => n.id === graphEdge.source,
         );
-
-        // Hide edges from parent categories to their checklist children
-        // (these connector arrows are not needed visually)
         if (targetNode?.parentId === sourceNode?.id) {
           return false;
         }
-        // Also check parentIds array for shared nodes
-        if (targetNode?.parentIds?.includes(sourceNode?.id ?? "")) {
-          return false;
-        }
-
-        // Filter edges from dimmed category nodes (respecting specialization)
-        // For shared nodes with multiple parents, hide edges from irrelevant parents
-        if (sourceNode) {
-          // Check if source category is dimmed
-          const isSourceDimmed = irrelevantNodeIds.includes(sourceNode.id);
-          if (isSourceDimmed) return false;
-
-          // Check if source's parent hub is dimmed (for category nodes)
-          if (sourceNode.parentId) {
-            const isSourceParentDimmed = irrelevantNodeIds.includes(
-              sourceNode.parentId,
-            );
-            if (isSourceParentDimmed) return false;
-          }
-        }
 
         // Hide edges to checklist nodes whose category is not selected
-        if (targetNode?.parentId || targetNode?.parentIds) {
-          // Check if target is a checklist node (has category parent(s))
-          const targetParents =
-            targetNode.parentIds ??
-            (targetNode.parentId ? [targetNode.parentId] : []);
+        if (targetNode?.parentId) {
+          // Check if target is a checklist node (parent is a category)
+          const parentNode = roadmap.graph.nodes.find(
+            (n) => n.id === targetNode.parentId,
+          );
+          const isCategoryParent =
+            parentNode?.parentId !== undefined && parentNode?.parentId !== null;
 
-          // For each parent, check if it's a category node
-          for (const parentId of targetParents) {
-            const parentNode = roadmap.graph.nodes.find(
-              (n) => n.id === parentId,
+          if (isCategoryParent) {
+            // Show edge if parent category is selected
+            if (selectedNodeId === targetNode.parentId) return true;
+
+            // Show edge if any sibling is selected
+            const hasSiblingSelected = roadmap.graph.nodes.some(
+              (n) =>
+                n.parentId === targetNode.parentId && n.id === selectedNodeId,
             );
-            const isCategoryParent =
-              parentNode?.parentId !== undefined &&
-              parentNode?.parentId !== null;
+            if (hasSiblingSelected) return true;
 
-            if (isCategoryParent) {
-              // For shared nodes, only show edges from the selected parent
-              // or if the edge source matches this parent
-              if (graphEdge.source === parentId) {
-                // Show edge if parent category is selected
-                if (selectedNodeId === parentId) return true;
-
-                // Show edge if any sibling is selected
-                const hasSiblingSelected = roadmap.graph.nodes.some(
-                  (n) => n.parentId === parentId && n.id === selectedNodeId,
-                );
-                if (hasSiblingSelected) return true;
-
-                return false; // Hide edge if category not selected
-              }
-            }
+            return false; // Hide edge if category not selected
           }
         }
 
@@ -486,7 +393,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         style: baseEdgeStyle,
         markerEnd: arrowMarker,
       }));
-  }, [roadmap, selectedNodeId, userProfile]);
+  }, [roadmap, selectedNodeId]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges] = useEdgesState(initialEdges);
@@ -765,7 +672,6 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
           items: checklistNodes.map((node) => ({
             id: node.id,
             title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
-            status: nodeStatuses[node.id] ?? "base",
           })),
         },
       ];
@@ -791,29 +697,12 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         items: checklistNodes.map((node) => ({
           id: node.id,
           title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
-          status: nodeStatuses[node.id] ?? "base",
         })),
       };
     });
 
     return categories;
-  }, [selectedNodeId, roadmap, nodeRelationships, nodeStatuses]);
-
-  // Calculate progress for selected node
-  const selectedNodeProgress = useMemo(() => {
-    if (!selectedNodeId) return null;
-
-    const selectedContent = roadmap.content.get(selectedNodeId);
-    if (!selectedContent) return null;
-
-    return calculateNodeProgress(
-      selectedNodeId,
-      selectedContent.frontmatter.type,
-      nodeStatuses,
-      roadmap.graph.nodes,
-      roadmap.content,
-    );
-  }, [selectedNodeId, roadmap, nodeStatuses]);
+  }, [selectedNodeId, roadmap, nodeRelationships]);
 
   // Handle navigation from Quick Navigation dropdown
   const handleNavigateToNode = useCallback(
@@ -955,7 +844,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         <div className="pointer-events-none absolute top-0 left-0 flex w-full justify-start p-4 md:pt-10 md:pr-0 md:pl-10">
           <div className="pointer-events-auto">
             <NodeInfoPanel
-              badge={selectedContent.frontmatter.badge}
+              badge={selectedContent.frontmatter.badge ?? "Node"}
               subtitle={
                 selectedContent.frontmatter.subtitle ??
                 selectedContent.frontmatter.duration
@@ -973,12 +862,10 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
               nodeType={selectedContent.frontmatter.type}
               nodeId={selectedNodeId}
               nodeStatus={nodeStatuses[selectedNodeId] ?? "base"}
-              progress={selectedNodeProgress}
               onStatusChange={(status) =>
                 handleStatusChange(selectedNodeId, status)
               }
               onNavigateToNode={handleNavigateToNode}
-              onChecklistStatusChange={handleStatusChange}
             />
           </div>
         </div>
