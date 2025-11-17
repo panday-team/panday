@@ -9,6 +9,22 @@ export interface ProgressBarProps {
 }
 
 /**
+ * Get progress bar color based on percentage thresholds
+ * - 0-33%: Red
+ * - 33-66%: Yellow
+ * - 67-100%: Green
+ */
+function getProgressColor(percentage: number): string {
+  if (percentage < 33) {
+    return "bg-gradient-to-r from-red-500 to-red-600";
+  } else if (percentage < 67) {
+    return "bg-gradient-to-r from-yellow-500 to-yellow-600";
+  } else {
+    return "bg-gradient-to-r from-green-500 to-green-600";
+  }
+}
+
+/**
  * Progress bar component for tracking node completion
  * Shows visual progress bar with completion stats
  */
@@ -18,6 +34,8 @@ function ProgressBarComponent({
   percentage,
   className = "",
 }: ProgressBarProps) {
+  const colorClass = getProgressColor(percentage);
+
   return (
     <div className={`space-y-1.5 ${className}`}>
       {/* Progress text */}
@@ -32,7 +50,7 @@ function ProgressBarComponent({
       <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
         {/* Progress bar fill */}
         <motion.div
-          className="h-full rounded-full bg-gradient-to-r from-green-500 to-green-600"
+          className={`h-full rounded-full ${colorClass}`}
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
           transition={{

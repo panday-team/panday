@@ -66,7 +66,7 @@ export function getDescendantChecklists(
 /**
  * Calculate progress for a node based on its type and children
  * - Hub nodes: Track all descendant checklists
- * - Connector nodes: Track direct checklist children
+ * - Category/Connector nodes: Track direct checklist children
  * - Other nodes: Return null (no progress tracking)
  */
 export function calculateNodeProgress(
@@ -76,9 +76,10 @@ export function calculateNodeProgress(
   graphNodes: GraphNode[],
   contentMap: Map<string, NodeContent>
 ): ProgressData | null {
-  // Only hub and connector nodes have progress
+  // Only hub and category/connector nodes have progress
   if (
     nodeType !== "hub" &&
+    nodeType !== "category" &&
     nodeType !== "resources" &&
     nodeType !== "actions" &&
     nodeType !== "roadblocks"
@@ -92,7 +93,7 @@ export function calculateNodeProgress(
     // Hub nodes: count all descendant checklists
     targetNodes = getDescendantChecklists(nodeId, graphNodes, contentMap);
   } else {
-    // Connector nodes: count direct checklist children
+    // Category/Connector nodes: count direct checklist children
     targetNodes = getDirectChildren(nodeId, graphNodes).filter((node) => {
       const childType = getNodeType(node.id, contentMap);
       return childType === "checklist";

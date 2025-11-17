@@ -9,7 +9,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import type { ProgressData } from "@/lib/progress-utils";
 
@@ -91,19 +91,25 @@ export function NodeInfoPanel({
           {subtitle ? (
             <span className="text-xs font-medium text-black/60">{subtitle}</span>
           ) : null}
-          {nodeStatus === "completed" ? (
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#61FF05]">
-              <Check className="h-4 w-4 text-white" strokeWidth={3} />
-            </div>
-          ) : null}
         </div>
       </div>
 
       <div className="mt-6 space-y-5">
         <header>
-          <h1 className="font-sans text-3xl leading-tight text-black">
-            {title}
-          </h1>
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="font-sans text-3xl leading-tight text-black">
+              {title}
+            </h1>
+            {nodeType === "checklist" && onStatusChange ? (
+              <Checkbox
+                checked={nodeStatus === "completed"}
+                onCheckedChange={(checked) => {
+                  onStatusChange(checked ? "completed" : "base");
+                }}
+                className="mt-1 shrink-0 border-2 border-white/60 bg-white/10 data-[state=checked]:border-white data-[state=checked]:bg-[#61FF05] data-[state=checked]:text-white"
+              />
+            ) : null}
+          </div>
           {description ? (
             <p className="mt-2 text-sm leading-relaxed text-black">
               {description}
@@ -127,31 +133,6 @@ export function NodeInfoPanel({
         ) : null}
         {outcomes?.length ? (
           <Section title="Final Outcome" items={outcomes} />
-        ) : null}
-
-        {nodeType === "checklist" && onStatusChange ? (
-          <section className="flex flex-row items-center gap-8">
-            <label className="flex cursor-pointer items-center gap-2">
-              <span className="text-sm text-black/90">Completed</span>
-              <Checkbox
-                checked={nodeStatus === "completed"}
-                onCheckedChange={(checked) => {
-                  onStatusChange(checked ? "completed" : "base");
-                }}
-                className="border-2 border-white/60 bg-white/10 data-[state=checked]:border-white data-[state=checked]:bg-[#61FF05] data-[state=checked]:text-white"
-              />
-            </label>
-            <label className="flex cursor-pointer items-center gap-2">
-              <span className="text-sm text-black/90">Save for Later</span>
-              <Checkbox
-                checked={nodeStatus === "in-progress"}
-                onCheckedChange={(checked) => {
-                  onStatusChange(checked ? "in-progress" : "base");
-                }}
-                className="border-2 border-white/60 bg-white/10 data-[state=checked]:border-white data-[state=checked]:bg-[#61FF05] data-[state=checked]:text-white"
-              />
-            </label>
-          </section>
         ) : null}
 
         {categories?.length && onNavigateToNode ? (
