@@ -30,7 +30,11 @@ import {
   type TerminalNodeType,
   type CategoryNodeType,
 } from "@/components/nodes";
-import { NodeInfoPanel, type Category } from "@/components/node-info-panel";
+import {
+  NodeInfoPanel,
+  type Category,
+  type ChecklistItem,
+} from "@/components/node-info-panel";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import { RoadmapTutorial } from "@/components/roadmap-tutorial";
 import { ZoomSlider } from "@/components/zoom-slider";
@@ -738,16 +742,36 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
 
       const categoryContent = roadmap.content.get(selectedNodeId);
 
+      // If this is a resources node, also include resources from the parent hub
+      let resourceItems: ChecklistItem[] = [];
+      if (selectedNode.id.includes("-resources") && selectedNode.parentId) {
+        const parentContent = roadmap.content.get(selectedNode.parentId);
+        if (parentContent?.resources) {
+          resourceItems = parentContent.resources.map((resource, index) => {
+            const resourceId = `resource-${selectedNode.parentId}-${index}`;
+            return {
+              id: resourceId,
+              title: resource.label,
+              href: resource.href,
+              status: nodeStatuses[resourceId] ?? "base",
+            };
+          });
+        }
+      }
+
       return [
         {
           id: selectedNodeId,
           title: categoryContent?.frontmatter.title ?? "Category",
           description: categoryContent?.content,
-          items: checklistNodes.map((node) => ({
-            id: node.id,
-            title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
-            status: nodeStatuses[node.id] ?? "base",
-          })),
+          items: [
+            ...checklistNodes.map((node) => ({
+              id: node.id,
+              title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
+              status: nodeStatuses[node.id] ?? "base",
+            })),
+            ...resourceItems,
+          ],
         },
       ];
     }
@@ -765,15 +789,35 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
       // Find all checklist items for this category (use pre-computed map)
       const checklistNodes = nodesByParent.get(categoryNode.id) ?? [];
 
+      // If categoryNode is a resources node, add parent's resources
+      let resourceItems: ChecklistItem[] = [];
+      if (categoryNode.id.includes("-resources")) {
+        const parentContent = roadmap.content.get(selectedNodeId);
+        if (parentContent?.resources) {
+          resourceItems = parentContent.resources.map((resource, index) => {
+            const resourceId = `resource-${selectedNodeId}-${index}`;
+            return {
+              id: resourceId,
+              title: resource.label,
+              href: resource.href,
+              status: nodeStatuses[resourceId] ?? "base",
+            };
+          });
+        }
+      }
+
       return {
         id: categoryNode.id,
         title: categoryContent?.frontmatter.title ?? "Category",
         description: categoryContent?.content,
-        items: checklistNodes.map((node) => ({
-          id: node.id,
-          title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
-          status: nodeStatuses[node.id] ?? "base",
-        })),
+        items: [
+          ...checklistNodes.map((node) => ({
+            id: node.id,
+            title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
+            status: nodeStatuses[node.id] ?? "base",
+          })),
+          ...resourceItems,
+        ],
       };
     });
 
@@ -950,7 +994,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
               eligibility={selectedContent.eligibility}
               benefits={selectedContent.benefits}
               outcomes={selectedContent.outcomes}
-              resources={selectedContent.resources}
+              resources={undefined}
               categories={selectedNodeCategories}
               nodeType={selectedContent.frontmatter.type}
               nodeId={selectedNodeId}

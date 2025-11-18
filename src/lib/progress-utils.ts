@@ -125,6 +125,7 @@ export function calculateNodeProgress(
   ).length;
 
   // Add virtual resource items if applicable
+  // Case 1: Resources category node (inherits resources from parent hub)
   if (nodeId.includes("-resources")) {
     const node = graphNodes.find((n) => n.id === nodeId);
     if (node?.parentId) {
@@ -138,6 +139,20 @@ export function calculateNodeProgress(
           }
         });
       }
+    }
+  }
+
+  // Case 2: Hub node (has its own resources)
+  if (nodeType === "hub") {
+    const content = contentMap.get(nodeId);
+    if (content?.resources) {
+      total += content.resources.length;
+      content.resources.forEach((_, idx) => {
+        const resourceId = `resource-${nodeId}-${idx}`;
+        if (nodeStatuses[resourceId] === "completed") {
+          completed++;
+        }
+      });
     }
   }
 
