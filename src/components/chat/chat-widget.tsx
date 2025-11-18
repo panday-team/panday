@@ -249,7 +249,6 @@ export function ChatWidget({
     handleSubmit,
     error,
     setMessages,
-    append,
     setInput,
     data: streamData,
   } = useChat({

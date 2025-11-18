@@ -144,6 +144,7 @@
 
 - **Endpoint**: `/api/chat` - RAG-powered chat using embeddings + AI
 - **Flow**: User query → Hybrid Embeddings Backend (JSON or Postgres) → AI Provider (system prompt + context) → Streamed response
+- **Authentication**: Clerk authentication required (enforced since Nov 2025)
 - **Source Citation**:
   - Relevance threshold: 50% (configurable in `src/lib/chat-config.ts`)
   - Sources below threshold are filtered from display to reduce noise
@@ -152,9 +153,75 @@
   - Rate limiting: 10 requests/minute per IP via `@upstash/ratelimit` (Redis-backed sliding window)
   - Input validation: Zod schema enforces max 50 messages, 10k chars per message
   - Timeout: 30s AbortController timeout on embeddings API calls
-  - ⚠️ No authentication yet (MVP-acceptable) - add Clerk protection before public launch
+  - User-scoped queries prevent cross-user data access
 - **Implementation**: `src/app/api/chat/route.ts`, `src/lib/embeddings-hybrid.ts`, `src/lib/embeddings-postgres.ts`, `src/lib/rate-limit.ts`, `src/lib/chat-config.ts`
 - **Testing**: See `src/app/api/chat/__tests__/route.test.ts` and `src/lib/__tests__/embeddings-client.test.ts`
+
+## Chat History & Persistence
+
+- **Database Schema**: Dual-model persistence for analytics and user-facing features
+  - `ChatSession` + `ChatMessage`: Analytics pipeline for Q&A extraction and FAQ generation (30-minute idle timeout)
+  - `ChatThread` + `ChatThreadMessage`: User-facing conversation history with CRUD operations (persistent until deleted)
+  - Both models track the same conversations—sessions for ML pipeline, threads for UX
+- **Thread Management API**: RESTful endpoints at `/api/chat-threads` and `/api/chat-threads/[threadId]`
+  - `GET /api/chat-threads`: Paginated list (max 50 per page) with cursor-based pagination, filterable by `roadmapId`
+  - `POST /api/chat-threads`: Create new thread with optional `roadmapId`, `selectedNodeId`, custom `title`
+  - `GET /api/chat-threads/[id]`: Fetch thread metadata + message count
+  - `PATCH /api/chat-threads/[id]`: Rename thread or update metadata (title, roadmapId, selectedNodeId)
+  - `DELETE /api/chat-threads/[id]`: Soft delete via `deletedAt` timestamp, cascades to messages
+  - `GET /api/chat-threads/[id]/messages`: Fetch messages with optional `limit` parameter
+  - `POST /api/chat-threads/[id]/messages`: Append messages (user + assistant pairs), auto-updates `lastMessageAt` and `messagePreview`
+- **Auto-Title Generation**: First user message automatically becomes thread title (max 80 chars, truncated with ellipsis)
+- **Message Preview**: Last assistant reply truncated to 180 chars for sidebar display
+- **Chat Widget Features** (`src/components/chat/chat-widget.tsx`):
+  - Desktop: Persistent sidebar (280px) showing conversation history with title, preview, timestamp, roadmap badge
+  - Mobile: Slide-over drawer triggered by hamburger menu
+  - Inline rename (double-click title or click pencil icon)
+  - Delete confirmation (trash icon on hover)
+  - FAQ quick questions (top 10 by frequency, loaded from `/api/faq?global=true`)
+  - Active thread highlighting, relative timestamps ("2m ago", "1h ago", "3d ago")
+  - Guest users: localStorage fallback for single-session history, prompt to sign in for persistence
+- **Thread Lifecycle**:
+  1. User opens chat → Auto-loads threads → Selects most recent or creates new
+  2. First message sent → Thread title auto-generated from user question
+  3. Streaming response → Messages persisted to both `ChatSession` and `ChatThread` models
+  4. `onFinish` callback → Refresh thread list, update preview/timestamp
+  5. Thread switch → Cached messages hydrated instantly, or fetch from API
+  6. Delete → Soft delete with `deletedAt`, messages cascade-deleted, switch to next thread
+- **Performance Optimizations**:
+  - Client-side message cache per thread (`threadMessagesCache`) reduces API calls
+  - SWR-style revalidation on thread mutations (create, rename, delete)
+  - Optimistic UI updates for rename/delete operations
+  - Desktop/mobile responsive layout (CSS grid vs absolute positioned drawer)
+- **Storage Utilities** (`src/lib/chat-threads.ts`):
+  - `deriveThreadTitle(content)`: Extract title from first message (max 80 chars)
+  - `buildMessagePreview(content)`: Truncate to 180 chars for preview
+  - `sanitizeText(value)`: Normalize whitespace for consistent formatting
+  - `toThreadResponse(thread)`: Map Prisma model to API response type
+  - `toThreadMessageResponse(message)`: Map message model with sources serialization
+
+## FAQ Generation Pipeline
+
+- **Overview**: Automated system that converts chat sessions into curated FAQs via Q&A extraction → semantic clustering → LLM consolidation
+- **Database Models**:
+  - `FAQCategory`: Thematic buckets (e.g., "Training Requirements", "Red Seal Process") with `displayOrder` for UI sorting
+  - `QAPair`: Individual question/answer pairs extracted from chat, with `embedding` (1536-dim vector), `clusterId`, `frequency`, `isGlobal` flag
+  - `FAQEntry`: Consolidated FAQs with canonical `question`, merged `answer`, `variations[]`, `sourceQAPairIds[]`, `isGlobal` flag
+- **Cron Jobs** (secured with `CRON_SECRET` bearer token in `Authorization` header):
+  - **Extract Q&As** (`/api/cron/extract-qas`): Streams `ChatSession`s through LLM to create structured `QAPair` records, marks sessions `endedAt` when processed
+  - **Cluster Q&As** (`/api/cron/cluster-qas`): Generates embeddings for new pairs (25 per run), samples 200 pairs, groups by cosine similarity ≥ 0.88, assigns `clusterId`
+  - **Generate FAQs** (`/api/cron/generate-faqs`): Consolidates clusters (10 per run) into `FAQEntry` records with merged answers and question variations
+  - **Categorize Q&As** (`/api/cron/categorize-qas`): (Optional) Assigns `categoryId` to uncategorized pairs, auto-creates "Global" category for fallback
+- **Operational Guide**: See `docs/QAS_OPERATIONS.md` for curl commands, troubleshooting, and pipeline run order
+- **FAQ API Endpoints**:
+  - `GET /api/faq`: List all categories with nested `faqEntries[]` (ordered by `displayOrder`)
+  - `GET /api/faq?global=true`: Filter to only `isGlobal` entries (platform-wide highlights shown in chat widget)
+  - Quick questions UI: Chat widget displays top 10 global FAQs as clickable pills below input field
+- **Security**: `CRON_SECRET` env var (min 32 chars) validated in `src/env.js`, required for all cron endpoints, prevents unauthorized FAQ generation
+- **Future Enhancements**:
+  - User feedback on FAQ quality (upvote/downvote)
+  - Multi-language FAQ variants
+  - Scheduled cron via Vercel Cron (hourly extract → daily cluster → weekly consolidate)
 
 ## Embeddings System
 

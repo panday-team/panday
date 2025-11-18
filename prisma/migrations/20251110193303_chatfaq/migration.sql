@@ -1,2 +1,2 @@
--- DropIndex
-DROP INDEX "public"."embedding_documents_embedding_idx";
+-- DropIndex (conditional - index may not exist)
+DROP INDEX IF EXISTS "public"."embedding_documents_embedding_idx";

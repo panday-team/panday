@@ -157,7 +157,6 @@ export async function POST(req: NextRequest) {
   try {
     const { userId, isAuthenticated } = await auth();
     currentUserId = userId;
-    if (!isAuthenticated) throw new Error("user not logged in");
 
     // Apply rate limiting BEFORE authentication check to prevent abuse
     const identifier = getRequestIdentifier(req, userId);
@@ -184,7 +183,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Require authentication for chat
-    if (!userId) {
+    if (!userId || !isAuthenticated) {
       return Response.json(
         { error: "Authentication required to use chat" },
         { status: 401 },

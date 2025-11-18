@@ -7,7 +7,9 @@ Panday helps aspiring tradespeople navigate their career path through interactiv
 ## Features
 
 - **Interactive Visual Roadmaps**: React Flow-based interactive diagrams showing career progression paths with zoom controls (slider + scroll + pinch)
-- **AI Career Guidance**: RAG-powered chat using OpenAI embeddings + LLM (Gemini/Claude/GPT)
+- **AI Career Guidance**: RAG-powered chat using OpenAI embeddings + LLM (Gemini/Claude/GPT) with conversation history
+- **Chat History & Persistence**: Save and revisit past conversations with auto-title generation, inline rename, and soft delete
+- **Automated FAQ Generation**: ML pipeline extracts Q&As from chat sessions, clusters by similarity, and consolidates into curated FAQs
 - **System Status Dashboard**: Real-time health monitoring for all services (Database, Redis, Clerk, OpenAI)
 - **Auto-Layout System**: Physics-based graph generation using D3-force simulation
 - **Content-Driven Architecture**: Markdown + YAML frontmatter for easy content updates

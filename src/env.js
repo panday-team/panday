@@ -31,7 +31,7 @@ export const env = createEnv({
     OPENAI_API_KEY: z.string(),
     GOOGLE_API_KEY: z.string().optional(),
     EMBEDDINGS_BACKEND: z.enum(["json", "postgres"]).default("json"),
-    CRON_SECRET: z.string().optional(),
+    CRON_SECRET: z.string().min(32, "CRON_SECRET must be at least 32 characters"),
   },
 
   /**
