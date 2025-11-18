@@ -62,6 +62,12 @@ type StreamMetadataEvent = {
   sources?: unknown;
 };
 
+type FaqQuickEntry = {
+  id: string;
+  question: string;
+  frequency: number;
+};
+
 type MinimalMessage = { content: string };
 
 const HISTORY_SKELETON_ITEMS = Array.from({ length: 3 });
@@ -218,6 +224,10 @@ export function ChatWidget({
     null,
   );
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [faqEntries, setFaqEntries] = useState<FaqQuickEntry[]>([]);
+  const [faqError, setFaqError] = useState<string | null>(null);
+  const [faqLoading, setFaqLoading] = useState(false);
+  const [hasLoadedFaqs, setHasLoadedFaqs] = useState(false);
 
   const activeThreadRef = useRef<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -239,6 +249,8 @@ export function ChatWidget({
     handleSubmit,
     error,
     setMessages,
+    append,
+    setInput,
     data: streamData,
   } = useChat({
     api: "/api/chat",
@@ -699,6 +711,100 @@ export function ChatWidget({
     void loadThreads();
   }, [hasFetchedThreads, isExpanded, isSignedIn, loadThreads]);
 
+  useEffect(() => {
+    if (!isExpanded || hasLoadedFaqs) return;
+
+    const loadFaqs = async () => {
+      setFaqLoading(true);
+      setFaqError(null);
+
+      try {
+        // First try global FAQs (platform-wide highlights)
+        const globalResponse = await fetch("/api/faq?global=true", {
+          cache: "no-store",
+        });
+
+        if (!globalResponse.ok) {
+          throw new Error("Failed to load FAQs");
+        }
+
+        const globalJson: unknown = await globalResponse.json();
+        if (!Array.isArray(globalJson)) {
+          throw new Error("FAQ response is not an array");
+        }
+
+        let entries = globalJson
+          .map((value): FaqQuickEntry | null => {
+            if (!isRecord(value)) return null;
+            const { id, question, frequency } = value;
+            if (typeof id !== "string" || typeof question !== "string") {
+              return null;
+            }
+            return {
+              id,
+              question,
+              frequency: typeof frequency === "number" ? frequency : 1,
+            };
+          })
+          .filter((entry): entry is FaqQuickEntry => entry !== null);
+
+        // If no global FAQs are flagged yet, fall back to category entries
+        if (entries.length === 0) {
+          const categoriesResponse = await fetch("/api/faq", {
+            cache: "no-store",
+          });
+
+          if (!categoriesResponse.ok) {
+            throw new Error("Failed to load category FAQs");
+          }
+
+          const categoriesJson: unknown = await categoriesResponse.json();
+          if (!Array.isArray(categoriesJson)) {
+            throw new Error("FAQ categories response is not an array");
+          }
+
+          const fromCategories: FaqQuickEntry[] = [];
+
+          for (const category of categoriesJson) {
+            if (!isRecord(category)) continue;
+            const { faqEntries } = category;
+            if (!Array.isArray(faqEntries)) continue;
+
+            for (const value of faqEntries) {
+              if (!isRecord(value)) continue;
+              const { id, question, frequency } = value;
+              if (typeof id !== "string" || typeof question !== "string") {
+                continue;
+              }
+              fromCategories.push({
+                id,
+                question,
+                frequency: typeof frequency === "number" ? frequency : 1,
+              });
+            }
+          }
+
+          entries = fromCategories;
+        }
+
+        const topEntries = entries
+          .sort((a, b) => b.frequency - a.frequency)
+          .slice(0, 10);
+
+        setFaqEntries(topEntries);
+      } catch (err) {
+        setFaqError(
+          err instanceof Error ? err.message : "Failed to load FAQs",
+        );
+      } finally {
+        setFaqLoading(false);
+        setHasLoadedFaqs(true);
+      }
+    };
+
+    void loadFaqs();
+  }, [hasLoadedFaqs, isExpanded]);
+
   const scrollToBottom = () => {
     const container = containerRef.current;
     if (container) {
@@ -736,6 +842,53 @@ export function ChatWidget({
     setStreamingMessageId("streaming");
     handleSubmit(event);
   };
+
+  const handleFaqClick = useCallback(
+    async (question: string) => {
+      if (!isSignedIn) {
+        logger.info("Guest attempted to use FAQ quick question", {
+          nodeId: selectedNodeId,
+        });
+        return;
+      }
+
+      const trimmed = question.trim();
+      if (!trimmed) return;
+
+      let threadId = activeThreadId;
+      if (!threadId) {
+        const thread = await createThread();
+        threadId = thread?.id ?? null;
+        if (!threadId) {
+          logger.error(
+            "Failed to create thread before sending FAQ question",
+            undefined,
+            { selectedNodeId },
+          );
+          return;
+        }
+        setActiveThreadId(threadId);
+      }
+
+      activeThreadRef.current = threadId;
+
+      setSources([]);
+      setIsLoading(true);
+      setStatusMessage("Processing request...");
+      setStreamingMessageId("streaming");
+      setInput(trimmed);
+      handleSubmit();
+    },
+    [
+      activeThreadId,
+      createThread,
+      isSignedIn,
+      handleSubmit,
+      selectedNodeId,
+      setActiveThreadId,
+      setInput,
+    ],
+  );
 
   const handleHistoryToggle = () => {
     if (!isSignedIn) return;
@@ -1288,6 +1441,31 @@ export function ChatWidget({
                   {selectedNodeId && (
                     <p className="mt-2 text-xs text-gray-500 dark:text-white/50">
                       Asking about the current step
+                    </p>
+                  )}
+                  {faqEntries.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-white/40">
+                        Popular questions
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {faqEntries.map((faq) => (
+                          <button
+                            key={faq.id}
+                            type="button"
+                            disabled={isLoading || !isSignedIn}
+                            onClick={() => handleFaqClick(faq.question)}
+                            className="max-w-full truncate rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:hover:bg-white/10"
+                          >
+                            {faq.question}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {faqError && !faqLoading && faqEntries.length === 0 && (
+                    <p className="mt-2 text-[11px] text-red-500">
+                      {faqError}
                     </p>
                   )}
                 </form>
