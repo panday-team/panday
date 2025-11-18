@@ -33,6 +33,7 @@ import {
 import { NodeInfoPanel, type Category } from "@/components/node-info-panel";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import { RoadmapTutorial } from "@/components/roadmap-tutorial";
+import { ZoomSlider } from "@/components/zoom-slider";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -847,6 +848,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
           gap={300}
           variant={BackgroundVariant.Lines}
         />
+        <ZoomSlider position="bottom-right" orientation="vertical" />
       </ReactFlow>
 
       <div className="pointer-events-none absolute top-0 right-0 flex w-full justify-end p-4 md:pt-10 md:pr-10 md:pl-0">

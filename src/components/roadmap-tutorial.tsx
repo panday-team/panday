@@ -38,7 +38,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: "zoom",
     title: "Step 2/5: Get the Perfect View",
-    body: "Want to focus on a specific skill, or zoom out to grasp your overall growth? Achieve the ideal perspective instantly! Use CTRL + Scroll wheel (on your mouse/keyboard) or a pinch motion (on your trackpad) to fluidly adjust your view.",
+    body: "Want to focus on a specific skill, or zoom out to grasp your overall growth? Achieve the ideal perspective instantly! Use the zoom slider in the bottom-right corner, CTRL + Scroll wheel (on your mouse/keyboard), or a pinch motion (on your trackpad) to fluidly adjust your view.",
   },
   {
     id: "select",
@@ -126,7 +126,7 @@ export function RoadmapTutorial({ open, onComplete }: RoadmapTutorialProps) {
                   <h3 className="mb-4 text-base font-bold text-black">
                     {currentStepData.title}
                   </h3>
-                  <p className="whitespace-pre-wrap text-sm font-normal leading-relaxed text-black">
+                  <p className="text-sm leading-relaxed font-normal whitespace-pre-wrap text-black">
                     {currentStepData.body}
                   </p>
                 </div>
