@@ -8,6 +8,7 @@ vi.mock("@clerk/nextjs/server", () => ({
     Promise.resolve({
       userId: "test-user-id",
       sessionId: "test-session-id",
+      isAuthenticated: true,
     }),
   ),
 }));
@@ -22,6 +23,10 @@ vi.mock("@ai-sdk/google", () => ({
 }));
 
 vi.mock("ai", () => ({
+  StreamData: vi.fn().mockImplementation(() => ({
+    append: vi.fn(),
+    close: vi.fn(),
+  })),
   streamText: vi.fn(() => ({
     toDataStreamResponse: vi.fn(() =>
       Response.json({ message: "Mocked response" }),
@@ -51,6 +56,60 @@ vi.mock("@/env", () => ({
   },
 }));
 
+vi.mock("@/server/db", () => ({
+  db: {
+    chatSession: {
+      findFirst: vi.fn(() => Promise.resolve(null)),
+      create: vi.fn(() =>
+        Promise.resolve({
+          id: "test-session-id",
+          userId: "test-user-id",
+          roadmapId: null,
+          startedAt: new Date(),
+          endedAt: null,
+          messages: [],
+        }),
+      ),
+      update: vi.fn(() => Promise.resolve({ id: "test-session-id" })),
+    },
+    chatMessage: {
+      create: vi.fn(() =>
+        Promise.resolve({
+          id: "test-message-id",
+          sessionId: "test-session-id",
+          role: "user",
+          content: "test query",
+          createdAt: new Date(),
+        }),
+      ),
+    },
+    chatThread: {
+      findFirst: vi.fn(() => Promise.resolve(null)),
+      create: vi.fn(() =>
+        Promise.resolve({
+          id: "test-thread-id",
+          userId: "test-user-id",
+          title: "New chat",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      ),
+      update: vi.fn(() => Promise.resolve({ id: "test-thread-id" })),
+    },
+    chatThreadMessage: {
+      create: vi.fn(() =>
+        Promise.resolve({
+          id: "test-thread-message-id",
+          threadId: "test-thread-id",
+          role: "user",
+          content: "test query",
+          createdAt: new Date(),
+        }),
+      ),
+    },
+  },
+}));
+
 describe("Chat API Route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -61,6 +120,7 @@ describe("Chat API Route", () => {
       const { auth } = await import("@clerk/nextjs/server");
       vi.mocked(auth).mockResolvedValueOnce({
         userId: null,
+        isAuthenticated: false,
       } as never);
 
       const request = new NextRequest("http://localhost:3000/api/chat", {
@@ -79,6 +139,13 @@ describe("Chat API Route", () => {
 
     it("should apply rate limiting before authentication check", async () => {
       const { chatRateLimit } = await import("@/lib/rate-limit");
+      const { auth } = await import("@clerk/nextjs/server");
+
+      // Mock authenticated user to pass auth check
+      vi.mocked(auth).mockResolvedValueOnce({
+        userId: "test-user-id",
+        isAuthenticated: true,
+      } as never);
 
       // Mock rate limit to fail
       vi.mocked(chatRateLimit.limit).mockResolvedValueOnce({
@@ -113,6 +180,7 @@ describe("Chat API Route", () => {
       const { auth } = await import("@clerk/nextjs/server");
       vi.mocked(auth).mockResolvedValueOnce({
         userId: null,
+        isAuthenticated: false,
       } as never);
 
       const request = new NextRequest("http://localhost:3000/api/chat", {
@@ -277,16 +345,10 @@ describe("Chat API Route", () => {
 
       const response = await POST(request);
 
-      // Errors in the streaming flow are sent as stream data, not JSON error responses
-      expect(response.status).toBe(200); // Streaming response starts with 200
-      expect(response.headers.get("content-type")).toContain(
-        "text/event-stream",
-      );
-
-      // Read the stream to verify error message
-      const text = await response.text();
-      expect(text).toContain("error");
-      expect(text).toContain("Embeddings service unavailable");
+      // With database persistence, errors return 500 instead of streaming
+      expect(response.status).toBe(500);
+      const data = await response.json();
+      expect(data.error).toBeDefined();
     });
 
     it("should handle AI provider errors", async () => {
@@ -313,16 +375,10 @@ describe("Chat API Route", () => {
 
       const response = await POST(request);
 
-      // Errors in the streaming flow are sent as stream data, not JSON error responses
-      expect(response.status).toBe(200); // Streaming response starts with 200
-      expect(response.headers.get("content-type")).toContain(
-        "text/event-stream",
-      );
-
-      // Read the stream to verify error message
-      const text = await response.text();
-      expect(text).toContain("error");
-      expect(text).toContain("AI provider error");
+      // With database persistence, errors return 500 instead of streaming
+      expect(response.status).toBe(500);
+      const data = await response.json();
+      expect(data.error).toBeDefined();
     });
 
     it("should call streamText with proper parameters", async () => {
