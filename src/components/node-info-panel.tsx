@@ -49,8 +49,10 @@ export interface NodeInfoPanelProps extends ComponentPropsWithoutRef<"aside"> {
   onNavigateToNode?: (nodeId: string) => void;
   onChecklistStatusChange?: (
     nodeId: string,
-    status: "base" | "in-progress" | "completed"
+    status: "base" | "in-progress" | "completed",
   ) => void;
+  onCheckboxClick?: () => void;
+  onDropdownOpen?: () => void;
 }
 
 export function NodeInfoPanel({
@@ -70,6 +72,8 @@ export function NodeInfoPanel({
   onStatusChange,
   onNavigateToNode,
   onChecklistStatusChange,
+  onCheckboxClick,
+  onDropdownOpen,
   className,
   ...props
 }: NodeInfoPanelProps) {
@@ -77,8 +81,9 @@ export function NodeInfoPanel({
   const displayBadge = badge ?? title;
   return (
     <aside
+      data-tutorial="node-info-panel"
       className={cn(
-        "w-full max-h-[calc(100vh-2rem)] overflow-y-auto rounded-3xl border border-white/10 bg-[#98B3F9]/95 px-8 pt-8 pb-10 text-black shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur md:max-w-lg md:max-h-[calc(100vh-5rem)]",
+        "max-h-[calc(100vh-2rem)] w-full overflow-y-auto rounded-3xl border border-white/10 bg-[#98B3F9]/95 px-8 pt-8 pb-10 text-black shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur md:max-h-[calc(100vh-5rem)] md:max-w-lg",
         className,
       )}
       {...props}
@@ -89,7 +94,9 @@ export function NodeInfoPanel({
         </span>
         <div className="flex items-center gap-2">
           {subtitle ? (
-            <span className="text-xs font-medium text-black/60">{subtitle}</span>
+            <span className="text-xs font-medium text-black/60">
+              {subtitle}
+            </span>
           ) : null}
         </div>
       </div>
@@ -102,9 +109,13 @@ export function NodeInfoPanel({
             </h1>
             {nodeType === "checklist" && onStatusChange ? (
               <Checkbox
+                data-tutorial="checklist-checkbox"
                 checked={nodeStatus === "completed"}
                 onCheckedChange={(checked) => {
                   onStatusChange(checked ? "completed" : "base");
+                  if (onCheckboxClick) {
+                    onCheckboxClick();
+                  }
                 }}
                 className="mt-1 shrink-0 border-2 border-white/60 bg-white/10 data-[state=checked]:border-white data-[state=checked]:bg-[#61FF05] data-[state=checked]:text-white"
               />
@@ -140,6 +151,8 @@ export function NodeInfoPanel({
             categories={categories}
             onNavigateToNode={onNavigateToNode}
             onChecklistStatusChange={onChecklistStatusChange}
+            onCheckboxClick={onCheckboxClick}
+            onDropdownOpen={onDropdownOpen}
           />
         ) : null}
 
@@ -184,13 +197,17 @@ function CategoryNav({
   categories,
   onNavigateToNode,
   onChecklistStatusChange,
+  onCheckboxClick,
+  onDropdownOpen,
 }: {
   categories: Category[];
   onNavigateToNode: (nodeId: string) => void;
   onChecklistStatusChange?: (
     nodeId: string,
-    status: "base" | "in-progress" | "completed"
+    status: "base" | "in-progress" | "completed",
   ) => void;
+  onCheckboxClick?: () => void;
+  onDropdownOpen?: () => void;
 }) {
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
 
@@ -201,6 +218,10 @@ function CategoryNav({
         next.delete(categoryId);
       } else {
         next.add(categoryId);
+        // Notify when dropdown is opened (not closed)
+        if (onDropdownOpen) {
+          onDropdownOpen();
+        }
       }
       return next;
     });
@@ -218,7 +239,10 @@ function CategoryNav({
               open={isOpen}
               onOpenChange={() => toggleCategory(category.id)}
             >
-              <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg bg-white/20 px-3 py-2 text-left text-sm font-medium text-black transition-colors hover:bg-white/30">
+              <CollapsibleTrigger
+                data-tutorial="dropdown-trigger"
+                className="flex w-full items-center justify-between rounded-lg bg-white/20 px-3 py-2 text-left text-sm font-medium text-black transition-colors hover:bg-white/30"
+              >
                 <span>{category.title}</span>
                 <ChevronDown
                   className={cn(
@@ -235,12 +259,16 @@ function CategoryNav({
                   >
                     {onChecklistStatusChange ? (
                       <Checkbox
+                        data-tutorial="checklist-checkbox"
                         checked={item.status === "completed"}
                         onCheckedChange={(checked) => {
                           onChecklistStatusChange(
                             item.id,
-                            checked ? "completed" : "base"
+                            checked ? "completed" : "base",
                           );
+                          if (onCheckboxClick) {
+                            onCheckboxClick();
+                          }
                         }}
                         className="h-4 w-4 shrink-0 border-2 border-black/30 bg-white/10 data-[state=checked]:border-[#61FF05] data-[state=checked]:bg-[#61FF05] data-[state=checked]:text-white"
                       />

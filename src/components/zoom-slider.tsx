@@ -29,8 +29,9 @@ export function ZoomSlider({
 
   return (
     <Panel
+      data-tutorial="zoom-slider"
       className={cn(
-        "bg-primary-foreground text-foreground flex gap-1 rounded-md p-1",
+        "flex gap-1 rounded-md bg-white p-1 text-black dark:bg-gray-800 dark:text-white",
         orientation === "horizontal" ? "flex-row" : "flex-col",
         className,
       )}
@@ -47,7 +48,7 @@ export function ZoomSlider({
           size="icon"
           onClick={() => zoomOut({ duration: 300 })}
         >
-          <Minus className="h-4 w-4" />
+          <Minus className="h-4 w-4 text-black dark:text-white" />
         </Button>
         <Slider
           className={cn(
@@ -65,12 +66,12 @@ export function ZoomSlider({
           size="icon"
           onClick={() => zoomIn({ duration: 300 })}
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4 text-black dark:text-white" />
         </Button>
       </div>
       <Button
         className={cn(
-          "tabular-nums",
+          "text-black tabular-nums dark:text-white",
           orientation === "horizontal"
             ? "w-[140px] min-w-10"
             : "h-[40px] w-[40px]",
@@ -85,7 +86,7 @@ export function ZoomSlider({
         size="icon"
         onClick={() => fitView({ duration: 300 })}
       >
-        <Maximize className="h-4 w-4" />
+        <Maximize className="h-4 w-4 text-black dark:text-white" />
       </Button>
     </Panel>
   );

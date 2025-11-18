@@ -4,7 +4,13 @@ import { BaseNode } from "@/components/base-node";
 import { NodeAppendix } from "@/components/node-appendix";
 import { motion, AnimatePresence } from "motion/react";
 import Image from "next/image";
-import { Brain, ClipboardList, TrafficCone, ChevronRight, type LucideIcon } from "lucide-react";
+import {
+  Brain,
+  ClipboardList,
+  TrafficCone,
+  ChevronRight,
+  type LucideIcon,
+} from "lucide-react";
 
 export type CategoryNodeData = {
   label: string;
@@ -60,6 +66,14 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
     >
       <BaseNode
         id={id}
+        data-node-type={
+          icon === "brain"
+            ? "resources"
+            : icon === "clipboard-list"
+              ? "actions"
+              : "roadblocks"
+        }
+        data-node-id={id}
         aria-label={label}
         className="group nodrag relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-full border-none bg-transparent shadow-none outline-none hover:ring-0 focus-visible:ring-0"
       >
@@ -107,7 +121,7 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
 
         {/* Expand/Collapse indicator */}
         <motion.div
-          className="pointer-events-none absolute bottom-0 right-0 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-md"
+          className="pointer-events-none absolute right-0 bottom-0 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-md"
           animate={{
             rotate: isExpanded ? 90 : 0,
           }}

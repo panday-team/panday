@@ -56,6 +56,8 @@ function MainPathNodeComponent({
   return (
     <BaseNode
       id={id}
+      data-node-type={id.includes("red-seal") ? "terminal" : "hub"}
+      data-node-id={id}
       aria-label={label}
       className="relative flex h-32 w-32 cursor-pointer items-center justify-center rounded-full border-none bg-transparent shadow-none outline-none hover:ring-0 focus-visible:ring-0"
     >

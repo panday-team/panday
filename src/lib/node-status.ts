@@ -82,7 +82,15 @@ export async function setNodeStatus(
         logger.info("User not authenticated, using localStorage only");
         return;
       }
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Don't throw for 500 errors - just log as warning and continue
+      logger.warn("Failed to update node status in database", {
+        roadmapId,
+        nodeId,
+        status,
+        statusCode: response.status,
+        statusText: response.statusText,
+      });
+      return;
     }
 
     logger.info("Node status updated in database", {
@@ -91,10 +99,11 @@ export async function setNodeStatus(
       status,
     });
   } catch (error) {
-    logger.error("Failed to update node status in database", error as Error, {
+    logger.warn("Failed to update node status in database (network error)", {
       roadmapId,
       nodeId,
       status,
+      error: error instanceof Error ? error.message : String(error),
     });
     // Status is still saved in localStorage, so UI remains consistent
   }
@@ -110,7 +119,10 @@ function getLocalNodeStatuses(roadmapId: string): Record<string, NodeStatus> {
     const stored = localStorage.getItem(getStorageKey(roadmapId));
     return stored ? (JSON.parse(stored) as Record<string, NodeStatus>) : {};
   } catch (error) {
-    logger.error("Failed to get node statuses from localStorage", error as Error);
+    logger.error(
+      "Failed to get node statuses from localStorage",
+      error as Error,
+    );
     return {};
   }
 }

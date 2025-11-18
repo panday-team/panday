@@ -25,6 +25,7 @@ export function ChatButton({ isExpanded, onClick }: ChatButtonProps) {
 
   return (
     <motion.button
+      data-tutorial="chat-button"
       onClick={onClick}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}

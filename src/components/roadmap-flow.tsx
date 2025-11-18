@@ -32,7 +32,10 @@ import {
 } from "@/components/nodes";
 import { NodeInfoPanel, type Category } from "@/components/node-info-panel";
 import { ChatWidget } from "@/components/chat/chat-widget";
-import { RoadmapTutorial } from "@/components/roadmap-tutorial";
+import {
+  RoadmapTutorial,
+  type TutorialInteractionType,
+} from "@/components/roadmap-tutorial";
 import { ZoomSlider } from "@/components/zoom-slider";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -108,7 +111,8 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   const [nodeStatuses, setNodeStatuses] = useState<Record<string, NodeStatus>>(
     {},
   );
-  const { fitView } = useReactFlow();
+  const { fitView, setCenter, getViewport, screenToFlowPosition } =
+    useReactFlow();
 
   // Track which category nodes are expanded (showing their checklist children)
   // Always initialize with empty Set to avoid hydration mismatch
@@ -141,6 +145,8 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   }, [expandedCategories, roadmap.metadata.id]);
 
   const [showTutorial, setShowTutorial] = useState<boolean>(false);
+  const [showTutorialSkipAlert, setShowTutorialSkipAlert] =
+    useState<boolean>(false);
 
   // Load statuses from database on mount, with localStorage fallback
   useEffect(() => {
@@ -170,6 +176,8 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   useEffect(() => {
     if (userProfile && !userProfile.tutorialCompletedAt) {
       setShowTutorial(true);
+      // Close node info panel and deselect nodes when tutorial starts
+      setSelectedNodeId(null);
     }
   }, [userProfile]);
 
@@ -624,6 +632,23 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
     };
   }, []);
 
+  const handleTutorialInteraction = useCallback(
+    (interactionType: TutorialInteractionType) => {
+      // Forward interaction to tutorial component via window global
+      const handler = (
+        window as Window & {
+          __tutorialInteractionHandler?: (
+            type: TutorialInteractionType,
+          ) => void;
+        }
+      ).__tutorialInteractionHandler;
+      if (handler) {
+        handler(interactionType);
+      }
+    },
+    [],
+  );
+
   const nodeTypes = useMemo<NodeTypes>(
     () => ({
       hub: HubNode,
@@ -659,8 +684,11 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
           data: { ...n.data, isSelected: n.id === node.id },
         })),
       );
+
+      // Notify tutorial of node click
+      handleTutorialInteraction("node-click");
     },
-    [setNodes],
+    [setNodes, handleTutorialInteraction],
   );
 
   const onPaneClick = useCallback(() => {
@@ -673,6 +701,11 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
       })),
     );
   }, [setNodes]);
+
+  const onMove = useCallback(() => {
+    // Notify tutorial of zoom/pan changes
+    handleTutorialInteraction("zoom-change");
+  }, [handleTutorialInteraction]);
 
   const handleStatusChange = useCallback(
     (nodeId: string, status: NodeStatus) => {
@@ -707,9 +740,96 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
     }
   }, [userProfile]);
 
+  const handleTutorialSkip = useCallback(() => {
+    setShowTutorial(false);
+    setShowTutorialSkipAlert(true);
+
+    // Hide alert after 5 seconds
+    setTimeout(() => {
+      setShowTutorialSkipAlert(false);
+    }, 5000);
+  }, []);
+
   const handleTutorialOpen = useCallback(() => {
     setShowTutorial(true);
+    setShowTutorialSkipAlert(false);
+    // Close node info panel when tutorial is manually opened
+    setSelectedNodeId(null);
   }, []);
+
+  const handleViewportAdjustment = useCallback(
+    (selector?: string) => {
+      if (!selector) return;
+
+      // Small delay to ensure elements are rendered
+      setTimeout(() => {
+        // Find all matching elements
+        const elements = document.querySelectorAll(selector);
+        if (elements.length === 0) return;
+
+        // Get bounding boxes of all elements
+        const rects: DOMRect[] = [];
+        for (const element of elements) {
+          const rect = element.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            rects.push(rect);
+          }
+        }
+
+        if (rects.length === 0) return;
+
+        // Calculate combined bounding box
+        const minX = Math.min(...rects.map((r) => r.left));
+        const minY = Math.min(...rects.map((r) => r.top));
+        const maxX = Math.max(...rects.map((r) => r.right));
+        const maxY = Math.max(...rects.map((r) => r.bottom));
+
+        // Calculate center point in screen coordinates
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+
+        // Get viewport dimensions
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        // Reserve space for UI elements (node panel on left, chat on right)
+        const uiPaddingLeft = 400; // Node info panel width
+        const uiPaddingRight = 100; // Chat button area
+        const uiPaddingTop = 150; // Top profile card
+        const uiPaddingBottom = 100; // Bottom margin
+
+        // Calculate adjusted center (accounting for UI elements)
+        const adjustedCenterX =
+          (uiPaddingLeft + (viewportWidth - uiPaddingRight)) / 2;
+        const adjustedCenterY =
+          (uiPaddingTop + (viewportHeight - uiPaddingBottom)) / 2;
+
+        // Check if elements are already in the clear area
+        const isInClearArea =
+          centerX > uiPaddingLeft &&
+          centerX < viewportWidth - uiPaddingRight &&
+          centerY > uiPaddingTop &&
+          centerY < viewportHeight - uiPaddingBottom;
+
+        // Only adjust if not already in clear area
+        if (!isInClearArea) {
+          // Convert screen coordinates to flow coordinates
+          const currentViewport = getViewport();
+          const flowPosition = screenToFlowPosition({
+            x: adjustedCenterX,
+            y: adjustedCenterY,
+          });
+
+          // Pan to center the elements in the clear area
+          void setCenter(flowPosition.x, flowPosition.y, {
+            duration: 600,
+            zoom: currentViewport.zoom, // Keep current zoom level
+          });
+        }
+      }, 200);
+    },
+    [setCenter, getViewport, screenToFlowPosition],
+  );
 
   const selectedContent = selectedNodeId
     ? roadmap.content.get(selectedNodeId)
@@ -823,6 +943,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   return (
     <div className="relative h-screen w-full overflow-hidden bg-[#EDF2F6] dark:bg-[#0C1020]">
       <ReactFlow
+        data-tutorial="react-flow"
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
@@ -839,6 +960,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         onNodeDrag={onNodeDrag}
         onNodeDragStop={onNodeDragStop}
         onNodesChange={onNodesChange}
+        onMove={onMove}
         disableKeyboardA11y={true}
         className="[&_.react-flow__attribution]:hidden [&_.react-flow__edge-path]:drop-shadow-[0_0_6px_rgba(53,193,185,0.25)]"
         proOptions={{ hideAttribution: true }}
@@ -871,14 +993,21 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
                   </p>
                 </div>
                 <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={handleTutorialOpen}
-                  >
-                    <BookOpenText className="h-4 w-4" />
-                  </Button>
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={handleTutorialOpen}
+                    >
+                      <BookOpenText className="h-4 w-4" />
+                    </Button>
+                    {showTutorialSkipAlert && (
+                      <div className="animate-tutorial-slide-down absolute top-10 right-0 z-50 rounded-md bg-yellow-400 px-3 py-2 text-xs font-medium whitespace-nowrap text-black shadow-lg">
+                        Tutorial skipped! Click to restart.
+                      </div>
+                    )}
+                  </div>
                   <Link href="/">
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                       <Home className="h-4 w-4" />
@@ -934,7 +1063,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
       </div>
 
       {selectedContent && selectedNodeId && (
-        <div className="pointer-events-none absolute top-0 left-0 flex w-full justify-start p-4 md:pt-10 md:pr-0 md:pl-10">
+        <div className="pointer-events-none absolute top-0 left-0 z-[10000] flex w-full justify-start p-4 md:pt-10 md:pr-0 md:pl-10">
           <div className="pointer-events-auto">
             <NodeInfoPanel
               badge={selectedContent.frontmatter.badge}
@@ -961,6 +1090,10 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
               }
               onNavigateToNode={handleNavigateToNode}
               onChecklistStatusChange={handleStatusChange}
+              onCheckboxClick={() =>
+                handleTutorialInteraction("checkbox-click")
+              }
+              onDropdownOpen={() => handleTutorialInteraction("dropdown-open")}
             />
           </div>
         </div>
@@ -979,11 +1112,16 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
               }
             : undefined
         }
+        onChatOpen={() => handleTutorialInteraction("chat-open")}
+        forceClose={showTutorial}
       />
 
       <RoadmapTutorial
         open={showTutorial}
         onComplete={handleTutorialComplete}
+        onSkip={handleTutorialSkip}
+        onInteraction={handleTutorialInteraction}
+        onRequestViewportAdjustment={handleViewportAdjustment}
       />
     </div>
   );

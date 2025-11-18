@@ -25,12 +25,16 @@ interface ChatWidgetProps {
     specialization?: string;
     residencyStatus?: string;
   };
+  onChatOpen?: () => void;
+  forceClose?: boolean;
 }
 
 export function ChatWidget({
   selectedNodeId,
   roadmapId,
   userProfile,
+  onChatOpen,
+  forceClose,
 }: ChatWidgetProps) {
   const { isSignedIn } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -196,7 +200,10 @@ export function ChatWidget({
           setMessages(parsed as Parameters<typeof setMessages>[0]);
         }
       } catch (e) {
-        logger.error("Failed to restore chat history", e instanceof Error ? e : new Error(String(e)));
+        logger.error(
+          "Failed to restore chat history",
+          e instanceof Error ? e : new Error(String(e)),
+        );
       }
     }
     setIsHydrated(true);
@@ -250,6 +257,13 @@ export function ChatWidget({
   useEffect(() => {
     if (!isExpanded) didMountRef.current = false;
   }, [isExpanded]);
+
+  // Force close chat when tutorial starts
+  useEffect(() => {
+    if (forceClose) {
+      setIsExpanded(false);
+    }
+  }, [forceClose]);
 
   // Track scroll position to show/hide scroll-to-bottom button
   useEffect(() => {
@@ -660,7 +674,13 @@ export function ChatWidget({
       )}
       <ChatButton
         isExpanded={isExpanded}
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => {
+          const wasExpanded = isExpanded;
+          setIsExpanded(!isExpanded);
+          if (!wasExpanded && onChatOpen) {
+            onChatOpen();
+          }
+        }}
       />
     </div>
   );
