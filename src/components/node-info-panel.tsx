@@ -9,7 +9,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ExternalLink } from "lucide-react";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import type { ProgressData } from "@/lib/progress-utils";
 
@@ -22,6 +22,7 @@ export type ChecklistItem = {
   id: string;
   title: string;
   status?: "base" | "in-progress" | "completed";
+  href?: string;
 };
 
 export type Category = {
@@ -49,7 +50,7 @@ export interface NodeInfoPanelProps extends ComponentPropsWithoutRef<"aside"> {
   onNavigateToNode?: (nodeId: string) => void;
   onChecklistStatusChange?: (
     nodeId: string,
-    status: "base" | "in-progress" | "completed"
+    status: "base" | "in-progress" | "completed",
   ) => void;
 }
 
@@ -78,7 +79,7 @@ export function NodeInfoPanel({
   return (
     <aside
       className={cn(
-        "w-full max-h-[calc(100vh-2rem)] overflow-y-auto rounded-3xl border border-white/10 bg-[#98B3F9]/95 px-8 pt-8 pb-10 text-black shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur md:max-w-lg md:max-h-[calc(100vh-5rem)]",
+        "max-h-[calc(100vh-2rem)] w-full overflow-y-auto rounded-3xl border border-white/10 bg-[#98B3F9]/95 px-8 pt-8 pb-10 text-black shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur md:max-h-[calc(100vh-5rem)] md:max-w-lg",
         className,
       )}
       {...props}
@@ -89,7 +90,9 @@ export function NodeInfoPanel({
         </span>
         <div className="flex items-center gap-2">
           {subtitle ? (
-            <span className="text-xs font-medium text-black/60">{subtitle}</span>
+            <span className="text-xs font-medium text-black/60">
+              {subtitle}
+            </span>
           ) : null}
         </div>
       </div>
@@ -189,7 +192,7 @@ function CategoryNav({
   onNavigateToNode: (nodeId: string) => void;
   onChecklistStatusChange?: (
     nodeId: string,
-    status: "base" | "in-progress" | "completed"
+    status: "base" | "in-progress" | "completed",
   ) => void;
 }) {
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
@@ -239,7 +242,7 @@ function CategoryNav({
                         onCheckedChange={(checked) => {
                           onChecklistStatusChange(
                             item.id,
-                            checked ? "completed" : "base"
+                            checked ? "completed" : "base",
                           );
                         }}
                         className="h-4 w-4 shrink-0 border-2 border-black/30 bg-white/10 data-[state=checked]:border-[#61FF05] data-[state=checked]:bg-[#61FF05] data-[state=checked]:text-white"
@@ -247,12 +250,27 @@ function CategoryNav({
                     ) : (
                       <span className="text-xs text-black/60">→</span>
                     )}
-                    <button
-                      onClick={() => onNavigateToNode(item.id)}
-                      className="flex-1 text-left text-sm text-black/80 transition-colors hover:text-black"
-                    >
-                      {item.title}
-                    </button>
+
+                    {item.href ? (
+                      <div className="flex min-w-0 flex-1 items-center gap-2">
+                        <a
+                          href={item.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="truncate text-left text-sm text-blue-600 underline transition-colors hover:underline"
+                        >
+                          {item.title}
+                        </a>
+                        <ExternalLink className="h-3 w-3 shrink-0 text-black/40" />
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => onNavigateToNode(item.id)}
+                        className="flex-1 text-left text-sm text-black/80 transition-colors hover:text-black"
+                      >
+                        {item.title}
+                      </button>
+                    )}
                   </div>
                 ))}
               </CollapsibleContent>

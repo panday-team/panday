@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
-import type { CSSProperties, SetStateAction } from "react";
+import type { CSSProperties } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -30,7 +30,11 @@ import {
   type TerminalNodeType,
   type CategoryNodeType,
 } from "@/components/nodes";
-import { NodeInfoPanel, type Category } from "@/components/node-info-panel";
+import {
+  NodeInfoPanel,
+  type Category,
+  type ChecklistItem,
+} from "@/components/node-info-panel";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import { RoadmapTutorial } from "@/components/roadmap-tutorial";
 import { ZoomSlider } from "@/components/zoom-slider";
@@ -60,7 +64,7 @@ import {
   LEVEL_METADATA,
 } from "@/lib/profile-types";
 import { calculateViewportForNode } from "@/lib/viewport-utils";
-import { nullable } from "zod";
+import { calculateNodeProgress } from "@/lib/progress-utils";
 
 type FlowNode =
   | HubNodeType
@@ -143,20 +147,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   const [showTutorial, setShowTutorial] = useState<boolean>(false);
   const tutorialKey = `${userProfile?.clerkUserId || "guest-account"}:tutorial-finished`;
   // use the users id to identify if they have completed the tutorial already.
-  const { getItem: getTutorialCompleted, setItem: setTutorialCompleted } =
-    useLocalStorage(tutorialKey);
-
-  // check local storage when roadmap renders
-  useEffect(() => {
-    const tutorialCompleted = getTutorialCompleted();
-    // console.log(`Showed Tutorial: ${tutorialCompleted || false}`);
-
-    if (!tutorialCompleted) {
-      setTutorialCompleted("burger ate");
-      return setShowTutorial(true);
-    }
-    // console.log(`Showed : ${tutorialCompleted || false}`);
-  }, [getTutorialCompleted, setTutorialCompleted]);
+  
 
   // Load statuses from database on mount, with localStorage fallback
   useEffect(() => {
@@ -690,12 +681,6 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
     );
   }, [setNodes]);
 
-  const handleTutorialClick = (event: React.MouseEvent) => {
-    event.preventDefault();
-    console.log("smash burger");
-    setShowTutorial(true);
-  };
-
   const handleStatusChange = useCallback(
     (nodeId: string, status: NodeStatus) => {
       // Update localStorage immediately (returns void, database update happens in background)
@@ -760,16 +745,36 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
 
       const categoryContent = roadmap.content.get(selectedNodeId);
 
+      // If this is a resources node, also include resources from the parent hub
+      let resourceItems: ChecklistItem[] = [];
+      if (selectedNode.id.includes("-resources") && selectedNode.parentId) {
+        const parentContent = roadmap.content.get(selectedNode.parentId);
+        if (parentContent?.resources) {
+          resourceItems = parentContent.resources.map((r, idx) => {
+            const resourceId = `resource-${selectedNode.parentId}-${idx}`;
+            return {
+              id: resourceId,
+              title: r.label,
+              href: r.href,
+              status: nodeStatuses[resourceId] ?? "base",
+            };
+          });
+        }
+      }
+
       return [
         {
           id: selectedNodeId,
           title: categoryContent?.frontmatter.title ?? "Category",
           description: categoryContent?.content,
-          items: checklistNodes.map((node) => ({
-            id: node.id,
-            title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
-            status: nodeStatuses[node.id] ?? "base",
-          })),
+          items: [
+            ...checklistNodes.map((node) => ({
+              id: node.id,
+              title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
+              status: nodeStatuses[node.id] ?? "base",
+            })),
+            ...resourceItems,
+          ],
         },
       ];
     }
@@ -875,14 +880,6 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
 
       <div className="pointer-events-none absolute top-0 right-0 flex w-full justify-end p-4 md:pt-10 md:pr-10 md:pl-0">
         <div className="pointer-events-auto">
-          {showTutorial && (
-            <>
-              <RoadmapTutorialWidget
-                setShowTutorial={setShowTutorial}
-                showTutorial={showTutorial}
-              />
-            </>
-          )}
           {userProfile ? (
             <Card className="bg-background/95 supports-[backdrop-filter]:bg-background/80 p-4 backdrop-blur">
               <div className="flex items-start justify-between gap-4">
@@ -901,6 +898,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
                   </p>
                 </div>
                 <div className="flex gap-1">
+<<<<<<< HEAD
                   <div>
                     <Button
                       variant="ghost"
@@ -911,6 +909,16 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
                       <BookOpenText className="h-4 w-4" />
                     </Button>
                   </div>
+=======
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={handleTutorialOpen}
+                  >
+                    <BookOpenText className="h-4 w-4" />
+                  </Button>
+>>>>>>> 69c85a8 (refactor: checklist node resources)
                   <Link href="/">
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                       <Home className="h-4 w-4" />
@@ -982,7 +990,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
               eligibility={selectedContent.eligibility}
               benefits={selectedContent.benefits}
               outcomes={selectedContent.outcomes}
-              resources={selectedContent.resources}
+              resources={undefined}
               categories={selectedNodeCategories}
               nodeType={selectedContent.frontmatter.type}
               nodeId={selectedNodeId}

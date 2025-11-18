@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-<<<<<<< HEAD
   Dialog,
   DialogContent,
   DialogPortal,
@@ -33,66 +32,70 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: "pan",
-=======
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
-
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-
-import type { Dispatch, SetStateAction } from "react";
-
-const TUTORIAL_STEPS = [
-  {
-    id: 420,
->>>>>>> 63aafc6 (add: tutorial widget that appears for first time users + button to activate it)
-    title: "Pan",
-    description: "Click and drag empty space to move around the roadmap.",
+    title: "Step 1/5: Explore Your Entire Career Path!",
+    body: "This is your dynamic Panday Roadmap, visually charting your progress and future milestones. To effortlessly see your entire journey—where you've been and what's next—simply click and drag any empty space on the map to navigate with ease.",
   },
   {
-<<<<<<< HEAD
     id: "zoom",
     title: "Step 2/5: Get the Perfect View",
+<<<<<<< HEAD
     body: "Want to focus on a specific skill, or zoom out to grasp your overall growth? Achieve the ideal perspective instantly! Use the zoom slider in the bottom-left corner, CTRL + Scroll wheel (on your mouse/keyboard), or a pinch motion (on your trackpad) to fluidly adjust your view.",
+=======
+    body: "Want to focus on a specific skill, or zoom out to grasp your overall growth? Achieve the ideal perspective instantly! Use CTRL + Scroll wheel (on your mouse/keyboard) or a pinch motion (on your trackpad) to fluidly adjust your view.",
+>>>>>>> 69c85a8 (refactor: checklist node resources)
   },
   {
-<<<<<<< HEAD
     id: "select",
-=======
-    id: 67,
->>>>>>> 63aafc6 (add: tutorial widget that appears for first time users + button to activate it)
-    title: "Select",
-    description:
-      "Click a node to open its details panel and update its status.",
+    title: "Step 3/5: Take Action & Update Your Status!",
+    body: "Each glowing node on the map represents a crucial milestone or task in your career development. To dive into the details, track your progress, and mark off your achievements, simply click any node. Your journey, your updates!",
   },
   {
-<<<<<<< HEAD
     id: "chat",
-=======
-    id: 41,
->>>>>>> 63aafc6 (add: tutorial widget that appears for first time users + button to activate it)
-    title: "Chat",
-    description:
-      "Get more assistance on your current progress with our AI Chatbot in the bottom-right corner",
+    title: "Step 4/5: Instant AI Career Support",
+    body: "Never feel stuck on your path! Our intelligent AI Chatbot is your personal career assistant, available 24/7. Need quick advice, resources, or assistance on your current task? Just look for the friendly chat icon in the bottom-right corner of your screen.",
+  },
+  {
+    id: "complete",
+    title: "You're Ready!",
+    body: "The Panday Roadmap is ready for your ambition. Use the controls you just learned to start charting your growth path now.\n\nNeed help? Find this tutorial anytime by clicking the book icon in the top-right corner.",
   },
 ];
 
-<<<<<<< HEAD
 export function RoadmapTutorial({ open, onComplete }: RoadmapTutorialProps) {
+  const [currentStep, setCurrentStep] = useState(0);
+
+  const handleNext = () => {
+    if (currentStep < TUTORIAL_STEPS.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      handleComplete();
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleSkip = () => {
+    onComplete();
+  };
+
+  const handleComplete = () => {
+    setCurrentStep(0); // Reset for next time
+    onComplete();
+  };
+
+  const currentStepData = TUTORIAL_STEPS[currentStep];
+  const isWelcome = currentStep === 0;
+  const isLastStep = currentStep === TUTORIAL_STEPS.length - 1;
+
+  // Guard against invalid step
+  if (!currentStepData) {
+    return null;
+  }
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleSkip()}>
       <DialogPortal>
@@ -114,6 +117,7 @@ export function RoadmapTutorial({ open, onComplete }: RoadmapTutorialProps) {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
+<<<<<<< HEAD
               <Card className="relative w-full rounded-[20px] bg-white p-8">
                 {/* Skip button in top right corner */}
                 <button
@@ -133,51 +137,74 @@ export function RoadmapTutorial({ open, onComplete }: RoadmapTutorialProps) {
                     {currentStepData.body}
                   </p>
                 </div>
-
-        <DialogFooter>
-          <Button onClick={onComplete}>Let&apos;s Go!</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
 =======
-export default function RoadmapTutorialWidget({
-  setShowTutorial,
-  showTutorial,
-}: {
-  setShowTutorial: Dispatch<SetStateAction<boolean>>;
-  showTutorial: boolean;
-}) {
-  return (
-    <>
-      <AlertDialog open={showTutorial ? true : false}>
-        <AlertDialogContent className="mx-50">
-          <AlertDialogHeader className="text-center">
-            <AlertDialogTitle className="text-2xl">
-              Roadmap Tutorial
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              3 simple controls to navigate your career!
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+              <Card className="w-full rounded-[20px] bg-white p-8">
+                {/* Step Indicators - Show arrows between steps except on welcome and last */}
+                {!isWelcome && !isLastStep && (
+                  <div className="mb-6 flex items-center justify-center gap-2">
+                    <ChevronRight className="h-5 w-5 text-gray-400" />
+                  </div>
+                )}
+>>>>>>> 69c85a8 (refactor: checklist node resources)
 
-          <div id="instructions" className="flex flex-col gap-4 text-center">
-            {TUTORIAL_STEPS.map((step) => (
-              <Card key={step.id} className="">
-                <CardHeader>
-                  <CardTitle>{step.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>{step.description}</CardDescription>
-                </CardContent>
+                {/* Content */}
+                <div className="mb-8 text-center">
+                  <h3 className="mb-4 text-base font-bold text-black">
+                    {currentStepData.title}
+                  </h3>
+                  <p className="text-sm leading-relaxed font-normal whitespace-pre-wrap text-black">
+                    {currentStepData.body}
+                  </p>
+                </div>
+
+                {/* Navigation Buttons */}
+                <div className="flex items-center justify-center gap-4">
+                  {/* Back/Skip Button */}
+                  {isWelcome ? (
+                    <Button
+                      onClick={handleSkip}
+                      className="h-9 w-28 rounded-[20px] bg-[#ec4447] text-sm font-medium text-black hover:bg-[#ec4447]/90"
+                    >
+                      Skip
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleBack}
+                      className="h-9 w-28 rounded-[20px] bg-[#f2ee23] text-sm font-medium text-black hover:bg-[#f2ee23]/90"
+                    >
+                      Back
+                    </Button>
+                  )}
+
+                  {/* Next/Start/Let's Go Button */}
+                  {isWelcome ? (
+                    <Button
+                      onClick={handleNext}
+                      className="h-9 w-28 rounded-[20px] bg-[#5deadc] text-sm font-medium text-black hover:bg-[#5deadc]/90"
+                    >
+                      Start
+                    </Button>
+                  ) : isLastStep ? (
+                    <Button
+                      onClick={handleComplete}
+                      className="h-9 w-28 rounded-[20px] bg-[#76e54a] text-sm font-medium text-black hover:bg-[#76e54a]/90"
+                    >
+                      Let&apos;s Go
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleNext}
+                      className="h-9 w-28 rounded-[20px] bg-[#5deadc] text-sm font-medium text-black hover:bg-[#5deadc]/90"
+                    >
+                      Next
+                    </Button>
+                  )}
+                </div>
               </Card>
-            ))}
-          </div>
-          <AlertDialogAction onClick={() => setShowTutorial(false)}>
-            Let&apos;s Go!
-          </AlertDialogAction>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
->>>>>>> 63aafc6 (add: tutorial widget that appears for first time users + button to activate it)
+            </motion.div>
+          </AnimatePresence>
+        </DialogContent>
+      </DialogPortal>
+    </Dialog>
   );
 }
