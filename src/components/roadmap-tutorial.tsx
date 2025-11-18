@@ -38,7 +38,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: "zoom",
     title: "Step 2/5: Get the Perfect View",
-    body: "Want to focus on a specific skill, or zoom out to grasp your overall growth? Achieve the ideal perspective instantly! Use the zoom slider in the bottom-right corner, CTRL + Scroll wheel (on your mouse/keyboard), or a pinch motion (on your trackpad) to fluidly adjust your view.",
+    body: "Want to focus on a specific skill, or zoom out to grasp your overall growth? Achieve the ideal perspective instantly! Use the zoom slider in the bottom-left corner, CTRL + Scroll wheel (on your mouse/keyboard), or a pinch motion (on your trackpad) to fluidly adjust your view.",
   },
   {
     id: "select",

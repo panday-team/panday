@@ -9,7 +9,8 @@ The Dynamic Roadmap System is a flexible, content-driven architecture for displa
 - **Milestone-Based**: Focus on core progression stages (Foundation → Level 1 → Level 2 → Level 3 → Level 4 → Red Seal)
 - **Checklist System**: Each milestone includes actionable checklists for requirements, training tasks, work hours, and resources
 - **Clean Visual Flow**: Simplified graph structure matching certification pathway
-- **Interactive UI**: Click nodes to view detailed checklists in elegant side panel
+- **Interactive UI**: Click nodes to view detailed checklists in elegant side panel, pan/zoom with mouse, trackpad, or vertical zoom slider
+- **Zoom Controls**: Vertical slider in bottom-left corner with plus/minus buttons, draggable slider (0.2x-3.0x), zoom percentage, and fit-view button
 - **Type-Safe**: Full TypeScript support with strict type checking
 - **Extensible**: Easy to add new roadmaps, nodes, or checklist sections
 

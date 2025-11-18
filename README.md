@@ -6,7 +6,7 @@ Panday helps aspiring tradespeople navigate their career path through interactiv
 
 ## Features
 
-- **Interactive Visual Roadmaps**: React Flow-based interactive diagrams showing career progression paths
+- **Interactive Visual Roadmaps**: React Flow-based interactive diagrams showing career progression paths with zoom controls (slider + scroll + pinch)
 - **AI Career Guidance**: RAG-powered chat using OpenAI embeddings + LLM (Gemini/Claude/GPT)
 - **System Status Dashboard**: Real-time health monitoring for all services (Database, Redis, Clerk, OpenAI)
 - **Auto-Layout System**: Physics-based graph generation using D3-force simulation
@@ -21,7 +21,7 @@ Panday helps aspiring tradespeople navigate their career path through interactiv
 - **Auth**: Clerk
 - **AI**: Google Gemini / Anthropic Claude / OpenAI via Vercel AI SDK
 - **Embeddings**: LlamaIndex + OpenAI text-embedding-3-small
-- **Visualization**: React Flow + Framer Motion
+- **Visualization**: React Flow + React Flow UI components + Framer Motion
 - **Styling**: Tailwind CSS + shadcn/ui
 - **Validation**: Zod
 - **Rate Limiting**: Upstash Ratelimit

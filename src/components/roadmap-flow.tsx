@@ -848,7 +848,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
           gap={300}
           variant={BackgroundVariant.Lines}
         />
-        <ZoomSlider position="bottom-right" orientation="vertical" />
+        <ZoomSlider position="bottom-left" orientation="vertical" />
       </ReactFlow>
 
       <div className="pointer-events-none absolute top-0 right-0 flex w-full justify-end p-4 md:pt-10 md:pr-10 md:pl-0">
