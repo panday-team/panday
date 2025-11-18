@@ -30,11 +30,7 @@ import {
   type TerminalNodeType,
   type CategoryNodeType,
 } from "@/components/nodes";
-import {
-  NodeInfoPanel,
-  type Category,
-  type ChecklistItem,
-} from "@/components/node-info-panel";
+import { NodeInfoPanel, type Category } from "@/components/node-info-panel";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import { RoadmapTutorial } from "@/components/roadmap-tutorial";
 import { ZoomSlider } from "@/components/zoom-slider";
@@ -145,9 +141,6 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   }, [expandedCategories, roadmap.metadata.id]);
 
   const [showTutorial, setShowTutorial] = useState<boolean>(false);
-  const tutorialKey = `${userProfile?.clerkUserId || "guest-account"}:tutorial-finished`;
-  // use the users id to identify if they have completed the tutorial already.
-  
 
   // Load statuses from database on mount, with localStorage fallback
   useEffect(() => {
@@ -745,36 +738,16 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
 
       const categoryContent = roadmap.content.get(selectedNodeId);
 
-      // If this is a resources node, also include resources from the parent hub
-      let resourceItems: ChecklistItem[] = [];
-      if (selectedNode.id.includes("-resources") && selectedNode.parentId) {
-        const parentContent = roadmap.content.get(selectedNode.parentId);
-        if (parentContent?.resources) {
-          resourceItems = parentContent.resources.map((r, idx) => {
-            const resourceId = `resource-${selectedNode.parentId}-${idx}`;
-            return {
-              id: resourceId,
-              title: r.label,
-              href: r.href,
-              status: nodeStatuses[resourceId] ?? "base",
-            };
-          });
-        }
-      }
-
       return [
         {
           id: selectedNodeId,
           title: categoryContent?.frontmatter.title ?? "Category",
           description: categoryContent?.content,
-          items: [
-            ...checklistNodes.map((node) => ({
-              id: node.id,
-              title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
-              status: nodeStatuses[node.id] ?? "base",
-            })),
-            ...resourceItems,
-          ],
+          items: checklistNodes.map((node) => ({
+            id: node.id,
+            title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
+            status: nodeStatuses[node.id] ?? "base",
+          })),
         },
       ];
     }
@@ -898,18 +871,6 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
                   </p>
                 </div>
                 <div className="flex gap-1">
-<<<<<<< HEAD
-                  <div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={handleTutorialClick}
-                    >
-                      <BookOpenText className="h-4 w-4" />
-                    </Button>
-                  </div>
-=======
                   <Button
                     variant="ghost"
                     size="sm"
@@ -918,7 +879,6 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
                   >
                     <BookOpenText className="h-4 w-4" />
                   </Button>
->>>>>>> 69c85a8 (refactor: checklist node resources)
                   <Link href="/">
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                       <Home className="h-4 w-4" />
@@ -990,7 +950,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
               eligibility={selectedContent.eligibility}
               benefits={selectedContent.benefits}
               outcomes={selectedContent.outcomes}
-              resources={undefined}
+              resources={selectedContent.resources}
               categories={selectedNodeCategories}
               nodeType={selectedContent.frontmatter.type}
               nodeId={selectedNodeId}

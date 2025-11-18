@@ -38,11 +38,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: "zoom",
     title: "Step 2/5: Get the Perfect View",
-<<<<<<< HEAD
     body: "Want to focus on a specific skill, or zoom out to grasp your overall growth? Achieve the ideal perspective instantly! Use the zoom slider in the bottom-left corner, CTRL + Scroll wheel (on your mouse/keyboard), or a pinch motion (on your trackpad) to fluidly adjust your view.",
-=======
-    body: "Want to focus on a specific skill, or zoom out to grasp your overall growth? Achieve the ideal perspective instantly! Use CTRL + Scroll wheel (on your mouse/keyboard) or a pinch motion (on your trackpad) to fluidly adjust your view.",
->>>>>>> 69c85a8 (refactor: checklist node resources)
   },
   {
     id: "select",
@@ -117,7 +113,6 @@ export function RoadmapTutorial({ open, onComplete }: RoadmapTutorialProps) {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-<<<<<<< HEAD
               <Card className="relative w-full rounded-[20px] bg-white p-8">
                 {/* Skip button in top right corner */}
                 <button
@@ -127,25 +122,6 @@ export function RoadmapTutorial({ open, onComplete }: RoadmapTutorialProps) {
                 >
                   <X className="h-5 w-5" />
                 </button>
-
-                {/* Content */}
-                <div className="mb-8 text-center">
-                  <h3 className="mb-4 text-base font-bold text-black">
-                    {currentStepData.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed font-normal whitespace-pre-wrap text-black">
-                    {currentStepData.body}
-                  </p>
-                </div>
-=======
-              <Card className="w-full rounded-[20px] bg-white p-8">
-                {/* Step Indicators - Show arrows between steps except on welcome and last */}
-                {!isWelcome && !isLastStep && (
-                  <div className="mb-6 flex items-center justify-center gap-2">
-                    <ChevronRight className="h-5 w-5 text-gray-400" />
-                  </div>
-                )}
->>>>>>> 69c85a8 (refactor: checklist node resources)
 
                 {/* Content */}
                 <div className="mb-8 text-center">
