@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronRight } from "lucide-react";
+import { X } from "lucide-react";
 
 interface RoadmapTutorialProps {
   open: boolean;
@@ -113,13 +113,15 @@ export function RoadmapTutorial({ open, onComplete }: RoadmapTutorialProps) {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <Card className="w-full rounded-[20px] bg-white p-8">
-                {/* Step Indicators - Show arrows between steps except on welcome and last */}
-                {!isWelcome && !isLastStep && (
-                  <div className="mb-6 flex items-center justify-center gap-2">
-                    <ChevronRight className="h-5 w-5 text-gray-400" />
-                  </div>
-                )}
+              <Card className="relative w-full rounded-[20px] bg-white p-8">
+                {/* Skip button in top right corner */}
+                <button
+                  onClick={handleSkip}
+                  className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md bg-red-500 text-white transition-colors hover:bg-red-600"
+                  aria-label="Skip tutorial"
+                >
+                  <X className="h-5 w-5" />
+                </button>
 
                 {/* Content */}
                 <div className="mb-8 text-center">
