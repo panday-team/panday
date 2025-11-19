@@ -9,7 +9,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ExternalLink } from "lucide-react";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import type { ProgressData } from "@/lib/progress-utils";
 
@@ -22,6 +22,7 @@ export type ChecklistItem = {
   id: string;
   title: string;
   status?: "base" | "in-progress" | "completed";
+  href?: string;
 };
 
 export type Category = {
@@ -275,12 +276,24 @@ function CategoryNav({
                     ) : (
                       <span className="text-xs text-black/60">→</span>
                     )}
-                    <button
-                      onClick={() => onNavigateToNode(item.id)}
-                      className="flex-1 text-left text-sm text-black/80 transition-colors hover:text-black"
-                    >
-                      {item.title}
-                    </button>
+                    {item.href ? (
+                      <a
+                        href={item.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex flex-1 items-center gap-1.5 text-left text-sm text-black/80 transition-colors hover:text-black hover:underline"
+                      >
+                        <span>{item.title}</span>
+                        <ExternalLink className="h-3 w-3 shrink-0" />
+                      </a>
+                    ) : (
+                      <button
+                        onClick={() => onNavigateToNode(item.id)}
+                        className="flex-1 text-left text-sm text-black/80 transition-colors hover:text-black"
+                      >
+                        {item.title}
+                      </button>
+                    )}
                   </div>
                 ))}
               </CollapsibleContent>

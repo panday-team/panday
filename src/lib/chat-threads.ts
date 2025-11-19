@@ -1,4 +1,7 @@
-import type { ChatThread, ChatThreadMessage } from "@prisma/client";
+import type {
+  ChatThread as PrismaChatThread,
+  ChatThreadMessage,
+} from "@prisma/client";
 
 import type { SourceDocument } from "@/lib/embeddings-service";
 
@@ -46,7 +49,7 @@ export const buildMessagePreview = (content: string): string => {
 };
 
 export const toThreadResponse = (
-  thread: ChatThread & { _count?: { messages: number } },
+  thread: PrismaChatThread & { _count?: { messages: number } },
 ): ThreadResponse => ({
   id: thread.id,
   title: thread.title,
@@ -63,12 +66,11 @@ export const toThreadMessageResponse = (
   message: ChatThreadMessage,
 ): ThreadMessageResponse => ({
   id: message.id,
-  role: (message.role as ThreadMessageRole) ?? "assistant",
+  role: message.role as ThreadMessageRole,
   content: message.content,
-  sources: (message.sources ?? null) as SourceDocument[] | null,
+  sources: (message.sources as SourceDocument[] | null) ?? null,
   createdAt: message.createdAt.toISOString(),
 });
 
-export const isSupportedRole = (
-  role: string,
-): role is ThreadMessageRole => THREAD_ROLES.includes(role as ThreadMessageRole);
+export const isSupportedRole = (role: string): role is ThreadMessageRole =>
+  THREAD_ROLES.includes(role as ThreadMessageRole);

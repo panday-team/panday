@@ -11,10 +11,7 @@ import { chatRateLimit } from "@/lib/rate-limit";
 import { getCookieName } from "@/lib/user-identifier";
 import { loadNodeContent } from "@/lib/roadmap-loader";
 import { db } from "@/server/db";
-import {
-  buildMessagePreview,
-  deriveThreadTitle,
-} from "@/lib/chat-threads";
+import { buildMessagePreview, deriveThreadTitle } from "@/lib/chat-threads";
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -208,7 +205,9 @@ export async function POST(req: NextRequest) {
     const validatedBody = validationResult.data;
     const threadId = validatedBody.thread_id ?? null;
     let threadForPersistence:
-      | (ChatThread & { _count: { messages: number } })
+      | (ChatThread & {
+          _count: { messages: number };
+        })
       | null = null;
 
     if (threadId) {
@@ -344,7 +343,8 @@ export async function POST(req: NextRequest) {
 
       if (trade) contextParts.push(`Trade: ${trade}`);
       if (currentLevel) contextParts.push(`Current Level: ${currentLevel}`);
-      if (specialization) contextParts.push(`Specialization: ${specialization}`);
+      if (specialization)
+        contextParts.push(`Specialization: ${specialization}`);
       if (residencyStatus)
         contextParts.push(`Residency Status: ${residencyStatus}`);
 
@@ -441,16 +441,23 @@ Provide personalized guidance based strictly on the user's current situation and
             });
           }
 
-          if (!session.endedAt && validatedBody.messages.length >= MAX_MESSAGES_PER_SESSION) {
+          if (
+            !session.endedAt &&
+            validatedBody.messages.length >= MAX_MESSAGES_PER_SESSION
+          ) {
             await db.chatSession.update({
               where: { id: sessionId },
               data: { endedAt: new Date() },
             });
           }
         } catch (persistenceError) {
-          logger.error("Failed to persist assistant response", persistenceError, {
-            sessionId,
-          });
+          logger.error(
+            "Failed to persist assistant response",
+            persistenceError,
+            {
+              sessionId,
+            },
+          );
         }
 
         logger.info("Chat completion finished", {
