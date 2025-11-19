@@ -218,8 +218,8 @@ function Section({ title, items }: { title: string; items: string[] }) {
     <section className="space-y-2 text-sm leading-relaxed text-black/80">
       <h2 className="font-semibold text-black">{title}</h2>
       <ul className="mt-1 list-disc space-y-1 pl-5">
-        {items.map((item, index) => (
-          <li key={index} className="[&_strong]:font-bold">
+        {items.map((item) => (
+          <li key={item} className="[&_strong]:font-bold">
             <ReactMarkdown
               components={{
                 p: ({ node, ...props }) => <span {...props} />,
