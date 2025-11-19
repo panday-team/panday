@@ -97,21 +97,6 @@ export function calculateNodeProgress(
     targetNodes = getDirectChildren(nodeId, graphNodes).filter((node) => {
       const childType = getNodeType(node.id, contentMap);
       return childType === "checklist";
-    });
-
-    // Special handling for Resources category nodes to include virtual resource items
-    if (nodeId.includes("-resources")) {
-      const node = graphNodes.find((n) => n.id === nodeId);
-      if (node?.parentId) {
-        const parentContent = contentMap.get(node.parentId);
-        if (parentContent?.resources) {
-          // Add resources to the total count
-          // Virtual ID convention: resource-{parentId}-{index}
-          // We don't add to targetNodes because they are not graph nodes
-          // We'll handle the counting manually
-        }
-      }
-    }
   }
 
   // Calculate base progress from graph nodes
