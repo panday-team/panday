@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-<<<<<<< HEAD
   Dialog,
   DialogContent,
   DialogPortal,
@@ -427,45 +426,5 @@ export function RoadmapTutorial({
         </DialogContent>
       </DialogPortal>
     </Dialog>
-=======
-export default function RoadmapTutorialWidget({
-  setShowTutorial,
-  showTutorial,
-}: {
-  setShowTutorial: Dispatch<SetStateAction<boolean>>;
-  showTutorial: boolean;
-}) {
-  return (
-    <>
-      <AlertDialog open={showTutorial ? true : false}>
-        <AlertDialogContent className="mx-50">
-          <AlertDialogHeader className="text-center">
-            <AlertDialogTitle className="text-2xl">
-              Roadmap Tutorial
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              3 simple controls to navigate your career!
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          <div id="instructions" className="flex flex-col gap-4 text-center">
-            {TUTORIAL_STEPS.map((step) => (
-              <Card key={step.id} className="">
-                <CardHeader>
-                  <CardTitle>{step.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>{step.description}</CardDescription>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          <AlertDialogAction onClick={() => setShowTutorial(false)}>
-            Let&apos;s Go!
-          </AlertDialogAction>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
->>>>>>> 63aafc6 (add: tutorial widget that appears for first time users + button to activate it)
   );
 }
