@@ -97,6 +97,7 @@ export function calculateNodeProgress(
     targetNodes = getDirectChildren(nodeId, graphNodes).filter((node) => {
       const childType = getNodeType(node.id, contentMap);
       return childType === "checklist";
+    });
   }
 
   // Calculate base progress from graph nodes

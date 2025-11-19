@@ -95,7 +95,7 @@ export function NodeInfoPanel({
         <span className="inline-flex items-center gap-2 rounded-full bg-[#76E54A] px-3 py-1 text-xs font-semibold tracking-wide text-[#1D2740] uppercase [&_strong]:font-bold">
           <ReactMarkdown
             components={{
-              p: ({ node, ...props }) => <span {...props} />,
+              p: ({ node: _node, ...props }) => <span {...props} />,
             }}
             remarkPlugins={[remarkGfm]}
           >
@@ -107,7 +107,7 @@ export function NodeInfoPanel({
             <span className="text-xs font-medium text-black/60 [&_strong]:font-bold">
               <ReactMarkdown
                 components={{
-                  p: ({ node, ...props }) => <span {...props} />,
+                  p: ({ node: _node, ...props }) => <span {...props} />,
                 }}
                 remarkPlugins={[remarkGfm]}
               >
@@ -124,7 +124,7 @@ export function NodeInfoPanel({
             <h1 className="font-sans text-3xl leading-tight text-black [&_strong]:font-bold">
               <ReactMarkdown
                 components={{
-                  p: ({ node, ...props }) => <span {...props} />,
+                  p: ({ node: _node, ...props }) => <span {...props} />,
                 }}
                 remarkPlugins={[remarkGfm]}
               >
@@ -196,7 +196,7 @@ export function NodeInfoPanel({
                   >
                     <ReactMarkdown
                       components={{
-                        p: ({ node, ...props }) => <span {...props} />,
+                        p: ({ node: _node, ...props }) => <span {...props} />,
                       }}
                       remarkPlugins={[remarkGfm]}
                     >
@@ -222,7 +222,7 @@ function Section({ title, items }: { title: string; items: string[] }) {
           <li key={item} className="[&_strong]:font-bold">
             <ReactMarkdown
               components={{
-                p: ({ node, ...props }) => <span {...props} />,
+                p: ({ node: _node, ...props }) => <span {...props} />,
               }}
               remarkPlugins={[remarkGfm]}
             >
@@ -288,7 +288,7 @@ function CategoryNav({
                 <span className="[&_strong]:font-bold">
                   <ReactMarkdown
                     components={{
-                      p: ({ node, ...props }) => <span {...props} />,
+                      p: ({ node: _node, ...props }) => <span {...props} />,
                     }}
                     remarkPlugins={[remarkGfm]}
                   >
@@ -336,7 +336,9 @@ function CategoryNav({
                         <span>
                           <ReactMarkdown
                             components={{
-                              p: ({ node, ...props }) => <span {...props} />,
+                              p: ({ node: _node, ...props }) => (
+                                <span {...props} />
+                              ),
                             }}
                             remarkPlugins={[remarkGfm]}
                           >
@@ -352,7 +354,9 @@ function CategoryNav({
                       >
                         <ReactMarkdown
                           components={{
-                            p: ({ node, ...props }) => <span {...props} />,
+                            p: ({ node: _node, ...props }) => (
+                              <span {...props} />
+                            ),
                           }}
                           remarkPlugins={[remarkGfm]}
                         >
