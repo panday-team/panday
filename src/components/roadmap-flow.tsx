@@ -200,9 +200,9 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
       : [];
     const currentLevelNodeId = userProfile
       ? getCurrentLevelNodeId(
-          userProfile.currentLevel,
-          userProfile.specialization,
-        )
+        userProfile.currentLevel,
+        userProfile.specialization,
+      )
       : null;
 
     // Use pre-computed node relationships from shared memo
@@ -366,8 +366,8 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
           const isCategorySelected = selectedNodeId === graphNode.id;
           const hasChildSelected = selectedNodeId
             ? (nodesByParent.get(graphNode.id) ?? []).some(
-                (n) => n.id === selectedNodeId,
-              )
+              (n) => n.id === selectedNodeId,
+            )
             : false;
           isExpanded = isCategorySelected || hasChildSelected;
         }
@@ -388,6 +388,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
             isCurrentLevel,
             isDimmed,
             isExpanded,
+            isSelected: selectedNodeId === graphNode.id,
             animationIndex,
           },
           sourcePosition: stringToPosition(graphNode.sourcePosition),
@@ -1105,11 +1106,11 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         userProfile={
           userProfile
             ? {
-                trade: userProfile.trade,
-                currentLevel: userProfile.currentLevel,
-                specialization: userProfile.specialization,
-                residencyStatus: userProfile.residencyStatus,
-              }
+              trade: userProfile.trade,
+              currentLevel: userProfile.currentLevel,
+              specialization: userProfile.specialization,
+              residencyStatus: userProfile.residencyStatus,
+            }
             : undefined
         }
         onChatOpen={() => handleTutorialInteraction("chat-open")}
