@@ -107,10 +107,8 @@ export function calculateNodeProgress(
         if (parentContent?.resources) {
           // Add resources to the total count
           // Virtual ID convention: resource-{parentId}-{index}
-          parentContent.resources.forEach((_, idx) => {
-            // We don't add to targetNodes because they are not graph nodes
-            // We'll handle the counting manually
-          });
+          // We don't add to targetNodes because they are not graph nodes
+          // We'll handle the counting manually
         }
       }
     }
