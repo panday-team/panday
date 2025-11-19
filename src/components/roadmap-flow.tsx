@@ -859,16 +859,37 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
 
       const categoryContent = roadmap.content.get(selectedNodeId);
 
+      const items = checklistNodes.map((node) => ({
+        id: node.id,
+        title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
+        status: nodeStatuses[node.id] ?? "base",
+      }));
+
+      // Inject resources from parent hub if this is a resources node
+      if (selectedNode.id.includes("-resources") && selectedNode.parentId) {
+        const parentContent = roadmap.content.get(selectedNode.parentId);
+        if (parentContent?.resources) {
+          const resourceItems = parentContent.resources.map(
+            (resource, index) => {
+              const resourceId = `resource-${selectedNode.parentId}-${index}`;
+              return {
+                id: resourceId,
+                title: resource.label,
+                status: nodeStatuses[resourceId] ?? "base",
+                href: resource.href,
+              };
+            },
+          );
+          items.push(...resourceItems);
+        }
+      }
+
       return [
         {
           id: selectedNodeId,
           title: categoryContent?.frontmatter.title ?? "Category",
           description: categoryContent?.content,
-          items: checklistNodes.map((node) => ({
-            id: node.id,
-            title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
-            status: nodeStatuses[node.id] ?? "base",
-          })),
+          items,
         },
       ];
     }
@@ -886,15 +907,34 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
       // Find all checklist items for this category (use pre-computed map)
       const checklistNodes = nodesByParent.get(categoryNode.id) ?? [];
 
+      const items = checklistNodes.map((node) => ({
+        id: node.id,
+        title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
+        status: nodeStatuses[node.id] ?? "base",
+      }));
+
+      // Inject resources if this is a resources category
+      if (categoryNode.id.includes("-resources")) {
+        const hubContent = roadmap.content.get(selectedNodeId);
+        if (hubContent?.resources) {
+          const resourceItems = hubContent.resources.map((resource, index) => {
+            const resourceId = `resource-${selectedNodeId}-${index}`;
+            return {
+              id: resourceId,
+              title: resource.label,
+              status: nodeStatuses[resourceId] ?? "base",
+              href: resource.href,
+            };
+          });
+          items.push(...resourceItems);
+        }
+      }
+
       return {
         id: categoryNode.id,
         title: categoryContent?.frontmatter.title ?? "Category",
         description: categoryContent?.content,
-        items: checklistNodes.map((node) => ({
-          id: node.id,
-          title: roadmap.content.get(node.id)?.frontmatter.title ?? node.id,
-          status: nodeStatuses[node.id] ?? "base",
-        })),
+        items,
       };
     });
 
@@ -1097,7 +1137,6 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
               eligibility={selectedContent.eligibility}
               benefits={selectedContent.benefits}
               outcomes={selectedContent.outcomes}
-              resources={selectedContent.resources}
               categories={selectedNodeCategories}
               nodeType={selectedContent.frontmatter.type}
               nodeId={selectedNodeId}

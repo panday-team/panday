@@ -9,9 +9,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ExternalLink } from "lucide-react";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import type { ProgressData } from "@/lib/progress-utils";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export type ResourceLink = {
   label: string;
@@ -22,6 +24,7 @@ export type ChecklistItem = {
   id: string;
   title: string;
   status?: "base" | "in-progress" | "completed";
+  href?: string;
 };
 
 export type Category = {
@@ -89,13 +92,27 @@ export function NodeInfoPanel({
       {...props}
     >
       <div className="flex items-center justify-between gap-4">
-        <span className="inline-flex items-center gap-2 rounded-full bg-[#76E54A] px-3 py-1 text-xs font-semibold tracking-wide text-[#1D2740] uppercase">
-          {displayBadge}
+        <span className="inline-flex items-center gap-2 rounded-full bg-[#76E54A] px-3 py-1 text-xs font-semibold tracking-wide text-[#1D2740] uppercase [&_strong]:font-bold">
+          <ReactMarkdown
+            components={{
+              p: ({ node, ...props }) => <span {...props} />,
+            }}
+            remarkPlugins={[remarkGfm]}
+          >
+            {displayBadge}
+          </ReactMarkdown>
         </span>
         <div className="flex items-center gap-2">
           {subtitle ? (
-            <span className="text-xs font-medium text-black/60">
-              {subtitle}
+            <span className="text-xs font-medium text-black/60 [&_strong]:font-bold">
+              <ReactMarkdown
+                components={{
+                  p: ({ node, ...props }) => <span {...props} />,
+                }}
+                remarkPlugins={[remarkGfm]}
+              >
+                {subtitle}
+              </ReactMarkdown>
             </span>
           ) : null}
         </div>
@@ -104,8 +121,15 @@ export function NodeInfoPanel({
       <div className="mt-6 space-y-5">
         <header>
           <div className="flex items-start justify-between gap-4">
-            <h1 className="font-sans text-3xl leading-tight text-black">
-              {title}
+            <h1 className="font-sans text-3xl leading-tight text-black [&_strong]:font-bold">
+              <ReactMarkdown
+                components={{
+                  p: ({ node, ...props }) => <span {...props} />,
+                }}
+                remarkPlugins={[remarkGfm]}
+              >
+                {title}
+              </ReactMarkdown>
             </h1>
             {nodeType === "checklist" && onStatusChange ? (
               <Checkbox
@@ -122,9 +146,11 @@ export function NodeInfoPanel({
             ) : null}
           </div>
           {description ? (
-            <p className="mt-2 text-sm leading-relaxed text-black">
-              {description}
-            </p>
+            <div className="mt-2 text-sm leading-relaxed text-black [&_a]:text-blue-600 [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-bold">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {description}
+              </ReactMarkdown>
+            </div>
           ) : null}
         </header>
 
@@ -161,14 +187,21 @@ export function NodeInfoPanel({
             <h2 className="font-semibold text-black">Resources</h2>
             <ul className="space-y-1">
               {resources.map((resource) => (
-                <li key={resource.href}>
+                <li key={resource.href} className="[&_strong]:font-bold">
                   <a
                     className="underline-offset-2 hover:underline"
                     href={resource.href}
                     rel="noreferrer"
                     target="_blank"
                   >
-                    {resource.label}
+                    <ReactMarkdown
+                      components={{
+                        p: ({ node, ...props }) => <span {...props} />,
+                      }}
+                      remarkPlugins={[remarkGfm]}
+                    >
+                      {resource.label}
+                    </ReactMarkdown>
                   </a>
                 </li>
               ))}
@@ -186,7 +219,16 @@ function Section({ title, items }: { title: string; items: string[] }) {
       <h2 className="font-semibold text-black">{title}</h2>
       <ul className="mt-1 list-disc space-y-1 pl-5">
         {items.map((item) => (
-          <li key={item}>{item}</li>
+          <li key={item} className="[&_strong]:font-bold">
+            <ReactMarkdown
+              components={{
+                p: ({ node, ...props }) => <span {...props} />,
+              }}
+              remarkPlugins={[remarkGfm]}
+            >
+              {item}
+            </ReactMarkdown>
+          </li>
         ))}
       </ul>
     </section>
@@ -243,7 +285,16 @@ function CategoryNav({
                 data-tutorial="dropdown-trigger"
                 className="flex w-full items-center justify-between rounded-lg bg-white/20 px-3 py-2 text-left text-sm font-medium text-black transition-colors hover:bg-white/30"
               >
-                <span>{category.title}</span>
+                <span className="[&_strong]:font-bold">
+                  <ReactMarkdown
+                    components={{
+                      p: ({ node, ...props }) => <span {...props} />,
+                    }}
+                    remarkPlugins={[remarkGfm]}
+                  >
+                    {category.title}
+                  </ReactMarkdown>
+                </span>
                 <ChevronDown
                   className={cn(
                     "h-4 w-4 transition-transform",
@@ -275,12 +326,40 @@ function CategoryNav({
                     ) : (
                       <span className="text-xs text-black/60">→</span>
                     )}
-                    <button
-                      onClick={() => onNavigateToNode(item.id)}
-                      className="flex-1 text-left text-sm text-black/80 transition-colors hover:text-black"
-                    >
-                      {item.title}
-                    </button>
+                    {item.href ? (
+                      <a
+                        href={item.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex flex-1 items-center gap-1.5 text-left text-sm text-black/80 transition-colors hover:text-black hover:underline [&_strong]:font-bold"
+                      >
+                        <span>
+                          <ReactMarkdown
+                            components={{
+                              p: ({ node, ...props }) => <span {...props} />,
+                            }}
+                            remarkPlugins={[remarkGfm]}
+                          >
+                            {item.title}
+                          </ReactMarkdown>
+                        </span>
+                        <ExternalLink className="h-3 w-3 shrink-0" />
+                      </a>
+                    ) : (
+                      <button
+                        onClick={() => onNavigateToNode(item.id)}
+                        className="flex-1 text-left text-sm text-black/80 transition-colors hover:text-black [&_strong]:font-bold"
+                      >
+                        <ReactMarkdown
+                          components={{
+                            p: ({ node, ...props }) => <span {...props} />,
+                          }}
+                          remarkPlugins={[remarkGfm]}
+                        >
+                          {item.title}
+                        </ReactMarkdown>
+                      </button>
+                    )}
                   </div>
                 ))}
               </CollapsibleContent>

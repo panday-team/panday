@@ -17,7 +17,7 @@ export interface ProgressData {
  */
 function getNodeType(
   nodeId: string,
-  contentMap: Map<string, NodeContent>
+  contentMap: Map<string, NodeContent>,
 ): NodeType | null {
   const content = contentMap.get(nodeId);
   return content?.frontmatter.type ?? null;
@@ -28,7 +28,7 @@ function getNodeType(
  */
 export function getDirectChildren(
   nodeId: string,
-  graphNodes: GraphNode[]
+  graphNodes: GraphNode[],
 ): GraphNode[] {
   return graphNodes.filter((node) => node.parentId === nodeId);
 }
@@ -40,7 +40,7 @@ export function getDirectChildren(
 export function getDescendantChecklists(
   nodeId: string,
   graphNodes: GraphNode[],
-  contentMap: Map<string, NodeContent>
+  contentMap: Map<string, NodeContent>,
 ): GraphNode[] {
   const children = getDirectChildren(nodeId, graphNodes);
   const checklists: GraphNode[] = [];
@@ -54,7 +54,7 @@ export function getDescendantChecklists(
       const childChecklists = getDescendantChecklists(
         child.id,
         graphNodes,
-        contentMap
+        contentMap,
       );
       checklists.push(...childChecklists);
     }
@@ -74,7 +74,7 @@ export function calculateNodeProgress(
   nodeType: string,
   nodeStatuses: Record<string, NodeStatus>,
   graphNodes: GraphNode[],
-  contentMap: Map<string, NodeContent>
+  contentMap: Map<string, NodeContent>,
 ): ProgressData | null {
   // Only hub and category/connector nodes have progress
   if (
@@ -97,13 +97,49 @@ export function calculateNodeProgress(
     targetNodes = getDirectChildren(nodeId, graphNodes).filter((node) => {
       const childType = getNodeType(node.id, contentMap);
       return childType === "checklist";
-    });
   }
 
-  const total = targetNodes.length;
-  const completed = targetNodes.filter(
-    (node) => nodeStatuses[node.id] === "completed"
+  // Calculate base progress from graph nodes
+  let total = targetNodes.length;
+  let completed = targetNodes.filter(
+    (node) => nodeStatuses[node.id] === "completed",
   ).length;
+
+  // Add virtual resource items if applicable
+  // Case 1: Resources category node (inherits resources from parent hub)
+  if (nodeId.includes("-resources")) {
+    const node = graphNodes.find((n) => n.id === nodeId);
+    if (node?.parentId) {
+      const parentContent = contentMap.get(node.parentId);
+      if (parentContent?.resources) {
+        total += parentContent.resources.length;
+        parentContent.resources.forEach((_, idx) => {
+          const resourceId = `resource-${node.parentId}-${idx}`;
+          if (nodeStatuses[resourceId] === "completed") {
+            completed++;
+          }
+        });
+      }
+    }
+  }
+
+  // Case 2: Hub node (has its own resources) - NO LONGER APPLIES
+  // Hub progress is now just the sum of its descendant checklists.
+  // Resources are handled within their own category node.
+  /*
+  if (nodeType === "hub") {
+    const content = contentMap.get(nodeId);
+    if (content?.resources) {
+      total += content.resources.length;
+      content.resources.forEach((_, idx) => {
+        const resourceId = `resource-${nodeId}-${idx}`;
+        if (nodeStatuses[resourceId] === "completed") {
+          completed++;
+        }
+      });
+    }
+  }
+  */
 
   const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
@@ -122,7 +158,7 @@ export function calculateMultipleNodeProgress(
   nodeIds: string[],
   nodeStatuses: Record<string, NodeStatus>,
   graphNodes: GraphNode[],
-  contentMap: Map<string, NodeContent>
+  contentMap: Map<string, NodeContent>,
 ): Record<string, ProgressData | null> {
   const progressMap: Record<string, ProgressData | null> = {};
 
@@ -134,7 +170,7 @@ export function calculateMultipleNodeProgress(
         nodeType,
         nodeStatuses,
         graphNodes,
-        contentMap
+        contentMap,
       );
     }
   }
