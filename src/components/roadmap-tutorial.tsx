@@ -37,6 +37,7 @@ interface TutorialStep {
   highlightCount?: number;
   mergeHighlights?: boolean;
   adjustViewport?: boolean; // Whether to adjust viewport to show highlighted elements
+  highlightPanelContent?: boolean; // Whether highlighting elements inside node-info-panel (requires higher z-index)
   position:
     | "center"
     | "top-center"
@@ -79,6 +80,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     body: "Try it now - click any yellow circle!",
     highlightSelector: "[data-node-type='hub']",
     highlightCount: 1, // Just highlight the closest one
+    adjustViewport: true, // Adjust viewport to show hub nodes clearly
     position: "top-center",
     requiresInteraction: "node-click",
   },
@@ -96,9 +98,10 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: "open-dropdown",
     title: "Open the Checklist",
-    body: "Click the dropdown to reveal checklist items!",
+    body: "Click any of the highlighted dropdown buttons in the side panel to reveal checklist items!",
     highlightSelector: "[data-tutorial='dropdown-trigger']",
-    highlightCount: 1,
+    highlightCount: 5, // Show multiple dropdowns so user can see all options
+    highlightPanelContent: true, // Highlight elements inside node-info-panel
     position: "right",
     requiresInteraction: "dropdown-open",
   },
@@ -109,6 +112,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     highlightSelector: "[data-tutorial='checklist-checkbox']",
     highlightCount: 10,
     mergeHighlights: true, // Merge all checkboxes into one bounding box
+    highlightPanelContent: true, // Highlight elements inside node-info-panel
     position: "right",
     requiresInteraction: "checkbox-click",
   },
@@ -324,10 +328,11 @@ export function RoadmapTutorial({
           show={open}
           padding={20}
           mergeHighlights={currentStepData.mergeHighlights}
+          highlightPanelContent={currentStepData.highlightPanelContent}
         />
 
         <DialogContent
-          className="z-[10001] border-0 bg-transparent p-0 shadow-none"
+          className="z-[10003] border-0 bg-transparent p-0 shadow-none"
           style={{
             position: "fixed",
             left: cardPosition.x,

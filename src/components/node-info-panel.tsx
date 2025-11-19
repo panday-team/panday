@@ -256,15 +256,21 @@ function CategoryNav({
   const toggleCategory = (categoryId: string) => {
     setOpenCategories((prev) => {
       const next = new Set(prev);
+      const wasOpening = !next.has(categoryId);
+
       if (next.has(categoryId)) {
         next.delete(categoryId);
       } else {
         next.add(categoryId);
-        // Notify when dropdown is opened (not closed)
-        if (onDropdownOpen) {
-          onDropdownOpen();
-        }
       }
+
+      // Defer callback to after render completes
+      if (wasOpening && onDropdownOpen) {
+        setTimeout(() => {
+          onDropdownOpen();
+        }, 0);
+      }
+
       return next;
     });
   };

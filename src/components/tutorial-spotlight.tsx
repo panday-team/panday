@@ -9,6 +9,7 @@ interface TutorialSpotlightProps {
   show: boolean;
   padding?: number;
   mergeHighlights?: boolean;
+  highlightPanelContent?: boolean; // Whether highlighting elements inside the node-info-panel
 }
 
 export function TutorialSpotlight({
@@ -17,6 +18,7 @@ export function TutorialSpotlight({
   show,
   padding = 20,
   mergeHighlights = false,
+  highlightPanelContent = false,
 }: TutorialSpotlightProps) {
   const [highlights, setHighlights] = useState<
     Array<{ x: number; y: number; width: number; height: number }>
@@ -119,8 +121,12 @@ export function TutorialSpotlight({
       animationFrameId = requestAnimationFrame(updateHighlights);
     };
 
-    // Start the animation loop
-    updateHighlights();
+    // Start the animation loop with a small delay to ensure DOM is ready
+    const initialDelayTimeout = setTimeout(() => {
+      if (isRunning) {
+        updateHighlights();
+      }
+    }, 150); // Small delay to allow DOM updates
 
     // Also listen to resize for responsiveness
     const handleResize = () => {
@@ -132,6 +138,7 @@ export function TutorialSpotlight({
 
     return () => {
       isRunning = false;
+      clearTimeout(initialDelayTimeout);
       window.removeEventListener("resize", handleResize);
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
@@ -140,6 +147,11 @@ export function TutorialSpotlight({
   }, [targetSelector, show, padding, targetCount, mergeHighlights]);
 
   if (!show) return null;
+
+  // Use higher z-index when highlighting panel content to appear above node-info-panel (z-10000)
+  // but below tutorial dialog (z-10003)
+  const overlayZIndex = highlightPanelContent ? "z-[10001]" : "z-[9998]";
+  const highlightZIndex = highlightPanelContent ? "z-[10001]" : "z-[9999]";
 
   return (
     <AnimatePresence>
@@ -151,7 +163,7 @@ export function TutorialSpotlight({
             animate={{ opacity: 0.7 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="pointer-events-none fixed inset-0 z-[9998] bg-black"
+            className={`pointer-events-none fixed inset-0 ${overlayZIndex} bg-black`}
             style={{
               maskImage:
                 highlights.length > 0
@@ -170,7 +182,7 @@ export function TutorialSpotlight({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
-              className="pointer-events-none fixed z-[9999] rounded-xl"
+              className={`pointer-events-none fixed ${highlightZIndex} rounded-xl`}
               style={{
                 left: highlight.x,
                 top: highlight.y,
