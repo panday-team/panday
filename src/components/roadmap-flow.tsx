@@ -1051,11 +1051,28 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
                       Sign In
                     </Button>
                   </SignInButton>
-                  <Link href="/">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Home className="h-4 w-4" />
-                    </Button>
-                  </Link>
+                  <div className="flex gap-1">
+                    <div className="relative">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={handleTutorialOpen}
+                      >
+                        <BookOpenText className="h-4 w-4" />
+                      </Button>
+                      {showTutorialSkipAlert && (
+                        <div className="animate-tutorial-slide-down absolute top-10 right-0 z-50 rounded-md bg-yellow-400 px-3 py-2 text-xs font-medium whitespace-nowrap text-black shadow-lg">
+                          Tutorial skipped! Click to restart.
+                        </div>
+                      )}
+                    </div>
+                    <Link href="/">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Home className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </div>
             </Card>
