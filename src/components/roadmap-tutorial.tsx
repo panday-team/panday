@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   Dialog,
-  DialogContent,
   DialogPortal,
   DialogOverlay,
   DialogTitle,
@@ -33,7 +33,7 @@ interface RoadmapTutorialProps {
 
 export interface TutorialStepViewport {
   zoom?: number | "auto" | { mobile: number; tablet: number; desktop: number };
-  center?: "auto" | "fit-all";
+  center?: "auto" | "fit-all" | "no-change" | "user-level";
   closeNodePanel?: boolean;
   closeChatWidget?: boolean;
 }
@@ -58,6 +58,8 @@ export interface TutorialStep {
     | "bottom-left"
     | "bottom-right";
   mobilePosition?: "center" | "bottom-sheet" | "fullscreen-overlay"; // Override position on mobile
+  customYOffset?: number; // Custom Y-axis offset in pixels (positive = down, negative = up)
+  customXOffset?: number; // Custom X-axis offset in pixels (positive = right, negative = left)
   requiresInteraction?: TutorialInteractionType;
 }
 
@@ -70,7 +72,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     mobilePosition: "fullscreen-overlay",
     viewport: {
       zoom: { mobile: 0.4, tablet: 0.6, desktop: 0.8 },
-      center: "fit-all",
+      center: "user-level", // Move to user's current level (same as initial viewport)
       closeNodePanel: true,
       closeChatWidget: true,
     },
@@ -81,11 +83,12 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     body: "The yellow circles represent the milestones in your apprenticeship, from Level 1 to Level 4.",
     highlightSelector: "[data-node-type='hub']",
     highlightCount: 5,
-    position: "top-center",
+    position: "center",
     mobilePosition: "bottom-sheet",
+    customYOffset: -100,
     viewport: {
       zoom: { mobile: 0.5, tablet: 0.7, desktop: 0.8 },
-      center: "fit-all",
+      center: "user-level", // Move to user's current level (same as initial viewport)
       closeNodePanel: true,
       closeChatWidget: true,
     },
@@ -99,9 +102,10 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     highlightCount: 30,
     position: "top-center",
     mobilePosition: "bottom-sheet",
+    customYOffset: -80,
     viewport: {
       zoom: { mobile: 0.6, tablet: 0.8, desktop: 0.9 },
-      center: "fit-all",
+      center: "no-change",
       closeNodePanel: true,
       closeChatWidget: true,
     },
@@ -112,12 +116,13 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     body: "Try it now - click any yellow circle!",
     highlightSelector: "[data-node-type='hub']",
     highlightCount: 1,
-    adjustViewport: true,
+    adjustViewport: false,
     position: "top-center",
     mobilePosition: "bottom-sheet",
+    customYOffset: -100,
     viewport: {
       zoom: { mobile: 0.7, tablet: 0.9, desktop: 1.0 },
-      center: "auto",
+      center: "no-change",
       closeNodePanel: true,
       closeChatWidget: true,
     },
@@ -130,12 +135,13 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     highlightSelector:
       "[data-node-type='resources'], [data-node-type='actions'], [data-node-type='roadblocks']",
     highlightCount: 10,
-    adjustViewport: true,
-    position: "top-right",
+    adjustViewport: false,
+    position: "top-center",
     mobilePosition: "bottom-sheet",
+    customYOffset: -100,
     viewport: {
       zoom: { mobile: 0.8, tablet: 1.0, desktop: 1.0 },
-      center: "auto",
+      center: "no-change",
       closeNodePanel: false, // Keep panel open after clicking
       closeChatWidget: true,
     },
@@ -150,9 +156,10 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     highlightPanelContent: true,
     position: "right",
     mobilePosition: "bottom-sheet",
+    customYOffset: -120,
     viewport: {
       zoom: { mobile: 1.0, tablet: 1.0, desktop: 1.0 },
-      center: "auto",
+      center: "no-change",
       closeNodePanel: false,
       closeChatWidget: true,
     },
@@ -170,7 +177,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     mobilePosition: "bottom-sheet",
     viewport: {
       zoom: { mobile: 1.0, tablet: 1.0, desktop: 1.0 },
-      center: "auto",
+      center: "no-change",
       closeNodePanel: false,
       closeChatWidget: true,
     },
@@ -185,7 +192,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     mobilePosition: "bottom-sheet",
     viewport: {
       zoom: { mobile: 0.6, tablet: 0.8, desktop: 0.8 },
-      center: "fit-all",
+      center: "no-change",
       closeNodePanel: true,
       closeChatWidget: true,
     },
@@ -199,7 +206,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     mobilePosition: "bottom-sheet",
     viewport: {
       zoom: { mobile: 0.6, tablet: 0.8, desktop: 0.8 },
-      center: "fit-all",
+      center: "no-change",
       closeNodePanel: true,
       closeChatWidget: true,
     },
@@ -210,11 +217,12 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     title: "AI Assistant",
     body: "Click here for instant help anytime.",
     highlightSelector: "[data-tutorial='chat-button']",
-    position: "top-right",
+    position: "bottom-right",
     mobilePosition: "bottom-sheet",
+    customXOffset: -100,
     viewport: {
       zoom: { mobile: 0.6, tablet: 0.8, desktop: 0.8 },
-      center: "fit-all",
+      center: "no-change",
       closeNodePanel: true,
       closeChatWidget: false, // Allow chat to stay open for demo
     },
@@ -228,7 +236,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     mobilePosition: "fullscreen-overlay",
     viewport: {
       zoom: { mobile: 0.5, tablet: 0.7, desktop: 0.8 },
-      center: "fit-all",
+      center: "no-change",
       closeNodePanel: true,
       closeChatWidget: true,
     },
@@ -369,6 +377,14 @@ export function RoadmapTutorial({
           break;
       }
 
+      // Apply custom X and Y offsets if provided
+      if (currentStepData.customXOffset) {
+        x += currentStepData.customXOffset;
+      }
+      if (currentStepData.customYOffset) {
+        y += currentStepData.customYOffset;
+      }
+
       setCardPosition({ x, y });
     };
 
@@ -473,7 +489,7 @@ export function RoadmapTutorial({
           highlightPanelContent={currentStepData.highlightPanelContent}
         />
 
-        <DialogContent
+        <DialogPrimitive.Content
           className="z-[10003] border-0 bg-transparent p-0 shadow-none"
           style={{
             position: "fixed",
@@ -481,9 +497,7 @@ export function RoadmapTutorial({
             top: cardPosition.y,
             width: cardDimensions.width,
             maxHeight: cardDimensions.height,
-            transform: "none",
           }}
-          showCloseButton={false}
         >
           {/* Visually hidden title for screen reader accessibility */}
           <DialogTitle className="sr-only">
@@ -589,7 +603,7 @@ export function RoadmapTutorial({
               </Card>
             </motion.div>
           </AnimatePresence>
-        </DialogContent>
+        </DialogPrimitive.Content>
       </DialogPortal>
     </Dialog>
   );

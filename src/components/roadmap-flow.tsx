@@ -113,7 +113,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   const [nodeStatuses, setNodeStatuses] = useState<Record<string, NodeStatus>>(
     {},
   );
-  const { fitView, setCenter, getViewport, screenToFlowPosition } =
+  const { fitView, setCenter, getViewport, screenToFlowPosition, setViewport } =
     useReactFlow();
   const responsive = useResponsive();
 
@@ -150,6 +150,8 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   const [showTutorial, setShowTutorial] = useState<boolean>(false);
   const [showTutorialSkipAlert, setShowTutorialSkipAlert] =
     useState<boolean>(false);
+  const [currentTutorialStep, setCurrentTutorialStep] =
+    useState<TutorialStep | null>(null);
 
   // Load statuses from database on mount, with localStorage fallback
   useEffect(() => {
@@ -707,9 +709,12 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   }, [setNodes]);
 
   const onMove = useCallback(() => {
-    // Notify tutorial of zoom/pan changes
-    handleTutorialInteraction("zoom-change");
-  }, [handleTutorialInteraction]);
+    // Only notify tutorial of zoom/pan changes if we're on the zoom-slider step
+    // This prevents viewport animations from auto-completing steps
+    if (currentTutorialStep?.id === "zoom-slider") {
+      handleTutorialInteraction("zoom-change");
+    }
+  }, [handleTutorialInteraction, currentTutorialStep]);
 
   const handleStatusChange = useCallback(
     (nodeId: string, status: NodeStatus) => {
@@ -763,6 +768,9 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
 
   const handleTutorialStepChange = useCallback(
     (step: TutorialStep) => {
+      // Store current step for interaction filtering
+      setCurrentTutorialStep(step);
+
       // Close node panel if step requires it
       if (step.viewport?.closeNodePanel) {
         setSelectedNodeId(null);
@@ -786,18 +794,48 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
 
         // Animate to new viewport
         setTimeout(() => {
-          if (center === "fit-all") {
-            // Fit all nodes in view
-            void fitView({
-              duration: 600,
-              padding: 0.2,
-              maxZoom: targetZoom,
-              minZoom: targetZoom,
-            });
-          } else {
-            // Keep current center, just adjust zoom
+          if (center === "user-level") {
+            // Move to user's current level (same logic as initialViewport)
+            const currentNodeId = userProfile
+              ? getCurrentLevelNodeId(userProfile.currentLevel)
+              : null;
+            const targetViewport = calculateViewportForNode(
+              currentNodeId,
+              roadmap.graph.nodes,
+            );
+
+            // Apply the step's target zoom
+            void setViewport(
+              {
+                x: targetViewport.x,
+                y: targetViewport.y,
+                zoom: targetZoom,
+              },
+              { duration: 600 },
+            );
+          } else if (center === "fit-all") {
+            // Keep current viewport position, just adjust zoom
+            // This maintains the user's current level position (set by initialViewport)
             const currentViewport = getViewport();
-            void setCenter(currentViewport.x, currentViewport.y, {
+            void setViewport(
+              {
+                x: currentViewport.x,
+                y: currentViewport.y,
+                zoom: targetZoom,
+              },
+              { duration: 600 },
+            );
+          } else {
+            // Default behavior (includes "no-change"): Keep current center point fixed, adjust zoom
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            const centerWorld = screenToFlowPosition({
+              x: viewportWidth / 2,
+              y: viewportHeight / 2,
+            });
+
+            void setCenter(centerWorld.x, centerWorld.y, {
               duration: 600,
               zoom: targetZoom,
             });
@@ -805,7 +843,16 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         }, 100);
       }
     },
-    [fitView, setCenter, getViewport, responsive.isMobile, responsive.isTablet],
+    [
+      setCenter,
+      setViewport,
+      getViewport,
+      screenToFlowPosition,
+      responsive.isMobile,
+      responsive.isTablet,
+      userProfile,
+      roadmap.graph.nodes,
+    ],
   );
 
   const handleViewportAdjustment = useCallback(
@@ -875,15 +922,32 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         if (!isInClearArea) {
           // Convert screen coordinates to flow coordinates
           const currentViewport = getViewport();
-          const flowPosition = screenToFlowPosition({
-            x: adjustedCenterX,
-            y: adjustedCenterY,
+          const zoom = currentViewport.zoom;
+
+          // Convert element center screen coordinates to flow coordinates
+          const elementWorldPos = screenToFlowPosition({
+            x: centerX,
+            y: centerY,
           });
 
+          // Calculate offset from viewport center to adjusted center
+          // We want elementWorldPos to be at (adjustedCenterX, adjustedCenterY)
+          // setCenter puts target at (viewportWidth/2, viewportHeight/2)
+          const viewportCenterX = viewportWidth / 2;
+          const viewportCenterY = viewportHeight / 2;
+
+          // The offset in screen pixels
+          const screenOffsetX = adjustedCenterX - viewportCenterX;
+          const screenOffsetY = adjustedCenterY - viewportCenterY;
+
+          // The target center we need to look at
+          const targetX = elementWorldPos.x - screenOffsetX / zoom;
+          const targetY = elementWorldPos.y - screenOffsetY / zoom;
+
           // Pan to center the elements in the clear area
-          void setCenter(flowPosition.x, flowPosition.y, {
+          void setCenter(targetX, targetY, {
             duration: 600,
-            zoom: currentViewport.zoom, // Keep current zoom level
+            zoom: zoom, // Keep current zoom level
           });
         }
       }, 200);

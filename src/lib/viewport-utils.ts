@@ -44,9 +44,13 @@ export function calculateViewportForNode(
   const centerX = typeof window !== "undefined" ? window.innerWidth / 2 : 960;
   const centerY = typeof window !== "undefined" ? window.innerHeight / 2 : 540;
 
+  // Add a vertical offset to visually center the content better
+  // The user reported elements appear in the top half, so we shift them down
+  const verticalOffset = 120;
+
   return {
     x: -node.position.x * zoom + centerX,
-    y: -node.position.y * zoom + centerY,
+    y: -node.position.y * zoom + centerY + verticalOffset,
     zoom,
   };
 }
