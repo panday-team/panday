@@ -400,6 +400,8 @@ INSTRUCTIONS:
    - "Just to clarify..."
 4. Cite your sources using the format [Source: Title] when using specific information from the context.
 5. Be conversational and helpful. Don't say "I don't have enough information" - instead, ask clarifying questions or offer to create something custom.
+6. DO NOT apologize for internal tool retries or explain technical details of tool execution. The UI already shows "Creating node..." status indicators to users. Simply confirm the successful result (e.g., "I've created a study checklist for you with 4 topics!").
+7. If a tool fails, DO NOT retry immediately or apologize repeatedly. Instead, read the error message from the tool response and either: (a) fix the specific issue mentioned in the error, or (b) inform the user about the specific problem in a helpful way.
 
 Example citation format:
 - "According to the Foundation Program [Source: Electrician Foundation], students receive 375 work-based training hours."
@@ -460,6 +462,7 @@ HOW TO USE createNode - PARENT SELECTION LOGIC:
 
 - If the user provides rich details (tasks, resources, deadlines), extract them into the tool parameters
 - If details are minimal, create a basic node with what you have
+- RESOURCES FIELD: Only include resources if you have REAL, VALID URLs (starting with https:// or http://). DO NOT use placeholder URLs like "#" or generic descriptions. If you don't have real URLs, omit the resources field entirely - the user can add them later.
 
 HOW TO USE updateNode:
 - nodeId: Use the ID of the most recently created/discussed custom node, or ask user to clarify which node
@@ -484,7 +487,9 @@ You: *Call updateNode to change parentId* → "I've moved it to Level 3 for you.
 
 Example 4 (user deletes):
 User: "Delete that reminder"
-You: *Call deleteNode* → "I've removed that reminder from your roadmap."`,
+You: *Call deleteNode* → "I've removed that reminder from your roadmap."
+
+IMPORTANT: NEVER expose internal node IDs in your responses to users. Node IDs are for your internal tracking only. Users see descriptive titles and types, not technical identifiers. Tool responses include [Internal: ...] sections with IDs - these are for your reference only and should NOT be mentioned to users.`,
       messages: validatedBody.messages.map((msg) => ({
         role: msg.role,
         content: msg.content,
@@ -496,10 +501,16 @@ You: *Call deleteNode* → "I've removed that reminder from your roadmap."`,
           description:
             "Create a new personalized node on the roadmap for the user. Use this when the user asks for a custom step, resource, or task that isn't already in the roadmap.",
           parameters: z.object({
-            title: z.string().describe("The title of the new node"),
+            title: z
+              .string()
+              .describe(
+                "The title of the new node (max 100 characters). Keep it concise.",
+              ),
             description: z
               .string()
-              .describe("A brief description of what this node represents"),
+              .describe(
+                "A brief description of what this node represents (max 1000 characters).",
+              ),
             parentId: z
               .string()
               .describe(
@@ -523,7 +534,7 @@ You: *Call deleteNode* → "I've removed that reminder from your roadmap."`,
               )
               .optional()
               .describe(
-                "List of helpful resources with labels and URLs (e.g., [{ label: 'ITA Study Guide', href: 'https://...' }])",
+                "List of helpful resources with labels and VALID URLs (e.g., [{ label: 'ITA Study Guide', href: 'https://www.itabc.ca/...' }]). IMPORTANT: Only include resources if you have real, valid URLs. DO NOT use placeholders like '#' or 'https://example.com'. If no real URLs are available, omit this field entirely.",
               ),
             notes: z
               .string()
@@ -558,6 +569,15 @@ You: *Call deleteNode* → "I've removed that reminder from your roadmap."`,
             if (!currentUserId) {
               return "Error: User must be authenticated to create nodes.";
             }
+
+            // Validate and truncate fields before processing
+            if (title.length > 100) {
+              return `Tool execution failed: Title is too long (${title.length} chars, max 100). Please shorten the title and try again.`;
+            }
+            if (description.length > 1000) {
+              return `Tool execution failed: Description is too long (${description.length} chars, max 1000). Please shorten the description and try again.`;
+            }
+
             try {
               const roadmapId = validatedBody.roadmap_id ?? "electrician-bc";
               const graph = await loadRoadmapGraph(roadmapId);
@@ -716,34 +736,62 @@ You: *Call deleteNode* → "I've removed that reminder from your roadmap."`,
               });
 
               // Stream the node ID to the client for viewport panning
+              // Wrap in try-catch because stream might already be closed
               if (dataStream) {
-                dataStream.append({
-                  type: "custom_node_created",
-                  nodeId: createdNode.id,
-                  parentId: finalParentId,
-                });
+                try {
+                  dataStream.append({
+                    type: "custom_node_created",
+                    nodeId: createdNode.id,
+                    parentId: finalParentId,
+                  });
+                } catch (streamError) {
+                  // Stream already closed - not a critical error, just log it
+                  logger.warn(
+                    "Failed to append to data stream (stream closed)",
+                    {
+                      nodeId: createdNode.id,
+                      error:
+                        streamError instanceof Error
+                          ? streamError.message
+                          : String(streamError),
+                    },
+                  );
+                }
               }
 
-              // Build success message with details INCLUDING node ID for future reference
-              let successMsg = `Successfully created "${title}" (ID: ${createdNode.id}) attached to ${finalParentId}`;
+              // Build success message with details (ID hidden from user, but logged for debugging)
+              logger.info("Custom node created", {
+                nodeId: createdNode.id,
+                title,
+                parentId: finalParentId,
+                userId: currentUserId,
+              });
+
+              let successMsg = `I've added "${title}" to your roadmap`;
               if (checklistItems && checklistItems.length > 0) {
                 successMsg += ` with ${checklistItems.length} checklist items`;
               }
               if (resources && resources.length > 0) {
-                successMsg += ` and ${resources.length} resources`;
+                successMsg += ` and ${resources.length} resource${resources.length > 1 ? "s" : ""}`;
               }
-              successMsg +=
-                ". The user can now see this on their roadmap. Remember this node ID for future updates/deletes.";
+              successMsg += "!";
 
-              return successMsg;
+              // Internal note: Store node ID for future reference
+              return `${successMsg} [Internal: Node ID ${createdNode.id} for future updates/deletes]`;
             } catch (error) {
-              logger.error("Failed to create custom node", error);
-              // Don't expose technical errors - ask for clarification instead
-              return `I had trouble placing that on your roadmap. Could you tell me which part of your journey this relates to? For example:
-- Foundation Program or Direct Entry?
-- Level 1, 2, 3, or 4?
-- Red Seal preparation?
-- Something else?`;
+              const errorMsg =
+                error instanceof Error ? error.message : String(error);
+              logger.error("Failed to create custom node", error, {
+                title,
+                titleLength: title.length,
+                descriptionLength: description.length,
+                parentId,
+                type,
+                userId: currentUserId,
+                errorMessage: errorMsg,
+              });
+              // Return detailed error - AI should analyze and inform user or fix the issue
+              return `Tool execution failed with error: ${errorMsg}. Do NOT retry with the same parameters. Either: 1) If the error mentions a specific validation issue (like invalid URL, too long, etc.), fix that specific issue, or 2) Inform the user there was a technical issue and ask them to try again later. Note: Title must be ≤100 chars, description ≤1000 chars.`;
             }
           },
         },
@@ -780,7 +828,9 @@ You: *Call deleteNode* → "I've removed that reminder from your roadmap."`,
                 }),
               )
               .optional()
-              .describe("Updated list of resources"),
+              .describe(
+                "Updated list of resources with VALID URLs. Only include if you have real URLs - do not use placeholders.",
+              ),
             notes: z.string().optional().describe("Updated notes"),
             dueDate: z.string().optional().describe("Updated due date"),
           }),
@@ -900,14 +950,16 @@ You: *Call deleteNode* → "I've removed that reminder from your roadmap."`,
                 return "You haven't created any custom nodes yet.";
               }
 
-              const nodeList = nodes
-                .map(
-                  (node) =>
-                    `- "${node.title}" (ID: ${node.id}) - attached to ${node.parentId}, type: ${node.type}`,
-                )
+              // Build user-facing list (hide IDs) and internal reference list
+              const nodeListForUser = nodes
+                .map((node) => `- "${node.title}" (${node.type})`)
                 .join("\n");
 
-              return `You have ${nodes.length} custom node(s):\n${nodeList}`;
+              const nodeListInternal = nodes
+                .map((node) => `[ID: ${node.id}] "${node.title}"`)
+                .join(", ");
+
+              return `You have ${nodes.length} custom node(s):\n${nodeListForUser}\n\n[Internal reference: ${nodeListInternal}]`;
             } catch (error) {
               logger.error("Failed to list custom nodes", error);
               return "I had trouble retrieving your custom nodes.";

@@ -150,6 +150,9 @@ export function NodeInfoPanel({
           <ReactMarkdown
             components={{
               p: ({ node: _node, ...props }) => <span {...props} />,
+              a: ({ node: _node, ...props }) => (
+                <a {...props} target="_blank" rel="noreferrer" />
+              ),
             }}
             remarkPlugins={[remarkGfm]}
           >
@@ -162,6 +165,9 @@ export function NodeInfoPanel({
               <ReactMarkdown
                 components={{
                   p: ({ node: _node, ...props }) => <span {...props} />,
+                  a: ({ node: _node, ...props }) => (
+                    <a {...props} target="_blank" rel="noreferrer" />
+                  ),
                 }}
                 remarkPlugins={[remarkGfm]}
               >
@@ -179,6 +185,9 @@ export function NodeInfoPanel({
               <ReactMarkdown
                 components={{
                   p: ({ node: _node, ...props }) => <span {...props} />,
+                  a: ({ node: _node, ...props }) => (
+                    <a {...props} target="_blank" rel="noreferrer" />
+                  ),
                 }}
                 remarkPlugins={[remarkGfm]}
               >
@@ -252,7 +261,14 @@ export function NodeInfoPanel({
           </div>
           {description ? (
             <div className="mt-2 space-y-3 text-sm leading-relaxed text-black [&_a]:text-blue-600 [&_a]:underline [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-black [&_h3]:mt-3 [&_h3]:mb-1.5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-black [&_ol]:mb-2 [&_ol]:ml-4 [&_ol]:list-decimal [&_ol]:space-y-1 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-bold [&_ul]:mb-2 [&_ul]:ml-4 [&_ul]:list-disc [&_ul]:space-y-1">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a: ({ node: _node, ...props }) => (
+                    <a {...props} target="_blank" rel="noreferrer" />
+                  ),
+                }}
+              >
                 {description}
               </ReactMarkdown>
             </div>
@@ -348,6 +364,9 @@ function Section({ title, items }: { title: string; items: string[] }) {
             <ReactMarkdown
               components={{
                 p: ({ node: _node, ...props }) => <span {...props} />,
+                a: ({ node: _node, ...props }) => (
+                  <a {...props} target="_blank" rel="noreferrer" />
+                ),
               }}
               remarkPlugins={[remarkGfm]}
             >
@@ -420,6 +439,9 @@ function CategoryNav({
                   <ReactMarkdown
                     components={{
                       p: ({ node: _node, ...props }) => <span {...props} />,
+                      a: ({ node: _node, ...props }) => (
+                        <a {...props} target="_blank" rel="noreferrer" />
+                      ),
                     }}
                     remarkPlugins={[remarkGfm]}
                   >
@@ -470,6 +492,13 @@ function CategoryNav({
                               p: ({ node: _node, ...props }) => (
                                 <span {...props} />
                               ),
+                              a: ({ node: _node, ...props }) => (
+                                <a
+                                  {...props}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                />
+                              ),
                             }}
                             remarkPlugins={[remarkGfm]}
                           >
@@ -487,6 +516,9 @@ function CategoryNav({
                           components={{
                             p: ({ node: _node, ...props }) => (
                               <span {...props} />
+                            ),
+                            a: ({ node: _node, ...props }) => (
+                              <a {...props} target="_blank" rel="noreferrer" />
                             ),
                           }}
                           remarkPlugins={[remarkGfm]}

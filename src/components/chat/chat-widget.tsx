@@ -257,6 +257,19 @@ export function ChatWidget({
     api: "/api/chat",
     streamProtocol: "data",
     maxSteps: 5,
+    onToolCall: ({ toolCall }) => {
+      // Display user-friendly status messages for tool calls
+      const toolNames: Record<string, string> = {
+        createNode: "Creating custom node...",
+        updateNode: "Updating node...",
+        deleteNode: "Deleting node...",
+        listCustomNodes: "Loading your custom nodes...",
+        deleteDuplicateNodes: "Removing duplicate nodes...",
+      };
+      const message =
+        toolNames[toolCall.toolName] ?? `Processing ${toolCall.toolName}...`;
+      setStatusMessage(message);
+    },
     onError: (chatError) => {
       logger.error("Chat error", chatError);
       setIsLoading(false);

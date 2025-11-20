@@ -1458,6 +1458,14 @@ function RoadmapFlowInner({
 
   const handleDeleteCustomNode = useCallback(
     async (nodeId: string) => {
+      // Optimistic update: immediately hide the node
+      setNodes((currentNodes) =>
+        currentNodes.map((n) => (n.id === nodeId ? { ...n, hidden: true } : n)),
+      );
+
+      // Close the info panel immediately
+      setSelectedNodeId(null);
+
       try {
         const response = await fetch(`/api/custom-nodes/${nodeId}`, {
           method: "DELETE",
@@ -1467,19 +1475,24 @@ function RoadmapFlowInner({
           throw new Error("Failed to delete custom node");
         }
 
-        // Close the info panel
-        setSelectedNodeId(null);
-
-        // Refresh custom nodes from parent
+        // Refresh custom nodes from parent to sync with server state
         if (onRefreshCustomNodes) {
           onRefreshCustomNodes();
         }
       } catch (error) {
         logger.error("Failed to delete custom node", error, { nodeId });
+
+        // Rollback optimistic update on error
+        setNodes((currentNodes) =>
+          currentNodes.map((n) =>
+            n.id === nodeId ? { ...n, hidden: false } : n,
+          ),
+        );
+
         alert("Failed to delete the node. Please try again.");
       }
     },
-    [onRefreshCustomNodes],
+    [onRefreshCustomNodes, setNodes],
   );
 
   return (

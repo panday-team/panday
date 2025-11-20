@@ -58,6 +58,7 @@ export function RoadmapClientWrapper({
         }
       } catch (error) {
         console.error("Failed to refresh custom nodes:", error);
+        // Don't show alert here - errors are handled at the call site
       }
     },
     [userId, roadmap.metadata.id],
