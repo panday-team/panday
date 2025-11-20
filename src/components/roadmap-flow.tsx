@@ -578,31 +578,98 @@ function RoadmapFlowInner({
         markerEnd: arrowMarker,
       }));
 
+    // Helper function to determine correct handle based on relative position
+    const getHandleIds = (
+      sourcePos: { x: number; y: number },
+      targetPos: { x: number; y: number },
+    ): { sourceHandle: string; targetHandle: string } => {
+      const dx = targetPos.x - sourcePos.x;
+      const dy = targetPos.y - sourcePos.y;
+
+      // Determine primary direction based on larger delta
+      const isHorizontal = Math.abs(dx) > Math.abs(dy);
+
+      if (isHorizontal) {
+        // Target is to the right or left
+        if (dx > 0) {
+          // Target is to the right
+          return {
+            sourceHandle: "right-source",
+            targetHandle: "left-target",
+          };
+        } else {
+          // Target is to the left
+          return {
+            sourceHandle: "left-source",
+            targetHandle: "right-target",
+          };
+        }
+      } else {
+        // Target is above or below
+        if (dy > 0) {
+          // Target is below
+          return {
+            sourceHandle: "bottom-source",
+            targetHandle: "top-target",
+          };
+        } else {
+          // Target is above
+          return {
+            sourceHandle: "top-source",
+            targetHandle: "bottom-target",
+          };
+        }
+      }
+    };
+
+    // Build position lookup map from initialNodes
+    const nodePositionMap = new Map<string, { x: number; y: number }>();
+    for (const node of initialNodes) {
+      nodePositionMap.set(node.id, node.position);
+    }
+
     // Add edges for custom nodes
     // Show dashed connectors from custom nodes to ALL their parents
     const customEdges: FlowEdge[] = customNodes.flatMap((customNode) => {
       const parentIds = customNode.parentId.split(",").map((id) => id.trim());
+      const customNodePos = nodePositionMap.get(customNode.id);
+
+      if (!customNodePos) return [];
 
       // Create a dashed edge from custom node to each parent
-      return parentIds.map((parentId, index) => ({
-        id: `custom-edge-${customNode.id}-${parentId}-${index}`,
-        source: parentId,
-        target: customNode.id,
-        type: "bezier",
-        style: {
-          ...baseEdgeStyle,
-          strokeDasharray: "5,5", // Dashed line
-          stroke: "#FFB830", // Golden color for custom nodes
-          strokeWidth: 1.5,
-          opacity: 0.6,
-        },
-        // No arrow marker for custom edges
-        animated: false,
-      }));
+      return parentIds
+        .map((parentId, index) => {
+          const parentPos = nodePositionMap.get(parentId);
+          if (!parentPos) return null;
+
+          const { sourceHandle, targetHandle } = getHandleIds(
+            parentPos,
+            customNodePos,
+          );
+
+          return {
+            id: `custom-edge-${customNode.id}-${parentId}-${index}`,
+            source: parentId,
+            target: customNode.id,
+            sourceHandle,
+            targetHandle,
+            type: "bezier" as const,
+            style: {
+              ...baseEdgeStyle,
+              strokeDasharray: "5,5", // Dashed line
+              stroke: "#FFB830", // Golden color for custom nodes
+              strokeWidth: 1.5,
+              opacity: 0.6,
+            },
+            // No arrow marker for custom edges
+            animated: false,
+          } as FlowEdge;
+        })
+        .filter((edge): edge is FlowEdge => edge !== null);
     });
 
     return [...standardEdges, ...customEdges];
-  }, [roadmap, selectedNodeId, userProfile, customNodes]);
+  }, [roadmap, selectedNodeId, userProfile, customNodes, initialNodes]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges] = useEdgesState(initialEdges);

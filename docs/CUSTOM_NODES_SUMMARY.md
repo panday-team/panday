@@ -276,9 +276,107 @@ box-shadow: 0 0 15px rgba(0, 200, 150, 0.4)
 - Standard checklist: Solid teal border (`#35C1B9`)
 - Custom checklist: Dashed golden border (`#FFB830`)
 
+### ✅ Rich Content Support
+
+**Problem:** Custom nodes need structured data (checklists, resources, due dates)
+
+**Solution:** JSON `content` field with flexible schema
+
+**Content Structure:**
+
+```typescript
+{
+  checklistItems?: Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+    subtasks?: Array<{...}>; // Nested support
+  }>;
+  resources?: Array<{
+    label: string;
+    href: string;
+  }>;
+  notes?: string; // Free-form text
+  dueDate?: string; // ISO date
+  metadata?: Record<string, unknown>; // Extensible
+}
+```
+
+**AI Tool Integration:**
+
+```typescript
+// Chat API createNode tool parameters
+createNode({
+  parentId: "red-seal",
+  title: "Study Transformers",
+  description: "Complete transformer theory",
+  checklistItems: ["Read chapter 5", "Practice problems"],
+  resources: [{ label: "ITA Guide", href: "https://..." }],
+  notes: "Focus on single-phase first",
+  dueDate: "2025-06-30",
+});
+```
+
+**Database Storage:**
+
+```sql
+-- CustomNode.content column (JSONB)
+{
+  "checklistItems": [...],
+  "resources": [...],
+  "notes": "...",
+  "dueDate": "..."
+}
+```
+
+**Implementation Files:**
+
+- Schema: `prisma/schema.prisma` (CustomNode.content field)
+- Validation: `src/lib/custom-nodes.ts` (Zod schema)
+- AI tool: `src/app/api/chat/route.ts` (createNode parameters)
+- Tests: `src/lib/__tests__/custom-nodes.test.ts` (24 tests)
+
 ---
 
 ## Testing
+
+### Automated Test Coverage
+
+**✅ Unit Tests (207 total, all passing)**
+
+| Test Suite                        | Tests | Coverage                              |
+| --------------------------------- | ----- | ------------------------------------- |
+| `custom-node-positioning.test.ts` | 14    | Centroid, multi-parent, collision     |
+| `collision-physics.test.ts`       | 22    | Spatial grid, repulsion forces        |
+| `custom-nodes.test.ts`            | 24    | Rich content, CRUD operations, schema |
+| `chat/route.test.ts`              | 12    | AI tool integration, createNode       |
+| Other test files                  | 135   | Roadmap loader, embeddings, profile   |
+
+**Key Test Cases (custom-nodes.test.ts):**
+
+1. ✅ Schema validation (basic, rich content, edge cases)
+2. ✅ Create node with checklist items
+3. ✅ Create node with resources (links)
+4. ✅ Create node with due date + notes
+5. ✅ Create node with ALL content fields
+6. ✅ Fetch custom nodes (user + roadmap filtering)
+7. ✅ Delete custom node (user isolation)
+8. ✅ Content field edge cases (empty, partial, nested)
+9. ✅ Schema validation errors (title length, invalid type)
+10. ✅ Prisma JSON serialization (JsonNull handling)
+
+**Running Tests:**
+
+```bash
+# All tests
+bun run test:run
+
+# Custom nodes only
+bun run test:run src/lib/__tests__/custom-nodes.test.ts
+
+# Watch mode
+bun run test
+```
 
 ### Manual Test Cases
 
@@ -474,3 +572,4 @@ centroid([p1, p2, p3, ...]) → geometric center
 | Nov 2024 | v1.1    | Removed page reload, added smart positioning                           |
 | Nov 2024 | v1.2    | Fixed Red Seal specialization bug                                      |
 | Nov 2024 | v2.0    | **Centroid positioning, visual connectors, spatial grid optimization** |
+| Nov 2024 | v2.1    | **Rich content support (checklists, resources, notes, due dates)**     |
