@@ -26,7 +26,7 @@ export default function LandingPage() {
               </div>
               <Link
                 href="/roadmap"
-                className="rounded-md border border-slate-600 px-6 py-3 text-sm font-semibold text-slate-300 shadow-sm transition hover:bg-slate-800 hover:text-white"
+                className="rounded-md border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
               >
                 Browse as Guest
               </Link>

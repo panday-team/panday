@@ -14,7 +14,8 @@
 - Clerk controls are centralized in `src/components/AuthControls.tsx` to keep auth UI client-side
 - Root layout wraps the tree in `ClerkProvider` (`src/app/layout.tsx`) so `SignedIn`/`SignedOut` helpers work
 - Health dashboard presentation uses shadcn cards/badges for consistent theming
-- Root layout forces `dark` mode and applies base background/foreground classes globally
+- Theme switching is enabled via `next-themes` with `ThemeProvider` wrapper; defaults to dark mode with system preference support
+- `ThemeToggle` component (`src/components/theme-toggle.tsx`) available on profile page for manual light/dark mode switching
 
 ## UI Toolkit
 

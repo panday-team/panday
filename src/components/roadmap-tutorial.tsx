@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { X } from "lucide-react";
 import { TutorialSpotlight } from "@/components/tutorial-spotlight";
+import { useResponsive } from "@/lib/use-responsive";
 
 export type TutorialInteractionType =
   | "node-click"
@@ -27,9 +28,17 @@ interface RoadmapTutorialProps {
   onSkip: () => void;
   onInteraction?: (interactionType: TutorialInteractionType) => void;
   onRequestViewportAdjustment?: (selector?: string) => void;
+  onStepChange?: (step: TutorialStep) => void;
 }
 
-interface TutorialStep {
+export interface TutorialStepViewport {
+  zoom?: number | "auto" | { mobile: number; tablet: number; desktop: number };
+  center?: "auto" | "fit-all";
+  closeNodePanel?: boolean;
+  closeChatWidget?: boolean;
+}
+
+export interface TutorialStep {
   id: string;
   title: string;
   body: string;
@@ -37,6 +46,7 @@ interface TutorialStep {
   highlightCount?: number;
   mergeHighlights?: boolean;
   adjustViewport?: boolean; // Whether to adjust viewport to show highlighted elements
+  viewport?: TutorialStepViewport; // Responsive viewport configuration
   highlightPanelContent?: boolean; // Whether highlighting elements inside node-info-panel (requires higher z-index)
   position:
     | "center"
@@ -47,6 +57,7 @@ interface TutorialStep {
     | "right"
     | "bottom-left"
     | "bottom-right";
+  mobilePosition?: "center" | "bottom-sheet" | "fullscreen-overlay"; // Override position on mobile
   requiresInteraction?: TutorialInteractionType;
 }
 
@@ -56,6 +67,13 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Welcome to Panday!",
     body: "Learn your career roadmap in 60 seconds.",
     position: "center",
+    mobilePosition: "fullscreen-overlay",
+    viewport: {
+      zoom: { mobile: 0.4, tablet: 0.6, desktop: 0.8 },
+      center: "fit-all",
+      closeNodePanel: true,
+      closeChatWidget: true,
+    },
   },
   {
     id: "roadmap-structure",
@@ -64,6 +82,13 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     highlightSelector: "[data-node-type='hub']",
     highlightCount: 5,
     position: "top-center",
+    mobilePosition: "bottom-sheet",
+    viewport: {
+      zoom: { mobile: 0.5, tablet: 0.7, desktop: 0.8 },
+      center: "fit-all",
+      closeNodePanel: true,
+      closeChatWidget: true,
+    },
   },
   {
     id: "connector-nodes",
@@ -71,17 +96,31 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     body: "Blue (Resources) = learning materials\nGreen (Actions) = tasks to complete\nOrange (Roadblocks) = challenges",
     highlightSelector:
       "[data-node-type='resources'], [data-node-type='actions'], [data-node-type='roadblocks']",
-    highlightCount: 30, // Increase to capture all connector nodes
+    highlightCount: 30,
     position: "top-center",
+    mobilePosition: "bottom-sheet",
+    viewport: {
+      zoom: { mobile: 0.6, tablet: 0.8, desktop: 0.9 },
+      center: "fit-all",
+      closeNodePanel: true,
+      closeChatWidget: true,
+    },
   },
   {
     id: "click-node",
     title: "Click a Yellow Node",
     body: "Try it now - click any yellow circle!",
     highlightSelector: "[data-node-type='hub']",
-    highlightCount: 1, // Just highlight the closest one
-    adjustViewport: true, // Adjust viewport to show hub nodes clearly
+    highlightCount: 1,
+    adjustViewport: true,
     position: "top-center",
+    mobilePosition: "bottom-sheet",
+    viewport: {
+      zoom: { mobile: 0.7, tablet: 0.9, desktop: 1.0 },
+      center: "auto",
+      closeNodePanel: true,
+      closeChatWidget: true,
+    },
     requiresInteraction: "node-click",
   },
   {
@@ -91,8 +130,15 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     highlightSelector:
       "[data-node-type='resources'], [data-node-type='actions'], [data-node-type='roadblocks']",
     highlightCount: 10,
-    adjustViewport: true, // Adjust viewport to show connector nodes
+    adjustViewport: true,
     position: "top-right",
+    mobilePosition: "bottom-sheet",
+    viewport: {
+      zoom: { mobile: 0.8, tablet: 1.0, desktop: 1.0 },
+      center: "auto",
+      closeNodePanel: false, // Keep panel open after clicking
+      closeChatWidget: true,
+    },
     requiresInteraction: "node-click",
   },
   {
@@ -100,9 +146,16 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Open the Checklist",
     body: "Click any of the highlighted dropdown buttons in the side panel to reveal checklist items!",
     highlightSelector: "[data-tutorial='dropdown-trigger']",
-    highlightCount: 5, // Show multiple dropdowns so user can see all options
-    highlightPanelContent: true, // Highlight elements inside node-info-panel
+    highlightCount: 5,
+    highlightPanelContent: true,
     position: "right",
+    mobilePosition: "bottom-sheet",
+    viewport: {
+      zoom: { mobile: 1.0, tablet: 1.0, desktop: 1.0 },
+      center: "auto",
+      closeNodePanel: false,
+      closeChatWidget: true,
+    },
     requiresInteraction: "dropdown-open",
   },
   {
@@ -111,9 +164,16 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     body: "Now check a box to mark it complete!",
     highlightSelector: "[data-tutorial='checklist-checkbox']",
     highlightCount: 10,
-    mergeHighlights: true, // Merge all checkboxes into one bounding box
-    highlightPanelContent: true, // Highlight elements inside node-info-panel
+    mergeHighlights: true,
+    highlightPanelContent: true,
     position: "right",
+    mobilePosition: "bottom-sheet",
+    viewport: {
+      zoom: { mobile: 1.0, tablet: 1.0, desktop: 1.0 },
+      center: "auto",
+      closeNodePanel: false,
+      closeChatWidget: true,
+    },
     requiresInteraction: "checkbox-click",
   },
   {
@@ -122,6 +182,13 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     body: "Click and drag anywhere to explore.",
     highlightSelector: "[data-tutorial='react-flow']",
     position: "top-center",
+    mobilePosition: "bottom-sheet",
+    viewport: {
+      zoom: { mobile: 0.6, tablet: 0.8, desktop: 0.8 },
+      center: "fit-all",
+      closeNodePanel: true,
+      closeChatWidget: true,
+    },
   },
   {
     id: "zoom-slider",
@@ -129,6 +196,13 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     body: "Use the slider, scroll, or pinch to zoom.",
     highlightSelector: "[data-tutorial='zoom-slider']",
     position: "top-right",
+    mobilePosition: "bottom-sheet",
+    viewport: {
+      zoom: { mobile: 0.6, tablet: 0.8, desktop: 0.8 },
+      center: "fit-all",
+      closeNodePanel: true,
+      closeChatWidget: true,
+    },
     requiresInteraction: "zoom-change",
   },
   {
@@ -137,6 +211,13 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     body: "Click here for instant help anytime.",
     highlightSelector: "[data-tutorial='chat-button']",
     position: "top-right",
+    mobilePosition: "bottom-sheet",
+    viewport: {
+      zoom: { mobile: 0.6, tablet: 0.8, desktop: 0.8 },
+      center: "fit-all",
+      closeNodePanel: true,
+      closeChatWidget: false, // Allow chat to stay open for demo
+    },
     requiresInteraction: "chat-open",
   },
   {
@@ -144,6 +225,13 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     title: "You're Ready!",
     body: "Click the book icon anytime to replay this tutorial.",
     position: "center",
+    mobilePosition: "fullscreen-overlay",
+    viewport: {
+      zoom: { mobile: 0.5, tablet: 0.7, desktop: 0.8 },
+      center: "fit-all",
+      closeNodePanel: true,
+      closeChatWidget: true,
+    },
   },
 ];
 
@@ -153,15 +241,28 @@ export function RoadmapTutorial({
   onSkip,
   onInteraction,
   onRequestViewportAdjustment,
+  onStepChange,
 }: RoadmapTutorialProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [cardPosition, setCardPosition] = useState({ x: 0, y: 0 });
+  const [cardDimensions, setCardDimensions] = useState({
+    width: 500,
+    height: 250,
+  });
+  const responsive = useResponsive();
 
   const currentStepData = TUTORIAL_STEPS[currentStep];
   const isWelcome = currentStep === 0;
   const isLastStep = currentStep === TUTORIAL_STEPS.length - 1;
   const waitingForInteraction =
     currentStepData?.requiresInteraction && !isLastStep;
+
+  // Notify parent when step changes (so it can control node panel, viewport, etc)
+  useEffect(() => {
+    if (open && currentStepData && onStepChange) {
+      onStepChange(currentStepData);
+    }
+  }, [currentStep, open, currentStepData, onStepChange]);
 
   // Request viewport adjustment when step changes
   useEffect(() => {
@@ -179,18 +280,59 @@ export function RoadmapTutorial({
     }
   }, [currentStep, open, currentStepData, onRequestViewportAdjustment]);
 
-  // Calculate card and arrow positions
+  // Calculate responsive card dimensions and positions
   useEffect(() => {
     if (!open || !currentStepData) return;
 
     const updatePositions = () => {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
-      const cardWidth = 500;
-      const cardHeight = 250;
+
+      // Responsive card dimensions
+      let cardWidth = 500;
+      let cardHeight = 250;
+
+      if (viewportWidth < 640) {
+        // Mobile: smaller card, variable height
+        cardWidth = Math.min(viewportWidth - 32, 400);
+        cardHeight = Math.min(cardHeight, viewportHeight * 0.5);
+      } else if (viewportWidth < 768) {
+        // Small tablet
+        cardWidth = Math.min(480, viewportWidth - 48);
+      } else if (viewportWidth < 1024) {
+        // Tablet
+        cardWidth = Math.min(500, viewportWidth - 64);
+      }
+
+      setCardDimensions({ width: cardWidth, height: cardHeight });
+
+      // Determine effective position (mobile override if specified)
+      const effectivePosition =
+        responsive.isMobile && currentStepData.mobilePosition
+          ? currentStepData.mobilePosition
+          : currentStepData.position;
 
       let x = 0;
       let y = 0;
+
+      // Handle mobile-specific positions
+      if (effectivePosition === "fullscreen-overlay") {
+        x = (viewportWidth - cardWidth) / 2;
+        y = (viewportHeight - cardHeight) / 2;
+        setCardPosition({ x, y });
+        return;
+      }
+
+      if (effectivePosition === "bottom-sheet") {
+        x = (viewportWidth - cardWidth) / 2;
+        y = viewportHeight - cardHeight - 16; // 16px from bottom
+        setCardPosition({ x, y });
+        return;
+      }
+
+      // Standard position handling
+      const padding = responsive.isMobile ? 16 : 40;
+      const topOffset = responsive.isMobile ? 80 : 120;
 
       switch (currentStepData.position) {
         case "center":
@@ -199,31 +341,31 @@ export function RoadmapTutorial({
           break;
         case "top-center":
           x = (viewportWidth - cardWidth) / 2;
-          y = Math.max(120, viewportHeight * 0.15);
+          y = Math.max(topOffset, viewportHeight * 0.15);
           break;
         case "top-left":
-          x = 40;
-          y = Math.max(120, viewportHeight * 0.15);
+          x = padding;
+          y = Math.max(topOffset, viewportHeight * 0.15);
           break;
         case "top-right":
-          x = viewportWidth - cardWidth - 40;
-          y = Math.max(120, viewportHeight * 0.15);
+          x = viewportWidth - cardWidth - padding;
+          y = Math.max(topOffset, viewportHeight * 0.15);
           break;
         case "left":
-          x = 40;
-          y = Math.max(120, (viewportHeight - cardHeight) / 2);
+          x = padding;
+          y = Math.max(topOffset, (viewportHeight - cardHeight) / 2);
           break;
         case "right":
-          x = viewportWidth - cardWidth - 40;
+          x = viewportWidth - cardWidth - padding;
           y = (viewportHeight - cardHeight) / 2;
           break;
         case "bottom-left":
-          x = 40;
-          y = viewportHeight - cardHeight - 40;
+          x = padding;
+          y = viewportHeight - cardHeight - padding;
           break;
         case "bottom-right":
-          x = viewportWidth - cardWidth - 40;
-          y = viewportHeight - cardHeight - 40;
+          x = viewportWidth - cardWidth - padding;
+          y = viewportHeight - cardHeight - padding;
           break;
       }
 
@@ -242,7 +384,7 @@ export function RoadmapTutorial({
       window.removeEventListener("scroll", updatePositions);
       clearTimeout(timeout);
     };
-  }, [open, currentStep, currentStepData]);
+  }, [open, currentStep, currentStepData, responsive.isMobile]);
 
   // Handle interaction from parent
   const handleInteractionReceived = useCallback(
@@ -337,7 +479,8 @@ export function RoadmapTutorial({
             position: "fixed",
             left: cardPosition.x,
             top: cardPosition.y,
-            maxWidth: "500px",
+            width: cardDimensions.width,
+            maxHeight: cardDimensions.height,
             transform: "none",
           }}
           showCloseButton={false}
@@ -355,7 +498,11 @@ export function RoadmapTutorial({
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <Card className="relative w-full rounded-[20px] bg-white p-8 shadow-2xl">
+              <Card
+                className={`relative w-full rounded-[20px] bg-white shadow-2xl ${
+                  responsive.isMobile ? "p-6" : "p-8"
+                } max-h-full overflow-y-auto`}
+              >
                 {/* Skip button in top right corner */}
                 <button
                   onClick={handleSkip}
@@ -382,19 +529,27 @@ export function RoadmapTutorial({
                 </div>
 
                 {/* Navigation Buttons */}
-                <div className="flex items-center justify-center gap-4">
+                <div
+                  className={`flex items-center justify-center gap-3 ${
+                    responsive.isMobile ? "flex-col" : "flex-row"
+                  }`}
+                >
                   {/* Back/Skip Button */}
                   {isWelcome ? (
                     <Button
                       onClick={handleSkip}
-                      className="h-9 w-28 rounded-[20px] bg-[#ec4447] text-sm font-medium text-black hover:bg-[#ec4447]/90"
+                      className={`h-9 rounded-[20px] bg-[#ec4447] text-sm font-medium text-black hover:bg-[#ec4447]/90 ${
+                        responsive.isMobile ? "w-full" : "w-28"
+                      }`}
                     >
                       Skip
                     </Button>
                   ) : (
                     <Button
                       onClick={handleBack}
-                      className="h-9 w-28 rounded-[20px] bg-[#f2ee23] text-sm font-medium text-black hover:bg-[#f2ee23]/90"
+                      className={`h-9 rounded-[20px] bg-[#f2ee23] text-sm font-medium text-black hover:bg-[#f2ee23]/90 ${
+                        responsive.isMobile ? "w-full" : "w-28"
+                      }`}
                     >
                       Back
                     </Button>
@@ -404,14 +559,18 @@ export function RoadmapTutorial({
                   {isWelcome ? (
                     <Button
                       onClick={handleNext}
-                      className="h-9 w-28 rounded-[20px] bg-[#5deadc] text-sm font-medium text-black hover:bg-[#5deadc]/90"
+                      className={`h-9 rounded-[20px] bg-[#5deadc] text-sm font-medium text-black hover:bg-[#5deadc]/90 ${
+                        responsive.isMobile ? "w-full" : "w-28"
+                      }`}
                     >
                       Start
                     </Button>
                   ) : isLastStep ? (
                     <Button
                       onClick={handleComplete}
-                      className="h-9 w-28 rounded-[20px] bg-[#76e54a] text-sm font-medium text-black hover:bg-[#76e54a]/90"
+                      className={`h-9 rounded-[20px] bg-[#76e54a] text-sm font-medium text-black hover:bg-[#76e54a]/90 ${
+                        responsive.isMobile ? "w-full" : "w-28"
+                      }`}
                     >
                       Let&apos;s Go
                     </Button>
@@ -419,7 +578,9 @@ export function RoadmapTutorial({
                     <Button
                       onClick={handleNext}
                       disabled={waitingForInteraction}
-                      className="h-9 w-28 rounded-[20px] bg-[#5deadc] text-sm font-medium text-black hover:bg-[#5deadc]/90 disabled:cursor-not-allowed disabled:opacity-50"
+                      className={`h-9 rounded-[20px] bg-[#5deadc] text-sm font-medium text-black hover:bg-[#5deadc]/90 disabled:cursor-not-allowed disabled:opacity-50 ${
+                        responsive.isMobile ? "w-full" : "w-28"
+                      }`}
                     >
                       Next
                     </Button>

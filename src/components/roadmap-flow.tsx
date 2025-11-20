@@ -35,6 +35,7 @@ import { ChatWidget } from "@/components/chat/chat-widget";
 import {
   RoadmapTutorial,
   type TutorialInteractionType,
+  type TutorialStep,
 } from "@/components/roadmap-tutorial";
 import { ZoomSlider } from "@/components/zoom-slider";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +65,7 @@ import {
 } from "@/lib/profile-types";
 import { calculateViewportForNode } from "@/lib/viewport-utils";
 import { calculateNodeProgress } from "@/lib/progress-utils";
+import { useResponsive } from "@/lib/use-responsive";
 
 type FlowNode =
   | HubNodeType
@@ -113,6 +115,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   );
   const { fitView, setCenter, getViewport, screenToFlowPosition } =
     useReactFlow();
+  const responsive = useResponsive();
 
   // Track which category nodes are expanded (showing their checklist children)
   // Always initialize with empty Set to avoid hydration mismatch
@@ -200,9 +203,9 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
       : [];
     const currentLevelNodeId = userProfile
       ? getCurrentLevelNodeId(
-        userProfile.currentLevel,
-        userProfile.specialization,
-      )
+          userProfile.currentLevel,
+          userProfile.specialization,
+        )
       : null;
 
     // Use pre-computed node relationships from shared memo
@@ -366,8 +369,8 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
           const isCategorySelected = selectedNodeId === graphNode.id;
           const hasChildSelected = selectedNodeId
             ? (nodesByParent.get(graphNode.id) ?? []).some(
-              (n) => n.id === selectedNodeId,
-            )
+                (n) => n.id === selectedNodeId,
+              )
             : false;
           isExpanded = isCategorySelected || hasChildSelected;
         }
@@ -758,6 +761,53 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
     setSelectedNodeId(null);
   }, []);
 
+  const handleTutorialStepChange = useCallback(
+    (step: TutorialStep) => {
+      // Close node panel if step requires it
+      if (step.viewport?.closeNodePanel) {
+        setSelectedNodeId(null);
+      }
+
+      // Animate viewport based on step config
+      if (step.viewport) {
+        const { zoom, center } = step.viewport;
+
+        // Calculate target zoom based on device
+        let targetZoom = 0.8; // default
+        if (typeof zoom === "number") {
+          targetZoom = zoom;
+        } else if (typeof zoom === "object") {
+          targetZoom = responsive.isMobile
+            ? zoom.mobile
+            : responsive.isTablet
+              ? zoom.tablet
+              : zoom.desktop;
+        }
+
+        // Animate to new viewport
+        setTimeout(() => {
+          if (center === "fit-all") {
+            // Fit all nodes in view
+            void fitView({
+              duration: 600,
+              padding: 0.2,
+              maxZoom: targetZoom,
+              minZoom: targetZoom,
+            });
+          } else {
+            // Keep current center, just adjust zoom
+            const currentViewport = getViewport();
+            void setCenter(currentViewport.x, currentViewport.y, {
+              duration: 600,
+              zoom: targetZoom,
+            });
+          }
+        }, 100);
+      }
+    },
+    [fitView, setCenter, getViewport, responsive.isMobile, responsive.isTablet],
+  );
+
   const handleViewportAdjustment = useCallback(
     (selector?: string) => {
       if (!selector) return;
@@ -793,11 +843,20 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
 
-        // Reserve space for UI elements (node panel on left, chat on right)
-        const uiPaddingLeft = 400; // Node info panel width
-        const uiPaddingRight = 100; // Chat button area
-        const uiPaddingTop = 150; // Top profile card
-        const uiPaddingBottom = 100; // Bottom margin
+        // Responsive UI padding based on breakpoint and panel state
+        const isNodePanelOpen = selectedNodeId !== null;
+        const isMobile = responsive.isMobile;
+        const isTablet = responsive.isTablet;
+
+        let uiPaddingLeft = 40;
+        const uiPaddingRight = 100;
+        const uiPaddingTop = isMobile ? 80 : 120;
+        const uiPaddingBottom = isMobile ? 120 : 100;
+
+        // Adjust for node panel (only on desktop/tablet when open)
+        if (isNodePanelOpen && !isMobile) {
+          uiPaddingLeft = isTablet ? 420 : 540; // Panel width + margin
+        }
 
         // Calculate adjusted center (accounting for UI elements)
         const adjustedCenterX =
@@ -829,7 +888,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         }
       }, 200);
     },
-    [setCenter, getViewport, screenToFlowPosition],
+    [setCenter, getViewport, screenToFlowPosition, selectedNodeId, responsive],
   );
 
   const selectedContent = selectedNodeId
@@ -1162,11 +1221,11 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         userProfile={
           userProfile
             ? {
-              trade: userProfile.trade,
-              currentLevel: userProfile.currentLevel,
-              specialization: userProfile.specialization,
-              residencyStatus: userProfile.residencyStatus,
-            }
+                trade: userProfile.trade,
+                currentLevel: userProfile.currentLevel,
+                specialization: userProfile.specialization,
+                residencyStatus: userProfile.residencyStatus,
+              }
             : undefined
         }
         onChatOpen={() => handleTutorialInteraction("chat-open")}
@@ -1179,6 +1238,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         onSkip={handleTutorialSkip}
         onInteraction={handleTutorialInteraction}
         onRequestViewportAdjustment={handleViewportAdjustment}
+        onStepChange={handleTutorialStepChange}
       />
     </div>
   );
