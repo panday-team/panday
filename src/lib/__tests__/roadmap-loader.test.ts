@@ -87,6 +87,49 @@ describe("roadmap-loader", () => {
       expect(content.content.length).toBeGreaterThan(0);
     });
 
+    it("should match content by title for level-2 checklist nodes", async () => {
+      // Test that content is matched by H1 title, not array index
+      const sponsorContent = await loadNodeContent(
+        "electrician-bc",
+        "level-2-req-sponsor",
+      );
+
+      expect(sponsorContent).toBeDefined();
+      expect(sponsorContent.frontmatter.title).toBe("Employer Sponsorship");
+      expect(sponsorContent.content).toContain(
+        "Maintain active employer sponsorship",
+      );
+      expect(sponsorContent.content).not.toContain("Distribution Equipment");
+    });
+
+    it("should match content by title for level-2 training nodes", async () => {
+      const distributionContent = await loadNodeContent(
+        "electrician-bc",
+        "level-2-training-distribution",
+      );
+
+      expect(distributionContent).toBeDefined();
+      expect(distributionContent.frontmatter.title).toBe(
+        "Distribution Equipment",
+      );
+      expect(distributionContent.content).toContain(
+        "Install and maintain electrical distribution panels",
+      );
+      expect(distributionContent.content).not.toContain("Employer Sponsorship");
+    });
+
+    it("should match content by title for level-2 roadblock nodes", async () => {
+      const layoffsContent = await loadNodeContent(
+        "electrician-bc",
+        "level-2-roadblock-layoffs",
+      );
+
+      expect(layoffsContent).toBeDefined();
+      expect(layoffsContent.frontmatter.title).toBe("Seasonal Layoffs");
+      expect(layoffsContent.content).toContain("highly seasonal");
+      expect(layoffsContent.content).toContain("winter months");
+    });
+
     it("should throw error for non-existent node", async () => {
       await expect(
         loadNodeContent("electrician-bc", "non-existent-node"),

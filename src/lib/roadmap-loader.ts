@@ -156,11 +156,7 @@ export async function loadNodeContent(
     };
   } catch (error) {
     // If standalone file doesn't exist, try to load from checklist file
-    if (
-      error instanceof Error &&
-      "code" in error &&
-      error.code === "ENOENT"
-    ) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       try {
         // Extract prefix from nodeId (e.g., "level-1" from "level-1-training-safety")
         // Try common patterns: level-X, foundation-program, direct-entry, etc.
@@ -168,7 +164,9 @@ export async function loadNodeContent(
           // Match "level-1", "level-2", etc.
           /^(level-\d+)/.exec(nodeId)?.[1],
           // Match "foundation-program", "direct-entry", "ace-it-program", "red-seal"
-          /^(foundation-program|direct-entry|ace-it-program|red-seal)/.exec(nodeId)?.[1],
+          /^(foundation-program|direct-entry|ace-it-program|red-seal)/.exec(
+            nodeId,
+          )?.[1],
           // Match "level-4-construction", "level-4-industrial"
           /^(level-\d+-\w+)/.exec(nodeId)?.[1],
         ].filter(Boolean);
@@ -286,9 +284,43 @@ async function loadChecklistNodes(
       .map((section) => section.trim())
       .filter((section) => section.length > 0);
 
-    // Match each node with its content section
-    nodes.forEach((node, index) => {
-      const nodeContent = contentSections[index] ?? "";
+    // Build map of title -> content for efficient lookup
+    // This allows matching content to nodes by title instead of array index
+    const contentByTitle = new Map<string, string>();
+    for (const section of contentSections) {
+      // Extract H1 header from content
+      const h1Match = /^# (.+)$/m.exec(section);
+      if (h1Match?.[1]) {
+        const title = h1Match[1].trim();
+        if (contentByTitle.has(title)) {
+          console.warn(
+            `[roadmap-loader] Duplicate H1 title found in ${fileName}: "${title}"`,
+          );
+        }
+        contentByTitle.set(title, section);
+      } else {
+        console.warn(
+          `[roadmap-loader] Content section without H1 header in ${fileName}`,
+          { preview: section.substring(0, 100) },
+        );
+      }
+    }
+
+    // Match each node with its content by title (not index)
+    nodes.forEach((node) => {
+      const nodeContent = contentByTitle.get(node.title) ?? "";
+
+      if (
+        !nodeContent &&
+        !node.title.includes("Financial Aid") &&
+        !node.id.startsWith("shared-")
+      ) {
+        // Financial Aid and shared nodes may not have content in every checklist file
+        console.warn(
+          `[roadmap-loader] No content found for node "${node.id}" with title "${node.title}" in ${fileName}`,
+        );
+      }
+
       contentMap.set(node.id, {
         frontmatter: {
           id: node.id,
@@ -344,6 +376,12 @@ export async function loadAllNodeContent(
         // Load multiple nodes from checklist file
         const checklistNodes = await loadChecklistNodes(roadmapId, file);
         checklistNodes.forEach((content, nodeId) => {
+          // Don't overwrite existing content with empty content for shared nodes
+          const existingContent = contentMap.get(nodeId);
+          if (existingContent && !content.content && existingContent.content) {
+            // Skip this update - keep the existing content
+            return;
+          }
           contentMap.set(nodeId, content);
         });
       } else {
