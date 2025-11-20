@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getCustomNodes } from "@/lib/custom-nodes";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
       nodes,
     });
   } catch (error) {
-    console.error("Failed to fetch custom nodes:", error);
+    logger.error("Failed to fetch custom nodes", error, { userId, roadmapId });
     return NextResponse.json(
       { error: "Failed to fetch custom nodes" },
       { status: 500 },

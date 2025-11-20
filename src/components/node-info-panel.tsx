@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentPropsWithoutRef } from "react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -9,7 +9,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, ExternalLink } from "lucide-react";
+import {
+  ChevronDown,
+  ExternalLink,
+  Trash2,
+  X,
+  Check,
+  Loader2,
+} from "lucide-react";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import type { ProgressData } from "@/lib/progress-utils";
 import ReactMarkdown from "react-markdown";
@@ -48,12 +55,14 @@ export interface NodeInfoPanelProps extends ComponentPropsWithoutRef<"aside"> {
   nodeId?: string;
   nodeStatus?: "base" | "in-progress" | "completed";
   progress?: ProgressData | null;
+  isCustomNode?: boolean;
   onStatusChange?: (status: "base" | "in-progress" | "completed") => void;
   onNavigateToNode?: (nodeId: string) => void;
   onChecklistStatusChange?: (
     nodeId: string,
     status: "base" | "in-progress" | "completed",
   ) => void;
+  onDeleteCustomNode?: (nodeId: string) => Promise<void>;
   onCheckboxClick?: () => void;
   onDropdownOpen?: () => void;
 }
@@ -69,12 +78,14 @@ export function NodeInfoPanel({
   resources,
   categories,
   nodeType,
-  nodeId: _nodeId,
+  nodeId,
   nodeStatus = "base",
   progress,
+  isCustomNode = false,
   onStatusChange,
   onNavigateToNode,
   onChecklistStatusChange,
+  onDeleteCustomNode,
   onCheckboxClick,
   onDropdownOpen,
   className,
@@ -82,6 +93,47 @@ export function NodeInfoPanel({
 }: NodeInfoPanelProps) {
   // Use title as badge if badge is not provided
   const displayBadge = badge ?? title;
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteConfirmRef = useRef<HTMLDivElement>(null);
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (nodeId && onDeleteCustomNode) {
+      setIsDeleting(true);
+      try {
+        await onDeleteCustomNode(nodeId);
+      } finally {
+        setIsDeleting(false);
+        setShowDeleteConfirm(false);
+      }
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
+  };
+
+  // Close confirmation on click outside
+  useEffect(() => {
+    if (!showDeleteConfirm) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        deleteConfirmRef.current &&
+        !deleteConfirmRef.current.contains(event.target as Node)
+      ) {
+        setShowDeleteConfirm(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showDeleteConfirm]);
+
   return (
     <aside
       data-tutorial="node-info-panel"
@@ -131,19 +183,70 @@ export function NodeInfoPanel({
                 {title}
               </ReactMarkdown>
             </h1>
-            {nodeType === "checklist" && onStatusChange ? (
-              <Checkbox
-                data-tutorial="checklist-checkbox"
-                checked={nodeStatus === "completed"}
-                onCheckedChange={(checked) => {
-                  onStatusChange(checked ? "completed" : "base");
-                  if (onCheckboxClick) {
-                    onCheckboxClick();
-                  }
-                }}
-                className="mt-1 shrink-0 border-2 border-white/60 bg-white/10 data-[state=checked]:border-white data-[state=checked]:bg-[#61FF05] data-[state=checked]:text-white"
-              />
-            ) : null}
+            <div className="flex items-start gap-2">
+              {nodeType === "checklist" && onStatusChange ? (
+                <div className="mt-1 shrink-0 p-1">
+                  <Checkbox
+                    data-tutorial="checklist-checkbox"
+                    checked={nodeStatus === "completed"}
+                    onCheckedChange={(checked) => {
+                      onStatusChange(checked ? "completed" : "base");
+                      if (onCheckboxClick) {
+                        onCheckboxClick();
+                      }
+                    }}
+                    className="h-5 w-5 border-2 border-white/60 bg-white/10 data-[state=checked]:border-white data-[state=checked]:bg-[#61FF05] data-[state=checked]:text-white"
+                  />
+                </div>
+              ) : null}
+              {isCustomNode && nodeId && onDeleteCustomNode ? (
+                <div className="relative" ref={deleteConfirmRef}>
+                  <button
+                    onClick={handleDeleteClick}
+                    className={cn(
+                      "group mt-1 shrink-0 rounded-md p-1 transition-all duration-200",
+                      showDeleteConfirm
+                        ? "bg-red-500/20 text-red-600"
+                        : "text-red-600/60 hover:bg-red-500/10 hover:text-red-600",
+                    )}
+                    title="Delete this custom node"
+                    aria-label="Delete custom node"
+                  >
+                    <Trash2 className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" />
+                  </button>
+                  {showDeleteConfirm && (
+                    <div className="animate-in fade-in slide-in-from-top-2 absolute top-full right-0 z-50 mt-2 duration-200">
+                      <div className="flex items-center gap-1.5 rounded-xl border-2 border-black/10 bg-white p-1.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-sm">
+                        <button
+                          onClick={() => void handleDeleteConfirm()}
+                          disabled={isDeleting}
+                          className="group/btn flex items-center gap-1.5 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:bg-red-600 hover:shadow-md active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label="Confirm delete"
+                        >
+                          {isDeleting ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Check className="h-3.5 w-3.5 transition-transform duration-200 group-hover/btn:scale-110" />
+                          )}
+                          {isDeleting ? "Deleting..." : "Delete"}
+                        </button>
+                        <button
+                          onClick={handleDeleteCancel}
+                          disabled={isDeleting}
+                          className="group/btn flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-all duration-200 hover:bg-gray-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label="Cancel delete"
+                        >
+                          <X className="h-3.5 w-3.5 transition-transform duration-200 group-hover/btn:scale-110" />
+                          Cancel
+                        </button>
+                      </div>
+                      {/* Subtle arrow pointer */}
+                      <div className="absolute -top-1 right-2 h-2 w-2 rotate-45 border-t-2 border-l-2 border-black/10 bg-white"></div>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
           </div>
           {description ? (
             <div className="mt-2 text-sm leading-relaxed text-black [&_a]:text-blue-600 [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-bold">

@@ -49,7 +49,7 @@ interface ChatWidgetProps {
   };
   onChatOpen?: () => void;
   forceClose?: boolean;
-  onCustomNodeCreated?: () => void;
+  onCustomNodeCreated?: (nodeId?: string) => void;
 }
 
 type StreamStatusEvent = {
@@ -277,11 +277,25 @@ export function ChatWidget({
         });
       }
 
+      // Check if a custom node was created and extract the node ID
+      let createdNodeId: string | undefined;
+      if (streamData && Array.isArray(streamData)) {
+        const nodeCreatedEvent = streamData.find(
+          (event) =>
+            isRecord(event) &&
+            event.type === "custom_node_created" &&
+            typeof event.nodeId === "string",
+        );
+        if (nodeCreatedEvent && isRecord(nodeCreatedEvent)) {
+          createdNodeId = nodeCreatedEvent.nodeId as string;
+        }
+      }
+
       // Notify parent to refresh custom nodes (seamless, no page reload)
       if (onCustomNodeCreated) {
         // Small delay to ensure database write completes
         setTimeout(() => {
-          onCustomNodeCreated();
+          onCustomNodeCreated(createdNodeId);
         }, 500);
       }
     },

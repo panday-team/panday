@@ -26,31 +26,42 @@ export function RoadmapClientWrapper({
   userId,
 }: RoadmapClientWrapperProps) {
   const [customNodes, setCustomNodes] = useState(initialCustomNodes);
+  const [newlyCreatedNodeId, setNewlyCreatedNodeId] = useState<
+    string | undefined
+  >();
 
-  const refreshCustomNodes = useCallback(async () => {
-    if (!userId) return;
+  const refreshCustomNodes = useCallback(
+    async (nodeId?: string) => {
+      if (!userId) return;
 
-    try {
-      const response = await fetch(
-        `/api/custom-nodes?roadmapId=${roadmap.metadata.id}`,
-        {
-          cache: "no-store",
-        },
-      );
+      try {
+        const response = await fetch(
+          `/api/custom-nodes?roadmapId=${roadmap.metadata.id}`,
+          {
+            cache: "no-store",
+          },
+        );
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch custom nodes");
+        if (!response.ok) {
+          throw new Error("Failed to fetch custom nodes");
+        }
+
+        const data = (await response.json()) as {
+          nodes: typeof initialCustomNodes;
+        };
+
+        setCustomNodes(data.nodes);
+
+        // Set the newly created node ID for viewport panning
+        if (nodeId) {
+          setNewlyCreatedNodeId(nodeId);
+        }
+      } catch (error) {
+        console.error("Failed to refresh custom nodes:", error);
       }
-
-      const data = (await response.json()) as {
-        nodes: typeof initialCustomNodes;
-      };
-
-      setCustomNodes(data.nodes);
-    } catch (error) {
-      console.error("Failed to refresh custom nodes:", error);
-    }
-  }, [userId, roadmap.metadata.id]);
+    },
+    [userId, roadmap.metadata.id],
+  );
 
   return (
     <RoadmapFlow
@@ -58,6 +69,8 @@ export function RoadmapClientWrapper({
       userProfile={userProfile}
       customNodes={customNodes}
       onRefreshCustomNodes={refreshCustomNodes}
+      newlyCreatedNodeId={newlyCreatedNodeId}
+      onNodePanned={() => setNewlyCreatedNodeId(undefined)}
     />
   );
 }

@@ -13,7 +13,12 @@ import { loadNodeContent } from "@/lib/roadmap-loader";
 import { db } from "@/server/db";
 import { buildMessagePreview, deriveThreadTitle } from "@/lib/chat-threads";
 
-import { createCustomNode } from "@/lib/custom-nodes";
+import {
+  createCustomNode,
+  updateCustomNode,
+  deleteCustomNode,
+  getCustomNodes,
+} from "@/lib/custom-nodes";
 import { loadRoadmapGraph } from "@/lib/roadmap-loader";
 import { auth } from "@clerk/nextjs/server";
 import stringSimilarity from "string-similarity";
@@ -406,29 +411,80 @@ Provide personalized guidance based on the user's current situation. When they w
       model: getChatModel(),
       system: `${systemPrompt}
 
-You have a 'createNode' tool to help users create personalized checklist items, resources, or trackers on their roadmap.
+You have tools to help users manage their personalized roadmap nodes: 'listCustomNodes', 'createNode', 'updateNode', and 'deleteNode'.
+
+CRITICAL: ALWAYS call 'listCustomNodes' FIRST before creating any new nodes to avoid duplicates!
+
+WHEN TO USE listCustomNodes:
+- BEFORE creating any new node (to check for duplicates)
+- When user mentions existing nodes or asks "what did I create?"
+- When you need to reference a node ID for updates/deletes
+- When user complains about duplicate nodes
 
 WHEN TO USE createNode:
+- ONLY AFTER checking listCustomNodes shows no duplicate exists
 - User wants to track something (e.g., "track my exam prep", "remind me to...", "I need to study...")
 - User mentions specific tasks, topics, or goals they want to organize
 - User provides resource links or mentions deadlines
 
-HOW TO USE createNode:
-- For parentId: Use the most relevant roadmap milestone (e.g., "Red Seal", "Level 4", "Foundation Program")
-  * If the user mentions a specific level or milestone, use that
-  * If unclear, ask: "Where on your roadmap would you like this? For example, is this for Level 4, Red Seal prep, or something else?"
+WHEN TO USE updateNode:
+- User wants to modify an existing custom node (e.g., "change the title", "add more tasks", "update the deadline")
+- User says a node is wrong or needs correction
+- User wants to move a node to a different parent milestone
+- Get the node ID from listCustomNodes first if you don't have it
+
+WHEN TO USE deleteNode:
+- User wants to remove a SPECIFIC custom node by ID
+- Get the node ID from listCustomNodes first if you don't have it
+
+WHEN TO USE deleteDuplicateNodes:
+- User mentions duplicates (e.g., "I have 3 copies", "delete the duplicates", "remove the extra ones")
+- You detect multiple nodes with the same title after calling listCustomNodes
+- User says "there are too many" or similar
+- This tool automatically keeps the most recent and deletes the rest - NO need to ask user which to keep!
+
+HOW TO USE createNode - PARENT SELECTION LOGIC:
+- **DEFAULT TO USER'S CURRENT LEVEL** for general tasks/reminders that aren't milestone-specific
+  * Examples: "buy work boots", "renew safety tickets", "update resume", "study for exam"
+  * User's current level is: ${validatedBody.user_profile?.currentLevel ?? "Level 2"}
+  * Use the exact level node ID format: "level-1", "level-2", "level-3", "level-4", etc.
+  
+- **Use specific milestone** ONLY when the user explicitly mentions it:
+  * "Red Seal exam prep" → use "red-seal-construction" or "red-seal-industrial"
+  * "Foundation Program" → use "foundation-program"
+  * "Level 3 training" → use "level-3"
+  * "ACE IT program" → use "ace-it-program"
+
+- **NEVER ask where to place** general tasks like buying equipment, preparing for exams (current level), or routine reminders
+- **ONLY ask for clarification** if the task is ambiguous between two very different milestones (e.g., "exam prep" without context could be current level OR Red Seal)
+
 - If the user provides rich details (tasks, resources, deadlines), extract them into the tool parameters
-- If details are minimal, either:
-  a) Ask clarifying questions, OR
-  b) Create a basic node and tell them they can add more details later
+- If details are minimal, create a basic node with what you have
 
-Example (user provides details):
-User: "I want to prepare for my Red Seal exam. I need to study transformers, motor controls, and PLC programming. I have the ITA study guide at https://itabc.ca/study-guide and want to finish by June 2025."
-You: *Call createNode with all the details* → "I've created a Red Seal Exam Prep tracker for you with 3 study topics, your ITA study guide link, and a June 2025 target date. You can see it on your roadmap now!"
+HOW TO USE updateNode:
+- nodeId: Use the ID of the most recently created/discussed custom node, or ask user to clarify which node
+- Only include fields that need to be updated (title, description, parentId, type, content)
+- For content updates, provide the complete updated content object
 
-Example (user provides minimal info):
-User: "Remind me to renew my safety tickets"
-You: *Call createNode with basic info* → "I've added a reminder to renew your safety tickets. Before I finalize this, when do they expire?"`,
+HOW TO USE deleteNode:
+- nodeId: Use the ID of the most recently created/discussed custom node, or ask user to clarify which node
+- Confirm deletion was successful
+
+Example 1 (general task - defaults to current level):
+User: "I need to buy new work boots"
+You: *Call createNode with parentId="${validatedBody.user_profile?.currentLevel ? `level-${validatedBody.user_profile.currentLevel}` : "level-2"}"* → "I've added 'Buy new work boots' to your ${validatedBody.user_profile?.currentLevel ?? "Level 2"} checklist!"
+
+Example 2 (specific milestone mentioned):
+User: "I want to prepare for my Red Seal exam. I need to study transformers, motor controls, and PLC programming."
+You: *Call createNode with parentId="red-seal-construction" and all the details* → "I've created a Red Seal Exam Prep tracker with 3 study topics!"
+
+Example 3 (user corrects):
+User: "Actually, that should be for Level 3, not Level 4"
+You: *Call updateNode to change parentId* → "I've moved it to Level 3 for you."
+
+Example 4 (user deletes):
+User: "Delete that reminder"
+You: *Call deleteNode* → "I've removed that reminder from your roadmap."`,
       messages: validatedBody.messages.map((msg) => ({
         role: msg.role,
         content: msg.content,
@@ -650,7 +706,7 @@ You: *Call createNode with basic info* → "I've added a reminder to renew your 
                 content.dueDate = dueDate;
               }
 
-              await createCustomNode(currentUserId, {
+              const createdNode = await createCustomNode(currentUserId, {
                 roadmapId,
                 parentId: finalParentId,
                 title,
@@ -659,15 +715,25 @@ You: *Call createNode with basic info* → "I've added a reminder to renew your 
                 content: Object.keys(content).length > 0 ? content : undefined,
               });
 
-              // Build success message with details
-              let successMsg = `Successfully created "${title}" attached to ${finalParentId}`;
+              // Stream the node ID to the client for viewport panning
+              if (dataStream) {
+                dataStream.append({
+                  type: "custom_node_created",
+                  nodeId: createdNode.id,
+                  parentId: finalParentId,
+                });
+              }
+
+              // Build success message with details INCLUDING node ID for future reference
+              let successMsg = `Successfully created "${title}" (ID: ${createdNode.id}) attached to ${finalParentId}`;
               if (checklistItems && checklistItems.length > 0) {
                 successMsg += ` with ${checklistItems.length} checklist items`;
               }
               if (resources && resources.length > 0) {
                 successMsg += ` and ${resources.length} resources`;
               }
-              successMsg += ". The user can now see this on their roadmap.";
+              successMsg +=
+                ". The user can now see this on their roadmap. Remember this node ID for future updates/deletes.";
 
               return successMsg;
             } catch (error) {
@@ -678,6 +744,224 @@ You: *Call createNode with basic info* → "I've added a reminder to renew your 
 - Level 1, 2, 3, or 4?
 - Red Seal preparation?
 - Something else?`;
+            }
+          },
+        },
+        updateNode: {
+          description:
+            "Update an existing custom node on the roadmap. Use this when the user wants to modify, correct, or move a node they previously created.",
+          parameters: z.object({
+            nodeId: z
+              .string()
+              .describe(
+                "The ID of the custom node to update. This should be from a recently created or discussed node.",
+              ),
+            title: z.string().optional().describe("Updated title"),
+            description: z.string().optional().describe("Updated description"),
+            parentId: z
+              .string()
+              .optional()
+              .describe(
+                "Updated parent ID to move the node to a different milestone",
+              ),
+            type: z
+              .enum(["checklist", "resource", "action", "roadblock"])
+              .optional()
+              .describe("Updated node type"),
+            checklistItems: z
+              .array(z.string())
+              .optional()
+              .describe("Updated list of checklist items"),
+            resources: z
+              .array(
+                z.object({
+                  label: z.string(),
+                  href: z.string().url(),
+                }),
+              )
+              .optional()
+              .describe("Updated list of resources"),
+            notes: z.string().optional().describe("Updated notes"),
+            dueDate: z.string().optional().describe("Updated due date"),
+          }),
+          execute: async ({
+            nodeId,
+            title,
+            description,
+            parentId,
+            type,
+            checklistItems,
+            resources,
+            notes,
+            dueDate,
+          }: {
+            nodeId: string;
+            title?: string;
+            description?: string;
+            parentId?: string;
+            type?: "checklist" | "resource" | "action" | "roadblock";
+            checklistItems?: string[];
+            resources?: Array<{ label: string; href: string }>;
+            notes?: string;
+            dueDate?: string;
+          }) => {
+            if (!currentUserId) {
+              return "You must be signed in to update nodes. Please sign in and try again.";
+            }
+
+            try {
+              // Build content object if any content fields are provided
+              let content: Record<string, unknown> | undefined;
+              if (checklistItems || resources || notes || dueDate) {
+                content = {};
+                if (checklistItems) {
+                  content.checklistItems = checklistItems.map(
+                    (item, index) => ({
+                      id: `item-${index + 1}`,
+                      title: item,
+                      completed: false,
+                    }),
+                  );
+                }
+                if (resources) {
+                  content.resources = resources;
+                }
+                if (notes) {
+                  content.notes = notes;
+                }
+                if (dueDate) {
+                  content.dueDate = dueDate;
+                }
+              }
+
+              const updateData: {
+                title?: string;
+                description?: string;
+                parentId?: string;
+                type?: "checklist" | "resource" | "action" | "roadblock";
+                content?: Record<string, unknown>;
+              } = {};
+              if (title) updateData.title = title;
+              if (description !== undefined)
+                updateData.description = description;
+              if (parentId) updateData.parentId = parentId;
+              if (type) updateData.type = type;
+              if (content) updateData.content = content;
+
+              await updateCustomNode(currentUserId, nodeId, updateData);
+
+              const updatedFields = Object.keys(updateData).join(", ");
+              return `Successfully updated the node (${updatedFields}). The changes are now visible on your roadmap.`;
+            } catch (error) {
+              logger.error("Failed to update custom node", error);
+              return `I had trouble updating that node. Could you try again or let me know which specific node you want to modify?`;
+            }
+          },
+        },
+        deleteNode: {
+          description:
+            "Delete a custom node from the roadmap. Use this when the user wants to remove a node they previously created.",
+          parameters: z.object({
+            nodeId: z
+              .string()
+              .describe(
+                "The ID of the custom node to delete. This should be from a recently created or discussed node.",
+              ),
+          }),
+          execute: async ({ nodeId }: { nodeId: string }) => {
+            if (!currentUserId) {
+              return "You must be signed in to delete nodes. Please sign in and try again.";
+            }
+
+            try {
+              await deleteCustomNode(currentUserId, nodeId);
+
+              return `Successfully deleted the node. It has been removed from your roadmap.`;
+            } catch (error) {
+              logger.error("Failed to delete custom node", error);
+              return `I had trouble deleting that node. Could you try again or let me know which specific node you want to remove?`;
+            }
+          },
+        },
+        listCustomNodes: {
+          description:
+            "List all custom nodes the user has created on their roadmap. Use this BEFORE creating nodes to avoid duplicates and when you need to reference existing node IDs for updates/deletes.",
+          parameters: z.object({}),
+          execute: async () => {
+            if (!currentUserId) {
+              return "You must be signed in to view your custom nodes.";
+            }
+
+            try {
+              const roadmapId = validatedBody.roadmap_id ?? "electrician-bc";
+              const nodes = await getCustomNodes(currentUserId, roadmapId);
+
+              if (nodes.length === 0) {
+                return "You haven't created any custom nodes yet.";
+              }
+
+              const nodeList = nodes
+                .map(
+                  (node) =>
+                    `- "${node.title}" (ID: ${node.id}) - attached to ${node.parentId}, type: ${node.type}`,
+                )
+                .join("\n");
+
+              return `You have ${nodes.length} custom node(s):\n${nodeList}`;
+            } catch (error) {
+              logger.error("Failed to list custom nodes", error);
+              return "I had trouble retrieving your custom nodes.";
+            }
+          },
+        },
+        deleteDuplicateNodes: {
+          description:
+            "Automatically find and delete duplicate nodes with the same title, keeping only the most recent one. Use this when the user mentions duplicates or when you detect multiple nodes with the same title.",
+          parameters: z.object({
+            title: z
+              .string()
+              .describe(
+                "The title of the duplicate nodes to clean up (e.g., 'Transformer Study Checklist')",
+              ),
+          }),
+          execute: async ({ title }: { title: string }) => {
+            if (!currentUserId) {
+              return "You must be signed in to delete nodes.";
+            }
+
+            try {
+              const roadmapId = validatedBody.roadmap_id ?? "electrician-bc";
+              const nodes = await getCustomNodes(currentUserId, roadmapId);
+
+              // Find all nodes with matching title (case-insensitive)
+              const duplicates = nodes.filter(
+                (node) => node.title.toLowerCase() === title.toLowerCase(),
+              );
+
+              if (duplicates.length === 0) {
+                return `I couldn't find any nodes titled "${title}".`;
+              }
+
+              if (duplicates.length === 1) {
+                return `There's only one "${title}" node, so no duplicates to remove.`;
+              }
+
+              // Sort by creation date (newest first) and keep the first one
+              duplicates.sort(
+                (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+              );
+              const toDelete = duplicates.slice(1); // Keep first (most recent), delete rest
+
+              // Delete all but the most recent
+              const userId = currentUserId; // Capture for closure
+              await Promise.all(
+                toDelete.map((node) => deleteCustomNode(userId, node.id)),
+              );
+
+              return `I found ${duplicates.length} "${title}" nodes and kept the most recent one, removing ${toDelete.length} duplicate(s). Your roadmap is now cleaned up!`;
+            } catch (error) {
+              logger.error("Failed to delete duplicate nodes", error);
+              return `I had trouble cleaning up those duplicates. Please try again.`;
             }
           },
         },

@@ -21,6 +21,19 @@ export const CreateCustomNodeSchema = z.object({
 
 export type CreateCustomNodeInput = z.infer<typeof CreateCustomNodeSchema>;
 
+export const UpdateCustomNodeSchema = z.object({
+  title: z.string().min(1).max(100).optional(),
+  description: z.string().max(1000).optional(),
+  parentId: z.string().optional(),
+  type: z.enum(["checklist", "resource", "action", "roadblock"]).optional(),
+  content: z
+    .record(z.unknown())
+    .optional()
+    .describe("Rich content: { checklistItems, resources, notes, dueDate }"),
+});
+
+export type UpdateCustomNodeInput = z.infer<typeof UpdateCustomNodeSchema>;
+
 export async function createCustomNode(
   userId: string,
   input: CreateCustomNodeInput,
@@ -36,6 +49,43 @@ export async function createCustomNode(
       description: validated.description,
       type: validated.type,
       content: (validated.content as Prisma.JsonValue) ?? Prisma.JsonNull,
+    },
+  });
+}
+
+export async function updateCustomNode(
+  userId: string,
+  nodeId: string,
+  input: UpdateCustomNodeInput,
+) {
+  const validated = UpdateCustomNodeSchema.parse(input);
+
+  // First check if node exists and belongs to user
+  const existing = await db.customNode.findFirst({
+    where: {
+      id: nodeId,
+      userId,
+    },
+  });
+
+  if (!existing) {
+    throw new Error("Custom node not found or access denied");
+  }
+
+  return db.customNode.update({
+    where: {
+      id: nodeId,
+    },
+    data: {
+      ...(validated.title && { title: validated.title }),
+      ...(validated.description !== undefined && {
+        description: validated.description,
+      }),
+      ...(validated.parentId && { parentId: validated.parentId }),
+      ...(validated.type && { type: validated.type }),
+      ...(validated.content !== undefined && {
+        content: (validated.content as Prisma.JsonValue) ?? Prisma.JsonNull,
+      }),
     },
   });
 }

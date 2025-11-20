@@ -103,7 +103,9 @@ interface RoadmapFlowProps {
     type: string;
     status: string;
   }>;
-  onRefreshCustomNodes?: () => void;
+  onRefreshCustomNodes?: (nodeId?: string) => void;
+  newlyCreatedNodeId?: string;
+  onNodePanned?: () => void;
 }
 
 function stringToPosition(pos?: string): Position | undefined {
@@ -122,6 +124,8 @@ function RoadmapFlowInner({
   userProfile,
   customNodes = [],
   onRefreshCustomNodes,
+  newlyCreatedNodeId,
+  onNodePanned,
 }: RoadmapFlowProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const animationsRef = useRef<Map<string, () => void>>(new Map());
@@ -205,6 +209,30 @@ function RoadmapFlowInner({
       setSelectedNodeId(null);
     }
   }, [userProfile]);
+
+  // Auto-pan to newly created custom node
+  useEffect(() => {
+    if (!newlyCreatedNodeId) return;
+
+    // Small delay to ensure node is rendered
+    const timer = setTimeout(() => {
+      // Pan viewport to the new node with smooth animation
+      void fitView({
+        nodes: [{ id: newlyCreatedNodeId }],
+        duration: 800,
+        padding: 0.3,
+        maxZoom: 1.5,
+      }).then(() => {
+        // Select the node to open its info panel after panning completes
+        setSelectedNodeId(newlyCreatedNodeId);
+
+        // Notify parent that panning is complete
+        onNodePanned?.();
+      });
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [newlyCreatedNodeId, fitView, onNodePanned]);
 
   // Calculate initial viewport based on user's current level
   const initialViewport = useMemo(() => {
@@ -468,7 +496,8 @@ function RoadmapFlowInner({
         data: {
           label: customNode.title,
           icon: "clipboard-list",
-          status: customNode.status as NodeStatus,
+          status: (nodeStatuses[customNode.id] ??
+            customNode.status) as NodeStatus, // Check nodeStatuses first, then fallback to database status
           parentId: customNode.parentId,
           isCustom: true, // Flag for custom styling if needed
           isCurrentLevel: false,
@@ -1408,6 +1437,32 @@ function RoadmapFlowInner({
     [setNodes, fitView],
   );
 
+  const handleDeleteCustomNode = useCallback(
+    async (nodeId: string) => {
+      try {
+        const response = await fetch(`/api/custom-nodes/${nodeId}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to delete custom node");
+        }
+
+        // Close the info panel
+        setSelectedNodeId(null);
+
+        // Refresh custom nodes from parent
+        if (onRefreshCustomNodes) {
+          onRefreshCustomNodes();
+        }
+      } catch (error) {
+        logger.error("Failed to delete custom node", error, { nodeId });
+        alert("Failed to delete the node. Please try again.");
+      }
+    },
+    [onRefreshCustomNodes],
+  );
+
   return (
     <div className="relative h-screen w-full overflow-hidden bg-[#EDF2F6] dark:bg-[#0C1020]">
       <ReactFlow
@@ -1569,11 +1624,13 @@ function RoadmapFlowInner({
               nodeId={selectedNodeId}
               nodeStatus={nodeStatuses[selectedNodeId] ?? "base"}
               progress={selectedNodeProgress}
+              isCustomNode={customNodes.some((n) => n.id === selectedNodeId)}
               onStatusChange={(status) =>
                 handleStatusChange(selectedNodeId, status)
               }
               onNavigateToNode={handleNavigateToNode}
               onChecklistStatusChange={handleStatusChange}
+              onDeleteCustomNode={handleDeleteCustomNode}
               onCheckboxClick={() =>
                 handleTutorialInteraction("checkbox-click")
               }
