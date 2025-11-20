@@ -11,6 +11,7 @@ export type ChecklistNodeData = {
   status?: "base" | "in-progress" | "completed";
   isSelected?: boolean;
   animationIndex?: number;
+  isCustom?: boolean;
 };
 
 export type ChecklistNodeType = Node<ChecklistNodeData, "checklist">;
@@ -21,25 +22,46 @@ export type ChecklistNodeType = Node<ChecklistNodeData, "checklist">;
  * Features Obsidian-inspired physics-based floating animation
  */
 function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
-  const { label, status = "base", isSelected, animationIndex = 0 } = data;
+  const {
+    label,
+    status = "base",
+    isSelected,
+    animationIndex = 0,
+    isCustom = false,
+  } = data;
   const hiddenHandleClass =
     "pointer-events-none opacity-0 h-3 w-3 bg-transparent border-transparent";
 
-  // Determine colors based on status
-  const colors = {
-    base: {
-      main: "#0077CC",
-      glow: "#0077CC",
-    },
-    "in-progress": {
-      main: "#C91D39",
-      glow: "#C91D39",
-    },
-    completed: {
-      main: "#00A36C",
-      glow: "#00A36C",
-    },
-  };
+  // Determine colors based on status (custom nodes use warmer tones)
+  const colors = isCustom
+    ? {
+        base: {
+          main: "#FFB830", // Warm yellow-orange
+          glow: "#FFB830",
+        },
+        "in-progress": {
+          main: "#FF8C42", // Orange
+          glow: "#FF8C42",
+        },
+        completed: {
+          main: "#00C896", // Teal-green
+          glow: "#00C896",
+        },
+      }
+    : {
+        base: {
+          main: "#0077CC",
+          glow: "#0077CC",
+        },
+        "in-progress": {
+          main: "#C91D39",
+          glow: "#C91D39",
+        },
+        completed: {
+          main: "#00A36C",
+          glow: "#00A36C",
+        },
+      };
 
   const currentColor = colors[status];
 
@@ -173,10 +195,12 @@ function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
             style={{ backgroundColor: currentColor.main }}
           />
 
-          {/* White border ring */}
+          {/* White border ring (dashed for custom nodes) */}
           <span
             aria-hidden
-            className="pointer-events-none absolute h-16 w-16 rounded-full border-2 border-white"
+            className={`pointer-events-none absolute h-16 w-16 rounded-full border-2 ${
+              isCustom ? "border-dashed border-yellow-300" : "border-white"
+            }`}
           />
 
           {/* Center dot with subtle pulse */}

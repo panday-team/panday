@@ -56,6 +56,8 @@ import {
   fetchNodeStatuses,
   setNodeStatus,
 } from "@/lib/node-status";
+import { calculateCustomNodePositions } from "@/lib/custom-node-positioning";
+import { resolveCollisions, detectCollisions } from "@/lib/collision-physics";
 import {
   type UserProfile,
   getCompletedLevels,
@@ -93,6 +95,15 @@ const arrowMarker = {
 interface RoadmapFlowProps {
   roadmap: Roadmap;
   userProfile: UserProfile | null;
+  customNodes?: Array<{
+    id: string;
+    parentId: string;
+    title: string;
+    description: string;
+    type: string;
+    status: string;
+  }>;
+  onRefreshCustomNodes?: () => void;
 }
 
 function stringToPosition(pos?: string): Position | undefined {
@@ -106,7 +117,12 @@ function stringToPosition(pos?: string): Position | undefined {
   return posMap[pos.toLowerCase()];
 }
 
-function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
+function RoadmapFlowInner({
+  roadmap,
+  userProfile,
+  customNodes = [],
+  onRefreshCustomNodes,
+}: RoadmapFlowProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const animationsRef = useRef<Map<string, () => void>>(new Map());
   const isDraggingRef = useRef<string | null>(null);
@@ -116,6 +132,10 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
   const { fitView, setCenter, getViewport, screenToFlowPosition, setViewport } =
     useReactFlow();
   const responsive = useResponsive();
+
+  // Track custom node positions for physics-based collision avoidance
+  const [customNodePositionsOverride, setCustomNodePositionsOverride] =
+    useState<Map<string, { x: number; y: number }>>(new Map());
 
   // Track which category nodes are expanded (showing their checklist children)
   // Always initialize with empty Set to avoid hydration mismatch
@@ -403,8 +423,71 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         } as FlowNode;
       });
 
-    return builtNodes;
-  }, [roadmap, nodeStatuses, userProfile, selectedNodeId, nodeRelationships]);
+    // Process custom nodes with smart positioning
+    // Build parent position map
+    const parentPositions = new Map<string, { x: number; y: number }>();
+    for (const node of builtNodes) {
+      parentPositions.set(node.id, node.position);
+    }
+    // Include graph nodes as fallback
+    for (const node of roadmap.graph.nodes) {
+      if (!parentPositions.has(node.id)) {
+        parentPositions.set(node.id, node.position);
+      }
+    }
+
+    // Calculate smart positions for all custom nodes
+    const customNodePositions = calculateCustomNodePositions(
+      customNodes.map((n) => ({ id: n.id, parentId: n.parentId })),
+      parentPositions,
+      builtNodes.map((n) => ({ id: n.id, position: n.position })),
+    );
+
+    const processedCustomNodes: FlowNode[] = customNodes.map((customNode) => {
+      // Get calculated position or fallback to direct-entry
+      let position = customNodePositions.get(customNode.id);
+
+      if (!position) {
+        // Fallback for orphaned nodes
+        const defaultNode =
+          builtNodes.find((n) => n.id === "direct-entry") ?? builtNodes[0];
+        if (defaultNode) {
+          position = {
+            x: defaultNode.position.x + 150,
+            y: defaultNode.position.y,
+          };
+        } else {
+          position = { x: 0, y: 0 };
+        }
+      }
+
+      return {
+        id: customNode.id,
+        type: "checklist", // Use checklist appearance
+        position,
+        data: {
+          label: customNode.title,
+          icon: "clipboard-list",
+          status: customNode.status as NodeStatus,
+          parentId: customNode.parentId,
+          isCustom: true, // Flag for custom styling if needed
+          isCurrentLevel: false,
+          isDimmed: false,
+          isSelected: selectedNodeId === customNode.id,
+        },
+        draggable: true, // Allow user to move their custom notes
+      } as FlowNode;
+    });
+
+    return [...builtNodes, ...processedCustomNodes];
+  }, [
+    roadmap,
+    nodeStatuses,
+    userProfile,
+    selectedNodeId,
+    nodeRelationships,
+    customNodes,
+  ]);
 
   const initialEdges = useMemo<FlowEdge[]>(() => {
     // Get personalization data for edge filtering
@@ -412,7 +495,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
       ? getIrrelevantNodes(userProfile.specialization, userProfile.currentLevel)
       : [];
 
-    return roadmap.graph.edges
+    const standardEdges = roadmap.graph.edges
       .filter((graphEdge) => {
         const targetNode = roadmap.graph.nodes.find(
           (n) => n.id === graphEdge.target,
@@ -494,7 +577,15 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         style: baseEdgeStyle,
         markerEnd: arrowMarker,
       }));
-  }, [roadmap, selectedNodeId, userProfile]);
+
+    // Add edges for custom nodes
+    // Custom nodes are floating and do not have connecting edges
+    // But we still need them to be positioned relative to their parents
+    const customEdges: FlowEdge[] = [];
+
+    return [...standardEdges, ...customEdges];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roadmap, selectedNodeId, userProfile, customNodes]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges] = useEdgesState(initialEdges);
@@ -521,6 +612,113 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
       })),
     );
   }, [nodeStatuses, setNodes]);
+
+  // Physics-based collision avoidance for custom nodes
+  useEffect(() => {
+    if (customNodes.length === 0) return;
+
+    // Get all currently visible nodes
+    const visibleNodes = nodes.filter((n) => {
+      // Include hub nodes, category nodes, and visible checklist nodes
+      const data = n.data as Record<string, unknown>;
+      if (!data.parentId && !data.parentIds) return true; // Hub/terminal
+      if (data.isExpanded !== undefined) return true; // Category nodes
+      // Checklist nodes visible when parent is selected
+      return false; // Will be checked separately
+    });
+
+    // Detect expanded categories
+    const expandedCategoryNodes = visibleNodes.filter((n) => {
+      const data = n.data as Record<string, unknown>;
+      return data.isExpanded === true;
+    });
+
+    // Get visible checklist nodes (children of expanded categories)
+    const visibleChecklistNodes = nodes.filter((n) => {
+      const data = n.data as Record<string, unknown>;
+      const parents = Array.isArray(data.parentIds)
+        ? (data.parentIds as string[])
+        : typeof data.parentId === "string"
+          ? [data.parentId]
+          : [];
+      return parents.some((parentId: string) =>
+        expandedCategoryNodes.some((cat) => cat.id === parentId),
+      );
+    });
+
+    // Get custom nodes
+    const customNodesList = nodes.filter((n) => {
+      const data = n.data as Record<string, unknown>;
+      return data.isCustom === true;
+    });
+
+    if (customNodesList.length === 0) return;
+
+    // Detect collisions
+    const collidingIds = detectCollisions(
+      customNodesList.map((n) => ({ id: n.id, position: n.position })),
+      expandedCategoryNodes.map((n) => ({ id: n.id, position: n.position })),
+      visibleChecklistNodes.map((n) => ({ id: n.id, position: n.position })),
+    );
+
+    // If collisions detected, run physics simulation
+    if (collidingIds.size > 0) {
+      const adjustedPositions = resolveCollisions(
+        customNodesList.map((n) => ({
+          id: n.id,
+          position: n.position,
+          size: 56,
+        })),
+        [
+          ...expandedCategoryNodes.map((n) => ({
+            id: n.id,
+            position: n.position,
+            size: 96,
+          })),
+          ...visibleChecklistNodes.map((n) => ({
+            id: n.id,
+            position: n.position,
+            size: 64,
+          })),
+        ],
+        50, // iterations
+      );
+
+      // Update positions with smooth animation
+      setCustomNodePositionsOverride(adjustedPositions);
+    } else {
+      // Clear overrides when no collisions
+      setCustomNodePositionsOverride(new Map());
+    }
+  }, [nodes, customNodes]);
+
+  // Apply position overrides with smooth animation
+  useEffect(() => {
+    if (customNodePositionsOverride.size === 0) return;
+
+    // Animate nodes to new positions
+    customNodePositionsOverride.forEach((targetPos, nodeId) => {
+      const node = nodes.find((n) => n.id === nodeId);
+      if (!node) return;
+
+      // Use React Flow's built-in smooth position update
+      setNodes((currentNodes) =>
+        currentNodes.map((n) =>
+          n.id === nodeId
+            ? {
+                ...n,
+                position: targetPos,
+                // Add animated class for CSS transition
+                style: {
+                  ...n.style,
+                  transition: "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+                },
+              }
+            : n,
+        ),
+      );
+    });
+  }, [customNodePositionsOverride, nodes, setNodes]);
 
   const childOffsets = useMemo(
     () => calculateChildOffsets(initialNodes),
@@ -675,7 +873,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
     () => ({
       type: "bezier" as const,
       style: baseEdgeStyle,
-      markerEnd: arrowMarker,
+      // markerEnd removed to allow custom edges to be arrow-less by default
     }),
     [],
   );
@@ -955,9 +1153,31 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
     [setCenter, getViewport, screenToFlowPosition, selectedNodeId, responsive],
   );
 
-  const selectedContent = selectedNodeId
-    ? roadmap.content.get(selectedNodeId)
-    : null;
+  const selectedContent = useMemo(() => {
+    if (!selectedNodeId) return null;
+
+    // Check if it's a custom node
+    const customNode = customNodes?.find((n) => n.id === selectedNodeId);
+    if (customNode) {
+      return {
+        frontmatter: {
+          id: customNode.id,
+          title: customNode.title,
+          type: "checklist" as const,
+          badge: "Custom",
+          subtitle: "Personalized Step", // Add default subtitle
+          duration: "Flexible", // Add default duration
+        },
+        content: customNode.description,
+        eligibility: [],
+        benefits: [],
+        outcomes: [],
+      };
+    }
+
+    // Standard content
+    return roadmap.content.get(selectedNodeId) ?? null;
+  }, [selectedNodeId, roadmap.content, customNodes]);
 
   // Build categories for hub/category nodes (for Quick Navigation dropdown)
   const selectedNodeCategories = useMemo<Category[] | undefined>(() => {
@@ -1294,6 +1514,7 @@ function RoadmapFlowInner({ roadmap, userProfile }: RoadmapFlowProps) {
         }
         onChatOpen={() => handleTutorialInteraction("chat-open")}
         forceClose={showTutorial}
+        onCustomNodeCreated={onRefreshCustomNodes}
       />
 
       <RoadmapTutorial

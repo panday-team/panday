@@ -13,7 +13,10 @@ import { loadNodeContent } from "@/lib/roadmap-loader";
 import { db } from "@/server/db";
 import { buildMessagePreview, deriveThreadTitle } from "@/lib/chat-threads";
 
+import { createCustomNode } from "@/lib/custom-nodes";
+import { loadRoadmapGraph } from "@/lib/roadmap-loader";
 import { auth } from "@clerk/nextjs/server";
+import stringSimilarity from "string-similarity";
 
 const ChatMessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]),
@@ -399,12 +402,169 @@ Provide personalized guidance based strictly on the user's current situation and
 
     const result = streamText({
       model: getChatModel(),
-      system: systemPrompt,
+      system: `${systemPrompt}
+
+You also have a tool called 'createNode' that you can use to create personalized checklist items, resources, or other nodes on the user's roadmap.
+If the user asks for a specific step, resource, or reminder that isn't in the standard roadmap, USE THIS TOOL to create it for them.
+Don't just tell them about it - actually create the node so they can see it.
+When you create a node, tell the user you have done so.`,
       messages: validatedBody.messages.map((msg) => ({
         role: msg.role,
         content: msg.content,
       })),
       maxTokens: 1024,
+      maxSteps: 5,
+      tools: {
+        createNode: {
+          description:
+            "Create a new personalized node on the roadmap for the user. Use this when the user asks for a custom step, resource, or task that isn't already in the roadmap.",
+          parameters: z.object({
+            title: z.string().describe("The title of the new node"),
+            description: z
+              .string()
+              .describe("A brief description of what this node represents"),
+            parentId: z
+              .string()
+              .describe(
+                "The ID of the existing node to attach this new node to. This should be the most relevant nearby node. You can provide multiple comma-separated IDs to attach to multiple parents (e.g., 'Level 4, Red Seal').",
+              ),
+            type: z
+              .enum(["checklist", "resource", "action", "roadblock"])
+              .describe("The type of node to create"),
+          }),
+          execute: async ({
+            title,
+            description,
+            parentId,
+            type,
+          }: {
+            title: string;
+            description: string;
+            parentId: string;
+            type: "checklist" | "resource" | "action" | "roadblock";
+          }) => {
+            if (!currentUserId) {
+              return "Error: User must be authenticated to create nodes.";
+            }
+            try {
+              const roadmapId = validatedBody.roadmap_id ?? "electrician-bc";
+              const graph = await loadRoadmapGraph(roadmapId);
+
+              // Process multiple parent IDs
+              const requestedParentIds = parentId
+                .split(",")
+                .map((p: string) => p.trim());
+              const resolvedParentIds: string[] = [];
+
+              for (const requestedId of requestedParentIds) {
+                let resolvedId = requestedId;
+                const exactMatch = graph.nodes.find(
+                  (n) => n.id === requestedId,
+                );
+
+                if (!exactMatch) {
+                  // Special case overrides for common terms
+                  const overrides: Record<string, string> = {
+                    "Level 1": "level-1",
+                    "Level 2": "level-2",
+                    "Level 3": "level-3",
+                    "Red Seal": "red-seal-construction",
+                    Foundation: "foundation-program",
+                    "Foundation Program": "foundation-program",
+                    "Direct Entry": "direct-entry",
+                  };
+
+                  const override = overrides[requestedId];
+                  if (override) {
+                    resolvedId = override;
+                    logger.info(
+                      `Mapped parentId "${requestedId}" to "${resolvedId}" via overrides`,
+                    );
+                  } else if (
+                    requestedId.toLowerCase() === "level 4" ||
+                    requestedId === "level-4"
+                  ) {
+                    // Special handling for Level 4: respect user specialization
+                    if (
+                      validatedBody.user_profile?.specialization ===
+                      "industrial"
+                    ) {
+                      resolvedId = "level-4-industrial";
+                    } else {
+                      resolvedId = "level-4-construction";
+                    }
+                    logger.info(
+                      `Mapped Level 4 to "${resolvedId}" based on specialization`,
+                    );
+                  } else if (requestedId.toLowerCase() === "red seal") {
+                    // Special handling for Red Seal as well
+                    if (
+                      validatedBody.user_profile?.specialization ===
+                      "industrial"
+                    ) {
+                      resolvedId = "red-seal-industrial";
+                    } else {
+                      resolvedId = "red-seal-construction";
+                    }
+                  } else {
+                    // Find best fuzzy match
+                    const nodeIds = graph.nodes.map((n) => n.id);
+                    const matches = stringSimilarity.findBestMatch(
+                      requestedId,
+                      nodeIds,
+                    );
+
+                    if (matches.bestMatch.rating > 0.25) {
+                      resolvedId = matches.bestMatch.target;
+                      logger.info(
+                        `Fuzzy matched parentId "${requestedId}" to "${resolvedId}"`,
+                      );
+                    } else {
+                      // Fallback only if it's the only parent requested
+                      if (requestedParentIds.length === 1) {
+                        resolvedId = "direct-entry";
+                        logger.warn(
+                          `No good match for parentId "${requestedId}", falling back to "direct-entry"`,
+                        );
+                      } else {
+                        // If multiple parents, just skip bad ones or keep as is?
+                        // Keeping as is might break frontend if it can't find it.
+                        // Let's skip adding it to resolved list if it's bad?
+                        // Or fallback to direct-entry?
+                        // Let's log warning and skip it to avoid cluttering direct-entry
+                        logger.warn(
+                          `Skipping unresolvable parent ID "${requestedId}" in multi-parent request`,
+                        );
+                        continue;
+                      }
+                    }
+                  }
+                }
+                resolvedParentIds.push(resolvedId);
+              }
+
+              // If we lost all parents due to resolution failure, fallback to direct-entry
+              if (resolvedParentIds.length === 0) {
+                resolvedParentIds.push("direct-entry");
+              }
+
+              const finalParentId = resolvedParentIds.join(",");
+
+              await createCustomNode(currentUserId, {
+                roadmapId,
+                parentId: finalParentId,
+                title,
+                description,
+                type,
+              });
+              return `Successfully created new node "${title}" attached to parent(s) "${finalParentId}" (originally requested "${parentId}"). The user can now see this on their roadmap.`;
+            } catch (error) {
+              logger.error("Failed to create custom node", error);
+              return "Error: Failed to create node. Please ensure the parent node ID is valid.";
+            }
+          },
+        },
+      },
       onFinish: async ({ text, sources, usage, finishReason }) => {
         try {
           await db.chatMessage.create({

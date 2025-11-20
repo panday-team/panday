@@ -90,6 +90,7 @@ model UserProfile {
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
   nodeProgress          NodeProgress[]
+  customNodes           CustomNode[]
 
   @@index([clerkUserId])
 }
@@ -216,4 +217,21 @@ model ChatThreadMessage {
   createdAt DateTime   @default(now())
 
   @@index([threadId, createdAt])
+}
+
+model CustomNode {
+  id          String   @id @default(cuid())
+  userId      String
+  roadmapId   String
+  parentId    String
+  title       String
+  description String   @db.Text
+  type        String   @default("checklist")
+  status      String   @default("in-progress")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        UserProfile @relation(fields: [userId], references: [clerkUserId], onDelete: Cascade)
+
+  @@index([userId, roadmapId])
 }

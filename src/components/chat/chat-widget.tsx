@@ -49,6 +49,7 @@ interface ChatWidgetProps {
   };
   onChatOpen?: () => void;
   forceClose?: boolean;
+  onCustomNodeCreated?: () => void;
 }
 
 type StreamStatusEvent = {
@@ -193,6 +194,7 @@ export function ChatWidget({
   userProfile,
   onChatOpen,
   forceClose,
+  onCustomNodeCreated,
 }: ChatWidgetProps) {
   const { isSignedIn } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -254,6 +256,7 @@ export function ChatWidget({
   } = useChat({
     api: "/api/chat",
     streamProtocol: "data",
+    maxSteps: 5,
     onError: (chatError) => {
       logger.error("Chat error", chatError);
       setIsLoading(false);
@@ -272,6 +275,14 @@ export function ChatWidget({
           hydrate: true,
           silent: true,
         });
+      }
+
+      // Notify parent to refresh custom nodes (seamless, no page reload)
+      if (onCustomNodeCreated) {
+        // Small delay to ensure database write completes
+        setTimeout(() => {
+          onCustomNodeCreated();
+        }, 500);
       }
     },
     experimental_prepareRequestBody: ({
@@ -792,9 +803,7 @@ export function ChatWidget({
 
         setFaqEntries(topEntries);
       } catch (err) {
-        setFaqError(
-          err instanceof Error ? err.message : "Failed to load FAQs",
-        );
+        setFaqError(err instanceof Error ? err.message : "Failed to load FAQs");
       } finally {
         setFaqLoading(false);
         setHasLoadedFaqs(true);
@@ -1444,7 +1453,7 @@ export function ChatWidget({
                   )}
                   {faqEntries.length > 0 && (
                     <div className="mt-3 space-y-2">
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-white/40">
+                      <p className="text-[11px] font-medium tracking-wide text-gray-400 uppercase dark:text-white/40">
                         Popular questions
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -1463,9 +1472,7 @@ export function ChatWidget({
                     </div>
                   )}
                   {faqError && !faqLoading && faqEntries.length === 0 && (
-                    <p className="mt-2 text-[11px] text-red-500">
-                      {faqError}
-                    </p>
+                    <p className="mt-2 text-[11px] text-red-500">{faqError}</p>
                   )}
                 </form>
               </div>

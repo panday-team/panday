@@ -1,7 +1,8 @@
+import { getCustomNodes } from "@/lib/custom-nodes";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { roadmapCache } from "@/lib/roadmap-cache";
-import { RoadmapFlow } from "@/components/roadmap-flow";
+import { RoadmapClientWrapper } from "@/components/roadmap-client-wrapper";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { db as prisma } from "@/server/db";
 import type {
@@ -18,6 +19,8 @@ export default async function RoadmapPage() {
 
   // Fetch user profile for personalization (guests will have null profile)
   let userProfile: UserProfile | null = null;
+  let customNodes: Awaited<ReturnType<typeof getCustomNodes>> = [];
+
   if (userId) {
     const dbProfile = await prisma.userProfile.findUnique({
       where: { clerkUserId: userId },
@@ -40,11 +43,18 @@ export default async function RoadmapPage() {
       createdAt: dbProfile.createdAt,
       updatedAt: dbProfile.updatedAt,
     };
+
+    customNodes = await getCustomNodes(userId, "electrician-bc");
   }
 
   return (
     <ErrorBoundary>
-      <RoadmapFlow roadmap={roadmap} userProfile={userProfile} />
+      <RoadmapClientWrapper
+        roadmap={roadmap}
+        userProfile={userProfile}
+        initialCustomNodes={customNodes}
+        userId={userId}
+      />
     </ErrorBoundary>
   );
 }
