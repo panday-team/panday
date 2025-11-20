@@ -8,6 +8,7 @@ import {
   useMemo,
   Fragment,
 } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { useChat, type Message } from "@ai-sdk/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,8 @@ import {
   Plus,
   Trash2,
   Pencil,
-  Menu,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -200,6 +202,7 @@ export function ChatWidget({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -238,6 +241,21 @@ export function ChatWidget({
   useEffect(() => {
     activeThreadRef.current = activeThreadId;
   }, [activeThreadId]);
+
+  // Load sidebar collapsed state from localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem("chat-sidebar-collapsed");
+    if (stored !== null) {
+      setIsSidebarCollapsed(stored === "true");
+    }
+  }, []);
+
+  // Persist sidebar collapsed state to localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("chat-sidebar-collapsed", String(isSidebarCollapsed));
+  }, [isSidebarCollapsed]);
 
   const activeThread = useMemo(() => {
     if (!activeThreadId) return null;
@@ -1018,7 +1036,7 @@ export function ChatWidget({
                 isDisabled && "cursor-not-allowed opacity-60",
               )}
             >
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex min-w-0 items-center justify-between gap-2">
                 {isRenaming ? (
                   <Input
                     value={renameState?.value ?? ""}
@@ -1051,18 +1069,18 @@ export function ChatWidget({
                     className="h-8 rounded-lg border-white/20 bg-white/10 text-white placeholder:text-white/40"
                   />
                 ) : (
-                  <div>
-                    <p className="text-sm font-semibold text-white">
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <p className="truncate text-sm leading-tight font-semibold text-white">
                       {thread.title}
                     </p>
-                    <p className="text-xs text-white/60">
+                    <p className="truncate text-xs leading-tight text-white/60">
                       {thread.messagePreview ?? "No messages yet"}
                     </p>
                   </div>
                 )}
 
-                {isSignedIn && (
-                  <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
+                {isSignedIn && !isRenaming && (
+                  <div className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100">
                     <button
                       type="button"
                       aria-label="Rename"
@@ -1099,8 +1117,8 @@ export function ChatWidget({
     );
   };
 
-  const historySidebar = (
-    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-white/10 bg-slate-900/80 px-4 py-5 text-white">
+  const renderSidebarContent = () => (
+    <div className="flex h-full flex-col px-4 py-5">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <p className="text-[11px] tracking-wide text-white/60 uppercase">
@@ -1123,7 +1141,32 @@ export function ChatWidget({
         </SignedIn>
       </div>
       <div className="flex-1 overflow-y-auto">{renderHistoryList()}</div>
-    </aside>
+    </div>
+  );
+
+  const historySidebar = (
+    <AnimatePresence mode="wait">
+      {!isSidebarCollapsed && (
+        <motion.aside
+          key="sidebar"
+          initial={{ width: 0, opacity: 0 }}
+          animate={{ width: 256, opacity: 1 }}
+          exit={{ width: 0, opacity: 0 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="flex h-full shrink-0 flex-col overflow-hidden border-r border-white/10 bg-slate-900/80 text-white"
+        >
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2, delay: 0.1 }}
+            className="h-full"
+          >
+            {renderSidebarContent()}
+          </motion.div>
+        </motion.aside>
+      )}
+    </AnimatePresence>
   );
 
   const renderMessages = () => {
@@ -1379,27 +1422,75 @@ export function ChatWidget({
   return (
     <div className="fixed right-6 bottom-6 z-40 flex flex-col items-end gap-3">
       {isExpanded && (
-        <div className="flex h-[75vh] max-h-[75vh] w-[min(960px,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur dark:border-white/10 dark:bg-[#1f2a37]/95">
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{
+            scale: 1,
+            opacity: 1,
+            width:
+              isSidebarCollapsed && isDesktop
+                ? "min(700px, calc(100vw - 3rem))"
+                : "min(960px, calc(100vw - 3rem))",
+          }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="flex h-[75vh] max-h-[75vh] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur dark:border-white/10 dark:bg-[#1f2a37]/95"
+        >
           <div className="flex h-full min-w-0 flex-1 flex-col">
             <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-white/10">
-              <div>
+              <div className="min-w-0 flex-1 overflow-hidden pr-4">
                 <p className="text-xs tracking-wide text-gray-500 uppercase dark:text-white/70">
                   Assistant
                 </p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                <p className="truncate text-lg font-semibold text-gray-900 dark:text-white">
                   {activeThread?.title ?? "New chat"}
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                {isDesktop && isSignedIn && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+                    className="text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-white/10"
+                    aria-label={
+                      isSidebarCollapsed ? "Show sidebar" : "Hide sidebar"
+                    }
+                  >
+                    <motion.div
+                      initial={false}
+                      animate={{ rotate: isSidebarCollapsed ? 0 : 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      {isSidebarCollapsed ? (
+                        <ChevronRight size={18} />
+                      ) : (
+                        <ChevronLeft size={18} />
+                      )}
+                    </motion.div>
+                  </Button>
+                )}
                 {!isDesktop && isSignedIn && (
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={handleHistoryToggle}
                     className="text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-white/10"
-                    aria-label="Show history"
+                    aria-label={
+                      isHistoryDrawerOpen ? "Hide history" : "Show history"
+                    }
                   >
-                    <Menu size={18} />
+                    <motion.div
+                      initial={false}
+                      animate={{ rotate: isHistoryDrawerOpen ? 0 : 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      {isHistoryDrawerOpen ? (
+                        <ChevronLeft size={18} />
+                      ) : (
+                        <ChevronRight size={18} />
+                      )}
+                    </motion.div>
                   </Button>
                 )}
                 <Button
@@ -1448,7 +1539,7 @@ export function ChatWidget({
                       placeholder={
                         !isSignedIn ? "Sign in to chat" : "Write your message"
                       }
-                      disabled={isLoading || !isSignedIn}
+                      disabled={!isSignedIn}
                       value={input}
                       onChange={handleInputChange}
                       className="border-none bg-transparent text-sm text-black placeholder:text-black/40 focus-visible:ring-0 dark:text-white dark:placeholder:text-white/40"
@@ -1506,18 +1597,36 @@ export function ChatWidget({
             </div>
           </div>
 
-          {!isDesktop && isHistoryDrawerOpen && (
-            <div className="absolute inset-0 z-50 flex">
-              <div
-                className="absolute inset-0 bg-black/50"
-                onClick={() => setIsHistoryDrawerOpen(false)}
-              />
-              <div className="relative h-full w-64 bg-slate-900/95 shadow-2xl">
-                {historySidebar}
-              </div>
-            </div>
-          )}
-        </div>
+          <AnimatePresence>
+            {!isDesktop && isHistoryDrawerOpen && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0 z-50 flex"
+              >
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute inset-0 bg-black/50"
+                  onClick={() => setIsHistoryDrawerOpen(false)}
+                />
+                <motion.div
+                  initial={{ x: -256 }}
+                  animate={{ x: 0 }}
+                  exit={{ x: -256 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="relative h-full w-64 bg-slate-900/80 text-white shadow-2xl"
+                >
+                  {renderSidebarContent()}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       )}
 
       <ChatButton
