@@ -579,12 +579,29 @@ function RoadmapFlowInner({
       }));
 
     // Add edges for custom nodes
-    // Custom nodes are floating and do not have connecting edges
-    // But we still need them to be positioned relative to their parents
-    const customEdges: FlowEdge[] = [];
+    // Show dashed connectors from custom nodes to ALL their parents
+    const customEdges: FlowEdge[] = customNodes.flatMap((customNode) => {
+      const parentIds = customNode.parentId.split(",").map((id) => id.trim());
+
+      // Create a dashed edge from custom node to each parent
+      return parentIds.map((parentId, index) => ({
+        id: `custom-edge-${customNode.id}-${parentId}-${index}`,
+        source: parentId,
+        target: customNode.id,
+        type: "bezier",
+        style: {
+          ...baseEdgeStyle,
+          strokeDasharray: "5,5", // Dashed line
+          stroke: "#FFB830", // Golden color for custom nodes
+          strokeWidth: 1.5,
+          opacity: 0.6,
+        },
+        // No arrow marker for custom edges
+        animated: false,
+      }));
+    });
 
     return [...standardEdges, ...customEdges];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roadmap, selectedNodeId, userProfile, customNodes]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);

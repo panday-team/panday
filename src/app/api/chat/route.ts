@@ -386,28 +386,49 @@ ${userContext}${nodeContext}You have access to the following relevant informatio
 
 ${embeddingsResponse.context}
 
-CRITICAL INSTRUCTIONS:
-1. ONLY use information from the provided context above. Do not use any external knowledge or make assumptions.
-2. If the context does not contain sufficient information to answer the user's question, explicitly state: "I don't have enough information in the provided sources to answer this question."
-3. Cite your sources using the format [Source: Title] when referencing specific information.
-4. When multiple sources are relevant, cite each one appropriately.
-5. Do not provide general guidance or advice that is not directly supported by the provided context.
-6. Be precise and accurate - if you're not certain about information from the context, acknowledge the limitation.
+INSTRUCTIONS:
+1. Prioritize information from the provided context above, but you can provide helpful guidance even when context is limited.
+2. When the user asks to create a custom node (checklist, reminder, tracker), use the createNode tool to help them.
+3. If you need clarification before answering or creating something, ask questions conversationally. Use phrases like:
+   - "Before I help with that, could you tell me..."
+   - "To make this more useful for you, what..."
+   - "Just to clarify..."
+4. Cite your sources using the format [Source: Title] when using specific information from the context.
+5. Be conversational and helpful. Don't say "I don't have enough information" - instead, ask clarifying questions or offer to create something custom.
 
 Example citation format:
 - "According to the Foundation Program [Source: Electrician Foundation], students receive 375 work-based training hours."
 - "The requirements include [Source: Level 1] completion of technical training."
 
-Provide personalized guidance based strictly on the user's current situation and the step they're asking about, using only the information provided in the context.`;
+Provide personalized guidance based on the user's current situation. When they want to track something or add a custom step, use the createNode tool to help them organize their learning journey.`;
 
     const result = streamText({
       model: getChatModel(),
       system: `${systemPrompt}
 
-You also have a tool called 'createNode' that you can use to create personalized checklist items, resources, or other nodes on the user's roadmap.
-If the user asks for a specific step, resource, or reminder that isn't in the standard roadmap, USE THIS TOOL to create it for them.
-Don't just tell them about it - actually create the node so they can see it.
-When you create a node, tell the user you have done so.`,
+You have a 'createNode' tool to help users create personalized checklist items, resources, or trackers on their roadmap.
+
+WHEN TO USE createNode:
+- User wants to track something (e.g., "track my exam prep", "remind me to...", "I need to study...")
+- User mentions specific tasks, topics, or goals they want to organize
+- User provides resource links or mentions deadlines
+
+HOW TO USE createNode:
+- For parentId: Use the most relevant roadmap milestone (e.g., "Red Seal", "Level 4", "Foundation Program")
+  * If the user mentions a specific level or milestone, use that
+  * If unclear, ask: "Where on your roadmap would you like this? For example, is this for Level 4, Red Seal prep, or something else?"
+- If the user provides rich details (tasks, resources, deadlines), extract them into the tool parameters
+- If details are minimal, either:
+  a) Ask clarifying questions, OR
+  b) Create a basic node and tell them they can add more details later
+
+Example (user provides details):
+User: "I want to prepare for my Red Seal exam. I need to study transformers, motor controls, and PLC programming. I have the ITA study guide at https://itabc.ca/study-guide and want to finish by June 2025."
+You: *Call createNode with all the details* → "I've created a Red Seal Exam Prep tracker for you with 3 study topics, your ITA study guide link, and a June 2025 target date. You can see it on your roadmap now!"
+
+Example (user provides minimal info):
+User: "Remind me to renew my safety tickets"
+You: *Call createNode with basic info* → "I've added a reminder to renew your safety tickets. Before I finalize this, when do they expire?"`,
       messages: validatedBody.messages.map((msg) => ({
         role: msg.role,
         content: msg.content,
@@ -431,17 +452,52 @@ When you create a node, tell the user you have done so.`,
             type: z
               .enum(["checklist", "resource", "action", "roadblock"])
               .describe("The type of node to create"),
+            checklistItems: z
+              .array(z.string())
+              .optional()
+              .describe(
+                "List of specific tasks or sub-items to track (e.g., ['Study transformers', 'Review motor controls', 'Practice PLC programming'])",
+              ),
+            resources: z
+              .array(
+                z.object({
+                  label: z.string(),
+                  href: z.string().url(),
+                }),
+              )
+              .optional()
+              .describe(
+                "List of helpful resources with labels and URLs (e.g., [{ label: 'ITA Study Guide', href: 'https://...' }])",
+              ),
+            notes: z
+              .string()
+              .optional()
+              .describe("Additional free-form notes or context"),
+            dueDate: z
+              .string()
+              .optional()
+              .describe(
+                "Target completion date if applicable (ISO format or natural language)",
+              ),
           }),
           execute: async ({
             title,
             description,
             parentId,
             type,
+            checklistItems,
+            resources,
+            notes,
+            dueDate,
           }: {
             title: string;
             description: string;
             parentId: string;
             type: "checklist" | "resource" | "action" | "roadblock";
+            checklistItems?: string[];
+            resources?: Array<{ label: string; href: string }>;
+            notes?: string;
+            dueDate?: string;
           }) => {
             if (!currentUserId) {
               return "Error: User must be authenticated to create nodes.";
@@ -463,12 +519,12 @@ When you create a node, tell the user you have done so.`,
                 );
 
                 if (!exactMatch) {
-                  // Special case overrides for common terms
+                  // Special case overrides for common terms (non-specialization-dependent)
                   const overrides: Record<string, string> = {
                     "Level 1": "level-1",
                     "Level 2": "level-2",
                     "Level 3": "level-3",
-                    "Red Seal": "red-seal-construction",
+                    // Note: "Red Seal" and "Level 4" removed - handled by specialization logic below
                     Foundation: "foundation-program",
                     "Foundation Program": "foundation-program",
                     "Direct Entry": "direct-entry",
@@ -485,26 +541,51 @@ When you create a node, tell the user you have done so.`,
                     requestedId === "level-4"
                   ) {
                     // Special handling for Level 4: respect user specialization
-                    if (
-                      validatedBody.user_profile?.specialization ===
-                      "industrial"
-                    ) {
+                    const specialization =
+                      validatedBody.user_profile?.specialization;
+
+                    if (!specialization) {
+                      // No specialization: attach to BOTH variants (multi-parent)
+                      resolvedParentIds.push("level-4-industrial");
+                      resolvedParentIds.push("level-4-construction");
+                      logger.info(
+                        `Level 4 → Multi-parent (no specialization): level-4-industrial, level-4-construction`,
+                      );
+                      continue; // Skip adding resolvedId to list since we already added both
+                    } else if (specialization === "industrial") {
                       resolvedId = "level-4-industrial";
+                      logger.info(
+                        `Level 4 → level-4-industrial (user specialization: industrial)`,
+                      );
                     } else {
                       resolvedId = "level-4-construction";
+                      logger.info(
+                        `Level 4 → level-4-construction (user specialization: ${specialization})`,
+                      );
                     }
-                    logger.info(
-                      `Mapped Level 4 to "${resolvedId}" based on specialization`,
-                    );
                   } else if (requestedId.toLowerCase() === "red seal") {
-                    // Special handling for Red Seal as well
-                    if (
-                      validatedBody.user_profile?.specialization ===
-                      "industrial"
-                    ) {
+                    // Special handling for Red Seal: respect user specialization
+                    const specialization =
+                      validatedBody.user_profile?.specialization;
+
+                    if (!specialization) {
+                      // No specialization: attach to BOTH variants (multi-parent)
+                      resolvedParentIds.push("red-seal-industrial");
+                      resolvedParentIds.push("red-seal-construction");
+                      logger.info(
+                        `Red Seal → Multi-parent (no specialization): red-seal-industrial, red-seal-construction`,
+                      );
+                      continue; // Skip adding resolvedId to list since we already added both
+                    } else if (specialization === "industrial") {
                       resolvedId = "red-seal-industrial";
+                      logger.info(
+                        `Red Seal → red-seal-industrial (user specialization: industrial)`,
+                      );
                     } else {
                       resolvedId = "red-seal-construction";
+                      logger.info(
+                        `Red Seal → red-seal-construction (user specialization: ${specialization})`,
+                      );
                     }
                   } else {
                     // Find best fuzzy match
@@ -550,17 +631,53 @@ When you create a node, tell the user you have done so.`,
 
               const finalParentId = resolvedParentIds.join(",");
 
+              // Build rich content object
+              const content: Record<string, unknown> = {};
+              if (checklistItems && checklistItems.length > 0) {
+                content.checklistItems = checklistItems.map((item, index) => ({
+                  id: `item-${index + 1}`,
+                  title: item,
+                  completed: false,
+                }));
+              }
+              if (resources && resources.length > 0) {
+                content.resources = resources;
+              }
+              if (notes) {
+                content.notes = notes;
+              }
+              if (dueDate) {
+                content.dueDate = dueDate;
+              }
+
               await createCustomNode(currentUserId, {
                 roadmapId,
                 parentId: finalParentId,
                 title,
                 description,
                 type,
+                content: Object.keys(content).length > 0 ? content : undefined,
               });
-              return `Successfully created new node "${title}" attached to parent(s) "${finalParentId}" (originally requested "${parentId}"). The user can now see this on their roadmap.`;
+
+              // Build success message with details
+              let successMsg = `Successfully created "${title}" attached to ${finalParentId}`;
+              if (checklistItems && checklistItems.length > 0) {
+                successMsg += ` with ${checklistItems.length} checklist items`;
+              }
+              if (resources && resources.length > 0) {
+                successMsg += ` and ${resources.length} resources`;
+              }
+              successMsg += ". The user can now see this on their roadmap.";
+
+              return successMsg;
             } catch (error) {
               logger.error("Failed to create custom node", error);
-              return "Error: Failed to create node. Please ensure the parent node ID is valid.";
+              // Don't expose technical errors - ask for clarification instead
+              return `I had trouble placing that on your roadmap. Could you tell me which part of your journey this relates to? For example:
+- Foundation Program or Direct Entry?
+- Level 1, 2, 3, or 4?
+- Red Seal preparation?
+- Something else?`;
             }
           },
         },

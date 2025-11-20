@@ -1,6 +1,11 @@
 /**
  * Physics-based collision detection and resolution for custom nodes
  * Provides smooth animations when nodes need to move out of the way
+ *
+ * Performance optimizations:
+ * - Spatial partitioning grid for O(n) nearest neighbor queries
+ * - Early termination when velocities settle below threshold
+ * - Distance-based culling for force calculations
  */
 
 interface Position {
@@ -12,6 +17,7 @@ const REPULSION_STRENGTH = 0.35; // How strongly nodes push each other
 const FRICTION = 0.85; // Dampening factor (0-1, higher = more damping)
 const MIN_REPULSION_DISTANCE = 200; // Distance at which repulsion kicks in (accounts for labels)
 const VELOCITY_THRESHOLD = 0.1; // Stop animating when velocity is very small
+const GRID_CELL_SIZE = 250; // Size of spatial partitioning cells (slightly larger than repulsion distance)
 
 /**
  * Calculate repulsion force between two nodes
@@ -52,6 +58,57 @@ function distance(p1: Position, p2: Position): number {
 }
 
 /**
+ * Spatial grid for fast nearest neighbor queries
+ * Reduces collision checks from O(n²) to O(n) for large node counts
+ */
+class SpatialGrid {
+  private grid: Map<
+    string,
+    Array<{ id: string; position: Position; size: number }>
+  >;
+  private cellSize: number;
+
+  constructor(cellSize: number) {
+    this.grid = new Map();
+    this.cellSize = cellSize;
+  }
+
+  private getCellKey(x: number, y: number): string {
+    const cellX = Math.floor(x / this.cellSize);
+    const cellY = Math.floor(y / this.cellSize);
+    return `${cellX},${cellY}`;
+  }
+
+  insert(node: { id: string; position: Position; size: number }): void {
+    const key = this.getCellKey(node.position.x, node.position.y);
+    const cell = this.grid.get(key) ?? [];
+    cell.push(node);
+    this.grid.set(key, cell);
+  }
+
+  getNearby(
+    position: Position,
+  ): Array<{ id: string; position: Position; size: number }> {
+    const nearby: Array<{ id: string; position: Position; size: number }> = [];
+
+    // Check 3x3 grid of cells (includes all neighbors)
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const checkX = position.x + dx * this.cellSize;
+        const checkY = position.y + dy * this.cellSize;
+        const key = this.getCellKey(checkX, checkY);
+        const cell = this.grid.get(key);
+        if (cell) {
+          nearby.push(...cell);
+        }
+      }
+    }
+
+    return nearby;
+  }
+}
+
+/**
  * Check if two nodes overlap
  */
 function checkOverlap(
@@ -69,6 +126,8 @@ function checkOverlap(
 /**
  * Resolve collisions using physics simulation
  * Returns adjusted positions for custom nodes that need to move
+ *
+ * Performance: O(n) per iteration using spatial partitioning (vs O(n²) naive)
  */
 export function resolveCollisions(
   customNodes: Array<{
@@ -83,6 +142,9 @@ export function resolveCollisions(
   }>,
   iterations = 50,
 ): Map<string, Position> {
+  // Early exit for small node counts (spatial grid overhead not worth it)
+  const useOptimization = customNodes.length + staticNodes.length > 20;
+
   // Initialize velocities
   const velocities = new Map<string, { x: number; y: number }>();
   const positions = new Map<string, Position>();
@@ -102,41 +164,91 @@ export function resolveCollisions(
       forces.set(node.id, { x: 0, y: 0 });
     }
 
-    // Calculate repulsion from static nodes
-    for (const customNode of customNodes) {
-      const customPos = positions.get(customNode.id);
-      if (!customPos) continue;
-
-      for (const staticNode of staticNodes) {
-        const dist = distance(customPos, staticNode.position);
-        const repulsion = calculateRepulsionForce(
-          customPos,
-          staticNode.position,
-          dist,
-        );
-
-        const currentForce = forces.get(customNode.id) ?? { x: 0, y: 0 };
-        forces.set(customNode.id, {
-          x: currentForce.x + repulsion.x,
-          y: currentForce.y + repulsion.y,
-        });
+    if (useOptimization) {
+      // Build spatial grid for this iteration (positions change each iteration)
+      const spatialGrid = new SpatialGrid(GRID_CELL_SIZE);
+      for (const node of staticNodes) {
+        spatialGrid.insert(node);
+      }
+      // Add custom nodes with updated positions
+      for (const node of customNodes) {
+        const pos = positions.get(node.id);
+        if (pos) {
+          spatialGrid.insert({ ...node, position: pos });
+        }
       }
 
-      // Calculate repulsion from other custom nodes
-      for (const otherNode of customNodes) {
-        if (customNode.id === otherNode.id) continue;
+      // Calculate repulsion using spatial grid (O(n) nearest neighbors)
+      for (const customNode of customNodes) {
+        const customPos = positions.get(customNode.id);
+        if (!customPos) continue;
 
-        const otherPos = positions.get(otherNode.id);
-        if (!otherPos) continue;
+        const nearbyNodes = spatialGrid.getNearby(customPos);
 
-        const dist = distance(customPos, otherPos);
-        const repulsion = calculateRepulsionForce(customPos, otherPos, dist);
+        for (const nearbyNode of nearbyNodes) {
+          // Skip self
+          if (nearbyNode.id === customNode.id) continue;
 
-        const currentForce = forces.get(customNode.id) ?? { x: 0, y: 0 };
-        forces.set(customNode.id, {
-          x: currentForce.x + repulsion.x,
-          y: currentForce.y + repulsion.y,
-        });
+          const dist = distance(customPos, nearbyNode.position);
+
+          // Skip if too far (optimization)
+          if (dist > MIN_REPULSION_DISTANCE) continue;
+
+          const repulsion = calculateRepulsionForce(
+            customPos,
+            nearbyNode.position,
+            dist,
+          );
+
+          const currentForce = forces.get(customNode.id) ?? { x: 0, y: 0 };
+          forces.set(customNode.id, {
+            x: currentForce.x + repulsion.x,
+            y: currentForce.y + repulsion.y,
+          });
+        }
+      }
+    } else {
+      // Naive O(n²) approach for small node counts (faster due to less overhead)
+      for (const customNode of customNodes) {
+        const customPos = positions.get(customNode.id);
+        if (!customPos) continue;
+
+        // Calculate repulsion from static nodes
+        for (const staticNode of staticNodes) {
+          const dist = distance(customPos, staticNode.position);
+          if (dist > MIN_REPULSION_DISTANCE) continue; // Optimization
+
+          const repulsion = calculateRepulsionForce(
+            customPos,
+            staticNode.position,
+            dist,
+          );
+
+          const currentForce = forces.get(customNode.id) ?? { x: 0, y: 0 };
+          forces.set(customNode.id, {
+            x: currentForce.x + repulsion.x,
+            y: currentForce.y + repulsion.y,
+          });
+        }
+
+        // Calculate repulsion from other custom nodes
+        for (const otherNode of customNodes) {
+          if (customNode.id === otherNode.id) continue;
+
+          const otherPos = positions.get(otherNode.id);
+          if (!otherPos) continue;
+
+          const dist = distance(customPos, otherPos);
+          if (dist > MIN_REPULSION_DISTANCE) continue; // Optimization
+
+          const repulsion = calculateRepulsionForce(customPos, otherPos, dist);
+
+          const currentForce = forces.get(customNode.id) ?? { x: 0, y: 0 };
+          forces.set(customNode.id, {
+            x: currentForce.x + repulsion.x,
+            y: currentForce.y + repulsion.y,
+          });
+        }
       }
     }
 

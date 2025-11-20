@@ -1,5 +1,6 @@
 import { db } from "@/server/db";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 
 import type { CustomNode } from "@prisma/client";
 
@@ -12,6 +13,10 @@ export const CreateCustomNodeSchema = z.object({
   type: z
     .enum(["checklist", "resource", "action", "roadblock"])
     .default("checklist"),
+  content: z
+    .record(z.unknown())
+    .optional()
+    .describe("Rich content: { checklistItems, resources, notes, dueDate }"),
 });
 
 export type CreateCustomNodeInput = z.infer<typeof CreateCustomNodeSchema>;
@@ -25,7 +30,12 @@ export async function createCustomNode(
   return db.customNode.create({
     data: {
       userId,
-      ...validated,
+      roadmapId: validated.roadmapId,
+      parentId: validated.parentId,
+      title: validated.title,
+      description: validated.description,
+      type: validated.type,
+      content: (validated.content as Prisma.JsonValue) ?? Prisma.JsonNull,
     },
   });
 }

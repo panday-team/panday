@@ -98,8 +98,34 @@ export function findCustomNodePosition(
 }
 
 /**
+ * Calculate centroid (center point) of multiple parent positions
+ */
+function calculateCentroid(positions: Position[]): Position {
+  if (positions.length === 0) {
+    return { x: 0, y: 0 };
+  }
+  if (positions.length === 1) {
+    return positions[0]!;
+  }
+
+  const sum = positions.reduce(
+    (acc, pos) => ({
+      x: acc.x + pos.x,
+      y: acc.y + pos.y,
+    }),
+    { x: 0, y: 0 },
+  );
+
+  return {
+    x: sum.x / positions.length,
+    y: sum.y / positions.length,
+  };
+}
+
+/**
  * Calculate positions for multiple custom nodes attached to same parent
  * Groups them together for better visual cohesion
+ * For multi-parent nodes, positions them at the centroid of all parents
  */
 export function calculateCustomNodePositions(
   customNodes: Array<{
@@ -111,25 +137,34 @@ export function calculateCustomNodePositions(
 ): Map<string, Position> {
   const positions = new Map<string, Position>();
   const nodesByParent = new Map<string, string[]>();
+  const multiParentNodes = new Map<
+    string,
+    { nodeId: string; parentIds: string[] }
+  >();
 
-  // Group custom nodes by parent
+  // Group custom nodes by parent and identify multi-parent nodes
   for (const node of customNodes) {
-    // Handle multi-parent nodes (use first parent for positioning)
     const parentIds = node.parentId.split(",").map((id) => id.trim());
-    const primaryParent = parentIds[0] ?? node.parentId;
 
-    const siblings = nodesByParent.get(primaryParent) ?? [];
-    siblings.push(node.id);
-    nodesByParent.set(primaryParent, siblings);
+    if (parentIds.length > 1) {
+      // Multi-parent node - handle separately
+      multiParentNodes.set(node.id, { nodeId: node.id, parentIds });
+    } else {
+      // Single-parent node - group with siblings
+      const primaryParent = parentIds[0] ?? node.parentId;
+      const siblings = nodesByParent.get(primaryParent) ?? [];
+      siblings.push(node.id);
+      nodesByParent.set(primaryParent, siblings);
+    }
   }
 
-  // Position each group of custom nodes
+  // Track all nodes (existing + already positioned custom nodes)
+  const allNodes = [...existingNodes];
+
+  // Position single-parent nodes first
   for (const [parentId, nodeIds] of nodesByParent) {
     const parentPos = parentPositions.get(parentId);
     if (!parentPos) continue;
-
-    // Track all nodes (existing + already positioned custom nodes)
-    const allNodes = [...existingNodes];
 
     nodeIds.forEach((nodeId, index) => {
       const position = findCustomNodePosition(parentPos, allNodes, index);
@@ -138,6 +173,31 @@ export function calculateCustomNodePositions(
       // Add this node to collision detection for next siblings
       allNodes.push({ id: nodeId, position });
     });
+  }
+
+  // Position multi-parent nodes at centroid of their parents
+  let multiParentIndex = 0;
+  for (const { nodeId, parentIds } of multiParentNodes.values()) {
+    // Get positions of all parents
+    const parentPoses = parentIds
+      .map((pid) => parentPositions.get(pid))
+      .filter((pos): pos is Position => pos !== undefined);
+
+    if (parentPoses.length === 0) continue;
+
+    // Calculate centroid of parent positions
+    const centroid = calculateCentroid(parentPoses);
+
+    // Find collision-free position around centroid
+    const position = findCustomNodePosition(
+      centroid,
+      allNodes,
+      multiParentIndex++,
+    );
+    positions.set(nodeId, position);
+
+    // Add to collision detection for subsequent nodes
+    allNodes.push({ id: nodeId, position });
   }
 
   return positions;

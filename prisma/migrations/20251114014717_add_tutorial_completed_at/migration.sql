@@ -1,5 +1,5 @@
--- DropIndex
-DROP INDEX "public"."embedding_documents_embedding_idx";
+-- DropIndex (IF EXISTS to prevent errors)
+DROP INDEX IF EXISTS "public"."embedding_documents_embedding_idx";
 
 -- AlterTable
-ALTER TABLE "UserProfile" ADD COLUMN     "tutorialCompletedAt" TIMESTAMP(3);
+ALTER TABLE "UserProfile" ADD COLUMN IF NOT EXISTS "tutorialCompletedAt" TIMESTAMP(3);
