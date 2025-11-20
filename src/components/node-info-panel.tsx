@@ -50,6 +50,7 @@ export interface NodeInfoPanelProps extends ComponentPropsWithoutRef<"aside"> {
   benefits?: string[];
   outcomes?: string[];
   resources?: ResourceLink[];
+  checklistItems?: Array<{ id: string; title: string; completed: boolean }>;
   categories?: Category[];
   nodeType?: string;
   nodeId?: string;
@@ -76,6 +77,7 @@ export function NodeInfoPanel({
   benefits,
   outcomes,
   resources,
+  checklistItems,
   categories,
   nodeType,
   nodeId,
@@ -249,7 +251,7 @@ export function NodeInfoPanel({
             </div>
           </div>
           {description ? (
-            <div className="mt-2 text-sm leading-relaxed text-black [&_a]:text-blue-600 [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-bold">
+            <div className="mt-2 space-y-3 text-sm leading-relaxed text-black [&_a]:text-blue-600 [&_a]:underline [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-black [&_h3]:mt-3 [&_h3]:mb-1.5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-black [&_ol]:mb-2 [&_ol]:ml-4 [&_ol]:list-decimal [&_ol]:space-y-1 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-bold [&_ul]:mb-2 [&_ul]:ml-4 [&_ul]:list-disc [&_ul]:space-y-1">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {description}
               </ReactMarkdown>
@@ -306,6 +308,26 @@ export function NodeInfoPanel({
                       {resource.label}
                     </ReactMarkdown>
                   </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {checklistItems?.length ? (
+          <section className="space-y-2 text-sm text-black/80">
+            <h2 className="font-semibold text-black">Checklist</h2>
+            <ul className="space-y-2">
+              {checklistItems.map((item) => (
+                <li key={item.id} className="flex items-start gap-2">
+                  <Checkbox
+                    checked={item.completed}
+                    disabled
+                    className="mt-0.5 h-4 w-4 shrink-0 border-2 border-black/30 bg-white/10 data-[state=checked]:border-[#61FF05] data-[state=checked]:bg-[#61FF05] data-[state=checked]:text-white"
+                  />
+                  <span className="flex-1 leading-relaxed [&_strong]:font-bold">
+                    {item.title}
+                  </span>
                 </li>
               ))}
             </ul>

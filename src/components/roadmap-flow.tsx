@@ -76,6 +76,14 @@ type FlowNode =
   | CategoryNodeType;
 type FlowEdge = Edge;
 
+// Type definition for custom node content JSON field
+interface CustomNodeContent {
+  checklistItems?: Array<{ id: string; title: string; completed: boolean }>;
+  resources?: Array<{ label: string; href: string }>;
+  notes?: string;
+  dueDate?: string;
+}
+
 const flowColor = "#35C1B9";
 
 const baseEdgeStyle: CSSProperties = {
@@ -102,6 +110,12 @@ interface RoadmapFlowProps {
     description: string;
     type: string;
     status: string;
+    content?: {
+      checklistItems?: Array<{ id: string; title: string; completed: boolean }>;
+      resources?: Array<{ label: string; href: string }>;
+      notes?: string;
+      dueDate?: string;
+    } | null;
   }>;
   onRefreshCustomNodes?: (nodeId?: string) => void;
   newlyCreatedNodeId?: string;
@@ -1272,6 +1286,9 @@ function RoadmapFlowInner({
     // Check if it's a custom node
     const customNode = customNodes?.find((n) => n.id === selectedNodeId);
     if (customNode) {
+      // Parse content JSON field for rich data with explicit type cast for better IDE support
+      const contentData = customNode.content as CustomNodeContent | null;
+
       return {
         frontmatter: {
           id: customNode.id,
@@ -1285,6 +1302,8 @@ function RoadmapFlowInner({
         eligibility: [],
         benefits: [],
         outcomes: [],
+        resources: contentData?.resources ?? [],
+        checklistItems: contentData?.checklistItems ?? [],
       };
     }
 
@@ -1612,13 +1631,12 @@ function RoadmapFlowInner({
                 selectedContent.frontmatter.duration
               }
               title={selectedContent.frontmatter.title}
-              description={selectedContent.content
-                .split("\n")
-                .find((line) => line.startsWith("#") === false && line.trim())
-                ?.trim()}
+              description={selectedContent.content}
               eligibility={selectedContent.eligibility}
               benefits={selectedContent.benefits}
               outcomes={selectedContent.outcomes}
+              resources={selectedContent.resources}
+              checklistItems={selectedContent.checklistItems}
               categories={selectedNodeCategories}
               nodeType={selectedContent.frontmatter.type}
               nodeId={selectedNodeId}

@@ -57,6 +57,11 @@ export interface NodeContent {
     label: string;
     href: string;
   }>;
+  checklistItems?: Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+  }>;
 }
 
 /**
