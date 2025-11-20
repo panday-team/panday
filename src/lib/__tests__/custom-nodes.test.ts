@@ -73,9 +73,7 @@ describe("custom-nodes", () => {
       const result = CreateCustomNodeSchema.parse(input);
       expect(result.title).toBe(input.title);
       expect(result.content).toBeDefined();
-      expect(
-        (result.content as Record<string, unknown>)?.checklistItems,
-      ).toHaveLength(2);
+      expect(result.content!.checklistItems).toHaveLength(2);
     });
 
     it("validates all node types", () => {
@@ -164,7 +162,7 @@ describe("custom-nodes", () => {
       };
 
       const result = CreateCustomNodeSchema.parse(input);
-      const content = result.content as Record<string, unknown> | undefined;
+      const content = result.content!;
       expect(content?.metadata).toBeDefined();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((content?.checklistItems as any)?.[0]?.subtasks).toHaveLength(1);
@@ -573,15 +571,9 @@ describe("custom-nodes", () => {
       };
 
       const validated = CreateCustomNodeSchema.parse(input);
-      expect(
-        (validated.content as Record<string, unknown>)?.checklistItems,
-      ).toHaveLength(1);
-      expect(
-        (validated.content as Record<string, unknown>)?.resources,
-      ).toBeUndefined();
-      expect(
-        (validated.content as Record<string, unknown>)?.notes,
-      ).toBeUndefined();
+      expect(validated.content!.checklistItems).toHaveLength(1);
+      expect(validated.content!.resources).toBeUndefined();
+      expect(validated.content!.notes).toBeUndefined();
     });
 
     it("handles content with only resources", async () => {
@@ -597,12 +589,8 @@ describe("custom-nodes", () => {
       };
 
       const validated = CreateCustomNodeSchema.parse(input);
-      expect(
-        (validated.content as Record<string, unknown>)?.resources,
-      ).toHaveLength(1);
-      expect(
-        (validated.content as Record<string, unknown>)?.checklistItems,
-      ).toBeUndefined();
+      expect(validated.content!.resources).toHaveLength(1);
+      expect(validated.content!.checklistItems).toBeUndefined();
     });
 
     it("handles content with only notes", async () => {
@@ -618,15 +606,9 @@ describe("custom-nodes", () => {
       };
 
       const validated = CreateCustomNodeSchema.parse(input);
-      expect((validated.content as Record<string, unknown>)?.notes).toBe(
-        "Important notes here",
-      );
-      expect(
-        (validated.content as Record<string, unknown>)?.checklistItems,
-      ).toBeUndefined();
-      expect(
-        (validated.content as Record<string, unknown>)?.resources,
-      ).toBeUndefined();
+      expect(validated.content!.notes).toBe("Important notes here");
+      expect(validated.content!.checklistItems).toBeUndefined();
+      expect(validated.content!.resources).toBeUndefined();
     });
 
     it("handles content with only due date", async () => {
@@ -642,9 +624,7 @@ describe("custom-nodes", () => {
       };
 
       const validated = CreateCustomNodeSchema.parse(input);
-      expect((validated.content as Record<string, unknown>)?.dueDate).toBe(
-        "2025-12-31",
-      );
+      expect(validated.content!.dueDate).toBe("2025-12-31");
     });
   });
 });
