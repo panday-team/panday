@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "next build",
+    "build": "prisma migrate deploy && prisma generate && next build",
     "check": "eslint && tsc --noEmit",
     "services:start": "bash scripts/dev-services.sh start",
     "services:stop": "bash scripts/dev-services.sh stop",

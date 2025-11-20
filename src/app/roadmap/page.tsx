@@ -36,7 +36,8 @@ export default async function RoadmapPage() {
       clerkUserId: dbProfile.clerkUserId,
       trade: dbProfile.trade as Trade,
       currentLevel: dbProfile.currentLevel as ApprenticeshipLevel,
-      specialization: dbProfile.specialization as ElectricianSpecialization,
+      specialization: (dbProfile.specialization ||
+        "undecided") as ElectricianSpecialization,
       residencyStatus: dbProfile.residencyStatus as ResidencyStatus,
       onboardingCompletedAt: dbProfile.onboardingCompletedAt,
       tutorialCompletedAt: dbProfile.tutorialCompletedAt,
