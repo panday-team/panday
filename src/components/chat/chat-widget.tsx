@@ -1073,7 +1073,7 @@ export function ChatWidget({
   };
 
   const historySidebar = (
-    <aside className="flex h-full w-72 shrink-0 flex-col border-r border-white/10 bg-slate-900/80 px-4 py-5 text-white">
+    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-white/10 bg-slate-900/80 px-4 py-5 text-white">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <p className="text-[11px] tracking-wide text-white/60 uppercase">
@@ -1352,8 +1352,8 @@ export function ChatWidget({
   return (
     <div className="fixed right-6 bottom-6 z-40 flex flex-col items-end gap-3">
       {isExpanded && (
-        <div className="flex h-[75vh] max-h-[75vh] w-[min(960px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur dark:border-white/10 dark:bg-[#1f2a37]/95">
-          <div className="flex h-full w-full flex-col">
+        <div className="flex h-[75vh] max-h-[75vh] w-[min(960px,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur dark:border-white/10 dark:bg-[#1f2a37]/95">
+          <div className="flex h-full min-w-0 flex-1 flex-col">
             <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-white/10">
               <div>
                 <p className="text-xs tracking-wide text-gray-500 uppercase dark:text-white/70">
@@ -1388,7 +1388,7 @@ export function ChatWidget({
             </div>
             <div className="flex h-full flex-1 overflow-hidden">
               {isDesktop && historySidebar}
-              <div className="relative flex flex-1 flex-col">
+              <div className="relative flex min-w-0 flex-1 flex-col">
                 <div ref={containerRef} className="flex-1 overflow-y-auto">
                   {threadMessagesLoading && isSignedIn ? (
                     <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-white/70">
@@ -1485,7 +1485,7 @@ export function ChatWidget({
                 className="absolute inset-0 bg-black/50"
                 onClick={() => setIsHistoryDrawerOpen(false)}
               />
-              <div className="relative h-full w-72 bg-slate-900/95 shadow-2xl">
+              <div className="relative h-full w-64 bg-slate-900/95 shadow-2xl">
                 {historySidebar}
               </div>
             </div>
