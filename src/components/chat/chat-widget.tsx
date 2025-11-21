@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 
 interface ChatWidgetProps {
   selectedNodeId?: string | null;
+  selectedNodeTitle?: string | null;
   roadmapId?: string;
   userProfile?: {
     trade?: string;
@@ -192,6 +193,7 @@ function SourcesDisplay({ sources }: { sources: SourceDocument[] }) {
 
 export function ChatWidget({
   selectedNodeId,
+  selectedNodeTitle,
   roadmapId,
   userProfile,
   onChatOpen,
@@ -1533,6 +1535,37 @@ export function ChatWidget({
                   onSubmit={onSubmit}
                   className="border-t border-gray-200 p-4 dark:border-white/10"
                 >
+                  {selectedNodeId && selectedNodeTitle && (
+                    <div className="animate-in fade-in slide-in-from-bottom-2 mb-3 duration-300">
+                      <div className="relative overflow-hidden rounded-xl border border-teal-500/20 bg-gradient-to-r from-teal-500/10 to-blue-500/10 px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-500/20">
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="text-teal-600 dark:text-teal-400"
+                            >
+                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium tracking-wide text-teal-900 uppercase dark:text-teal-100">
+                              Asking about
+                            </p>
+                            <p className="truncate text-sm font-semibold text-teal-700 dark:text-teal-300">
+                              {selectedNodeTitle}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 rounded-3xl bg-white px-3 py-1 shadow-sm dark:bg-white/10">
                     <Input
                       type="text"
@@ -1564,11 +1597,6 @@ export function ChatWidget({
                       </svg>
                     </button>
                   </div>
-                  {selectedNodeId && (
-                    <p className="mt-2 text-xs text-gray-500 dark:text-white/50">
-                      Asking about the current step
-                    </p>
-                  )}
                   {faqEntries.length > 0 && (
                     <div className="mt-3 space-y-2">
                       <p className="text-[11px] font-medium tracking-wide text-gray-400 uppercase dark:text-white/40">
