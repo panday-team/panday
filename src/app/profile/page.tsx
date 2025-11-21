@@ -19,8 +19,9 @@ import { TradeSelector } from "@/components/onboarding/trade-selector";
 import { LevelSelector } from "@/components/onboarding/level-selector";
 import { SpecializationSelector } from "@/components/onboarding/specialization-selector";
 import { ResidencySelector } from "@/components/onboarding/residency-selector";
-import { Edit2, ArrowLeft, Home, Check, X } from "lucide-react";
+import { Edit2, ArrowLeft, Home, Check, X, LogOut } from "lucide-react";
 import Link from "next/link";
+import { SignOutButton } from "@clerk/nextjs";
 import { createLogger } from "@/lib/logger";
 
 const profileLogger = createLogger({ context: "profile-settings" });
@@ -37,10 +38,12 @@ interface UserProfileData {
   updatedAt: string;
 }
 
-type EditableField = keyof Pick<
-  UserProfileData,
-  "trade" | "currentLevel" | "specialization" | "residencyStatus"
-> | null;
+type EditableField =
+  | keyof Pick<
+      UserProfileData,
+      "trade" | "currentLevel" | "specialization" | "residencyStatus"
+    >
+  | null;
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -207,7 +210,7 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Your Profile</h1>
-            <p className="mt-1 text-muted-foreground">
+            <p className="text-muted-foreground mt-1">
               Click the edit button next to any field to update it
             </p>
           </div>
@@ -275,7 +278,7 @@ export default function ProfilePage() {
                   <p className="font-medium">
                     {TRADE_METADATA[profile.trade].label}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     {TRADE_METADATA[profile.trade].icon}{" "}
                     {TRADE_METADATA[profile.trade].description}
                   </p>
@@ -333,7 +336,7 @@ export default function ProfilePage() {
                   <p className="font-medium">
                     {LEVEL_METADATA[profile.currentLevel].label}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     {LEVEL_METADATA[profile.currentLevel].description}
                   </p>
                 </div>
@@ -390,12 +393,18 @@ export default function ProfilePage() {
                   <p className="font-medium">
                     {SPECIALIZATION_METADATA[profile.specialization].label}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     Red Seal{" "}
-                    {SPECIALIZATION_METADATA[profile.specialization].redSealCode}
+                    {
+                      SPECIALIZATION_METADATA[profile.specialization]
+                        .redSealCode
+                    }
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    {SPECIALIZATION_METADATA[profile.specialization].description}
+                  <p className="text-muted-foreground text-sm">
+                    {
+                      SPECIALIZATION_METADATA[profile.specialization]
+                        .description
+                    }
                   </p>
                 </div>
               )}
@@ -451,7 +460,7 @@ export default function ProfilePage() {
                   <p className="font-medium">
                     {RESIDENCY_STATUS_METADATA[profile.residencyStatus].label}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     {
                       RESIDENCY_STATUS_METADATA[profile.residencyStatus]
                         .description
@@ -486,6 +495,18 @@ export default function ProfilePage() {
                 })}
               </span>
             </div>
+          </div>
+
+          <div className="border-border mt-6 border-t pt-6">
+            <SignOutButton>
+              <Button
+                variant="outline"
+                className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/20 dark:hover:text-red-300"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </Button>
+            </SignOutButton>
           </div>
         </Card>
       </div>

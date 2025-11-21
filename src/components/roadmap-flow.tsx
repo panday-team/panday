@@ -1673,6 +1673,7 @@ function RoadmapFlowInner({
 
       <ChatWidget
         selectedNodeId={selectedNodeId ?? undefined}
+        selectedNodeTitle={selectedContent?.frontmatter.title ?? undefined}
         roadmapId={roadmap.metadata.id}
         userProfile={
           userProfile
