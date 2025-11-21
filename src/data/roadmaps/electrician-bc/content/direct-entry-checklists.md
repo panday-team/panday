@@ -80,6 +80,7 @@ categories:
         nodeType: "checklist"
         labelPosition: "right"
 ---
+
 # Job Search Strategy Hub
 
 Comprehensive job search resources and strategies for finding electrical employers in BC who hire apprentices. This hub includes 15+ job boards, contractor directories, networking opportunities, and direct application strategies to maximize your chances of finding a sponsor.
@@ -192,6 +193,7 @@ If you have been actively searching for three to six months with few interviews 
 Persistence and adaptability are key to breaking into the electrical trade through direct entry.
 
 ---
+
 # BC Contractor Directory
 
 Regional directory of major electrical contractors and employer resources across British Columbia. This directory helps you identify potential employers by region, company size, and specialization to target your job search effectively.
@@ -428,6 +430,7 @@ Some employers offer relocation assistance, particularly in remote regions. Nego
 Temporary relocation for 1-2 years to gain experience, then transfer back to your preferred region is a viable strategy.
 
 ---
+
 # Networking & Connections
 
 Strategic networking and industry connections significantly increase your chances of finding an electrical apprenticeship sponsor. This resource covers union pathways, industry associations, mentorship programs, and networking events to help you build relationships with electrical contractors and journeypersons.
@@ -757,6 +760,11 @@ Effective networking combines multiple approaches:
 
 Networking takes time but significantly increases your chances of finding a quality apprenticeship sponsor. Many apprentices report that personal connections led to their job, not online applications.
 
+# --- Added delimiter to split Application Materials into its own section
+
+# (required for loader to map content by H1 title)
+
+---
 
 # Application Materials
 
@@ -1144,6 +1152,7 @@ Interview Preparation (After Application Success):
 Remember: Your application represents you before you meet the employer. Invest time in creating professional, error-free materials that demonstrate your commitment to the electrical trade and respect for the opportunity.
 
 ---
+
 # Pre-Registration Checklist
 
 Comprehensive checklist of everything you need to prepare before starting your electrical apprenticeship. Completing these items before your first day ensures a smooth registration process and demonstrates professionalism to your new employer.
@@ -1469,6 +1478,7 @@ Direct entry into the electrician apprenticeship requires an employer sponsor wi
 - [WorkBC Job Matching](https://www.workbc.ca/Job-Seekers/Job-Match.aspx) - Employment services and job search support
 
 ---
+
 # Financial Planning & Wages
 
 With direct entry, you start earning wages immediately while training on the job. BC electrical apprentice wages follow industry standards starting at 50-60% of journeyperson rates and increasing with each completed level. Understanding the wage progression and financial planning is essential for long-term success.
@@ -1493,6 +1503,7 @@ With direct entry, you start earning wages immediately while training on the job
 - [Canada Apprentice Loan](https://www.canada.ca/en/employment-social-development/services/student-financial-aid/apprentice-loan.html) - Up to $4,000 interest-free for technical training periods
 
 ---
+
 # Registration Steps
 
 Quick reference guide for the apprenticeship registration process. Your employer initiates registration, you pay the $150 fee, receive your registration number, and begin logging hours toward your Red Seal certification. The full step-by-step process is covered in the Registration Process Confusion roadblock resource.
@@ -1681,6 +1692,7 @@ Consider a foundation program if:
 - You want to accelerate your timeline and gain credentials
 
 ---
+
 # No Prior Experience
 
 Most employers prefer apprentices with some electrical or construction background, making it difficult for career changers or young people with no trade experience to break into the field. Foundation programs are specifically designed for people with no experience and provide baseline competency that employers value. There are several proven strategies to overcome the experience gap and make yourself attractive to employers.
@@ -1880,6 +1892,7 @@ Most employers prefer apprentices with some electrical or construction backgroun
 - Persistence through challenges
 
 ---
+
 # Initial Cost Burden
 
 While direct entry allows you to earn while you learn, there are significant upfront costs that can prevent aspiring electricians from starting their apprenticeship. Typical initial investment is $1,100-$2,750 for tools, safety gear, registration fees, and transportation before your first paycheque. This is a real barrier for many people, but there are financial planning strategies and support programs available to help you get started.
@@ -2263,6 +2276,7 @@ The initial cost barrier is real, but surmountable with planning:
 The electrician career pays back the initial investment many times over. The key is having a plan to bridge the startup costs period.
 
 ---
+
 # Registration Process Confusion
 
 BC's apprenticeship registration process involves multiple government agencies, confusing terminology, strict deadlines, and documentation requirements that aren't clearly explained. Many aspiring apprentices delay starting or make costly mistakes because they don't understand the registration system. This step-by-step guide will walk you through the entire process from employer registration to Red Seal certification.
