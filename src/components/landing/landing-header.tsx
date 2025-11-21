@@ -17,51 +17,62 @@ export function LandingHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <header className="fixed top-0 right-0 left-0 z-50 border-b-8 border-white bg-[#0B101D] md:border-b-[15px]">
-      <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-8 md:py-6">
+    <header className="fixed top-0 right-0 left-0 z-50 border-b-4 border-white bg-[#0B101D] md:border-b-6">
+      <div className="container mx-auto flex items-center justify-between px-4 py-3 md:px-8 md:py-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 md:gap-3">
+        <Link href="/" className="flex items-center gap-2">
           <Image
             src="/landing_page_imgs/high_quality_Logo.png"
             alt="Panday Logo"
-            width={60}
-            height={60}
-            className="h-[60px] w-[60px] md:h-[83px] md:w-[83px]"
+            width={40}
+            height={40}
+            className="h-10 w-10 md:h-12 md:w-12"
           />
-          <span className="font-inter text-xl font-bold text-white md:text-2xl">
+          <span className="font-inter text-lg font-bold text-white md:text-xl">
             Panday
           </span>
         </Link>
 
         {/* Desktop Navigation - Hidden on mobile */}
-        <nav className="hidden items-center gap-8 lg:flex xl:gap-12">
-          <Link
-            href="/roadmap"
-            className="font-inria-sans text-lg text-white transition hover:text-orange-500 xl:text-xl"
-          >
-            Explore
-          </Link>
+        <nav className="hidden items-center gap-6 lg:flex xl:gap-8">
+          <SignedOut>
+            <Link
+              href="/roadmap"
+              className="font-inria-sans text-base text-white transition hover:text-orange-500"
+            >
+              Explore
+            </Link>
+          </SignedOut>
+
+          <SignedIn>
+            <Link href="/roadmap">
+              <Button className="font-inria-sans rounded-lg bg-[#FF8F27] px-5 py-2 text-base text-white hover:bg-[#FF8F27]/90">
+                My Roadmap
+              </Button>
+            </Link>
+          </SignedIn>
+
           <Link
             href="/about"
-            className="font-inria-sans text-lg text-white transition hover:text-orange-500 xl:text-xl"
+            className="font-inria-sans text-base text-white transition hover:text-orange-500"
           >
             About Us
           </Link>
           <Link
             href="/tools"
-            className="font-inria-sans text-lg text-white transition hover:text-orange-500 xl:text-xl"
+            className="font-inria-sans text-base text-white transition hover:text-orange-500"
           >
             Tools
           </Link>
 
           <SignedOut>
             <SignInButton mode="modal">
-              <button className="font-inria-sans text-lg font-bold text-white transition hover:text-orange-500 xl:text-xl">
+              <button className="font-inria-sans text-base font-bold text-white transition hover:text-orange-500">
                 Login
               </button>
             </SignInButton>
             <SignUpButton mode="modal">
-              <Button className="font-inria-sans rounded-lg bg-[#FF8F27] px-4 py-2 text-lg text-white hover:bg-[#FF8F27]/90 xl:px-6 xl:py-3 xl:text-xl">
+              <Button className="font-inria-sans rounded-lg bg-[#FF8F27] px-5 py-2 text-base text-white hover:bg-[#FF8F27]/90">
                 Sign Up
               </Button>
             </SignUpButton>
@@ -121,13 +132,24 @@ export function LandingHeader() {
       {isMobileMenuOpen && (
         <div className="border-t border-slate-700 bg-[#0B101D] lg:hidden">
           <nav className="container mx-auto flex flex-col gap-4 px-4 py-4">
-            <Link
-              href="/roadmap"
-              className="font-inria-sans py-2 text-lg text-white transition hover:text-orange-500"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Explore
-            </Link>
+            <SignedOut>
+              <Link
+                href="/roadmap"
+                className="font-inria-sans py-2 text-lg text-white transition hover:text-orange-500"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Explore
+              </Link>
+            </SignedOut>
+
+            <SignedIn>
+              <Link href="/roadmap" onClick={() => setIsMobileMenuOpen(false)}>
+                <Button className="font-inria-sans w-full rounded-lg bg-[#FF8F27] px-5 py-2 text-base text-white hover:bg-[#FF8F27]/90">
+                  My Roadmap
+                </Button>
+              </Link>
+            </SignedIn>
+
             <Link
               href="/about"
               className="font-inria-sans py-2 text-lg text-white transition hover:text-orange-500"
