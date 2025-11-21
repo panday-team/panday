@@ -25,8 +25,8 @@ export default function RootLayout({
   return (
     <ClerkProvider
       signInUrl="/auth/signin"
-      signInFallbackRedirectUrl="/"
-      signUpFallbackRedirectUrl="/"
+      signInFallbackRedirectUrl="/roadmap"
+      signUpFallbackRedirectUrl="/roadmap"
     >
       <html lang="en" className={inriaSans.variable} suppressHydrationWarning>
         <body className="bg-background text-foreground min-h-dvh antialiased">
