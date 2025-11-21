@@ -21,8 +21,6 @@ import { ProgressBar } from "@/components/ui/progress-bar";
 import type { ProgressData } from "@/lib/progress-utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 
 export type ResourceLink = {
   label: string;
@@ -160,15 +158,6 @@ export function NodeInfoPanel({
           >
             {displayBadge}
           </ReactMarkdown>
-        <span className="inline-flex items-center gap-2 rounded-full bg-[#76E54A] px-3 py-1 text-xs font-semibold tracking-wide text-[#1D2740] uppercase [&_strong]:font-bold">
-          <ReactMarkdown
-            components={{
-              p: ({ node, ...props }) => <span {...props} />,
-            }}
-            remarkPlugins={[remarkGfm]}
-          >
-            {displayBadge}
-          </ReactMarkdown>
         </span>
         <div className="flex items-center gap-2">
           {subtitle ? (
@@ -179,15 +168,6 @@ export function NodeInfoPanel({
                   a: ({ node: _node, ...props }) => (
                     <a {...props} target="_blank" rel="noreferrer" />
                   ),
-                }}
-                remarkPlugins={[remarkGfm]}
-              >
-                {subtitle}
-              </ReactMarkdown>
-            <span className="text-xs font-medium text-black/60 [&_strong]:font-bold">
-              <ReactMarkdown
-                components={{
-                  p: ({ node, ...props }) => <span {...props} />,
                 }}
                 remarkPlugins={[remarkGfm]}
               >
@@ -208,15 +188,6 @@ export function NodeInfoPanel({
                   a: ({ node: _node, ...props }) => (
                     <a {...props} target="_blank" rel="noreferrer" />
                   ),
-                }}
-                remarkPlugins={[remarkGfm]}
-              >
-                {title}
-              </ReactMarkdown>
-            <h1 className="font-sans text-3xl leading-tight text-black [&_strong]:font-bold">
-              <ReactMarkdown
-                components={{
-                  p: ({ node, ...props }) => <span {...props} />,
                 }}
                 remarkPlugins={[remarkGfm]}
               >
@@ -289,13 +260,6 @@ export function NodeInfoPanel({
             </div>
           </div>
           {description ? (
-            <div className="mt-2 text-sm leading-relaxed text-black [&_a]:text-blue-600 [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-bold">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {description}
-              </ReactMarkdown>
-            </div>
-            <div className="mt-2 text-sm leading-relaxed text-black [&_a]:text-blue-600 [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-bold">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
             <div className="mt-2 space-y-3 text-sm leading-relaxed text-black [&_a]:text-blue-600 [&_a]:underline [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-black [&_h3]:mt-3 [&_h3]:mb-1.5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-black [&_ol]:mb-2 [&_ol]:ml-4 [&_ol]:list-decimal [&_ol]:space-y-1 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-bold [&_ul]:mb-2 [&_ul]:ml-4 [&_ul]:list-disc [&_ul]:space-y-1">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
@@ -345,7 +309,6 @@ export function NodeInfoPanel({
             <ul className="space-y-1">
               {resources.map((resource) => (
                 <li key={resource.href} className="[&_strong]:font-bold">
-                <li key={resource.href} className="[&_strong]:font-bold">
                   <a
                     className="underline-offset-2 hover:underline"
                     href={resource.href}
@@ -355,15 +318,6 @@ export function NodeInfoPanel({
                     <ReactMarkdown
                       components={{
                         p: ({ node: _node, ...props }) => <span {...props} />,
-                      }}
-                      remarkPlugins={[remarkGfm]}
-                    >
-                      {resource.label}
-                    </ReactMarkdown>
-                  >
-                    <ReactMarkdown
-                      components={{
-                        p: ({ node, ...props }) => <span {...props} />,
                       }}
                       remarkPlugins={[remarkGfm]}
                     >
@@ -405,8 +359,8 @@ function Section({ title, items }: { title: string; items: string[] }) {
     <section className="space-y-2 text-sm leading-relaxed text-black/80">
       <h2 className="font-semibold text-black">{title}</h2>
       <ul className="mt-1 list-disc space-y-1 pl-5">
-        {items.map((item, index) => (
-          <li key={index} className="[&_strong]:font-bold">
+        {items.map((item) => (
+          <li key={item} className="[&_strong]:font-bold">
             <ReactMarkdown
               components={{
                 p: ({ node: _node, ...props }) => <span {...props} />,
@@ -494,16 +448,6 @@ function CategoryNav({
                     {category.title}
                   </ReactMarkdown>
                 </span>
-                <span className="[&_strong]:font-bold">
-                  <ReactMarkdown
-                    components={{
-                      p: ({ node, ...props }) => <span {...props} />,
-                    }}
-                    remarkPlugins={[remarkGfm]}
-                  >
-                    {category.title}
-                  </ReactMarkdown>
-                </span>
                 <ChevronDown
                   className={cn(
                     "h-4 w-4 transition-transform",
@@ -541,18 +485,7 @@ function CategoryNav({
                         target="_blank"
                         rel="noreferrer"
                         className="flex flex-1 items-center gap-1.5 text-left text-sm text-black/80 transition-colors hover:text-black hover:underline [&_strong]:font-bold"
-                        className="flex flex-1 items-center gap-1.5 text-left text-sm text-black/80 transition-colors hover:text-black hover:underline [&_strong]:font-bold"
                       >
-                        <span>
-                          <ReactMarkdown
-                            components={{
-                              p: ({ node, ...props }) => <span {...props} />,
-                            }}
-                            remarkPlugins={[remarkGfm]}
-                          >
-                            {item.title}
-                          </ReactMarkdown>
-                        </span>
                         <span>
                           <ReactMarkdown
                             components={{
@@ -577,16 +510,6 @@ function CategoryNav({
                     ) : (
                       <button
                         onClick={() => onNavigateToNode(item.id)}
-                        className="flex-1 text-left text-sm text-black/80 transition-colors hover:text-black [&_strong]:font-bold"
-                      >
-                        <ReactMarkdown
-                          components={{
-                            p: ({ node, ...props }) => <span {...props} />,
-                          }}
-                          remarkPlugins={[remarkGfm]}
-                        >
-                          {item.title}
-                        </ReactMarkdown>
                         className="flex-1 text-left text-sm text-black/80 transition-colors hover:text-black [&_strong]:font-bold"
                       >
                         <ReactMarkdown
