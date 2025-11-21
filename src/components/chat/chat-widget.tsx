@@ -517,10 +517,9 @@ export function ChatWidget({
           return fallback;
         });
       } else {
-        const thread = await createThread();
-        if (thread) {
-          activeThreadRef.current = thread.id;
-        }
+        // Don't auto-create empty threads - wait for user's first message
+        setActiveThreadId(null);
+        activeThreadRef.current = null;
       }
     } catch (err) {
       logger.error("Failed to load chat threads", err);
@@ -529,7 +528,7 @@ export function ChatWidget({
       setThreadsLoading(false);
       setHasFetchedThreads(true);
     }
-  }, [createThread, isSignedIn]);
+  }, [isSignedIn]);
 
   const handleDeleteThread = useCallback(
     async (threadId?: string | null) => {
@@ -877,24 +876,33 @@ export function ChatWidget({
 
     if (!input.trim()) return;
 
-    let threadId = activeThreadId;
-    if (!threadId) {
-      const thread = await createThread();
-      threadId = thread?.id ?? null;
-      if (!threadId) {
-        logger.error("Failed to create thread before sending", undefined, {
-          selectedNodeId,
-        });
-        return;
-      }
-    }
-
-    activeThreadRef.current = threadId;
-
+    // Optimistically show UI feedback immediately
     setSources([]);
     setIsLoading(true);
     setStatusMessage("Processing request...");
     setStreamingMessageId("streaming");
+
+    // Create thread in background if needed (don't block UI)
+    if (!activeThreadId) {
+      // Start thread creation but don't await - handleSubmit will handle it
+      void createThread().then((thread) => {
+        if (thread) {
+          activeThreadRef.current = thread.id;
+        } else {
+          // Thread creation failed - reset UI
+          setIsLoading(false);
+          setStatusMessage(null);
+          setStreamingMessageId(null);
+          logger.error("Failed to create thread before sending", undefined, {
+            selectedNodeId,
+          });
+        }
+      });
+    } else {
+      activeThreadRef.current = activeThreadId;
+    }
+
+    // Submit immediately (useChat handles optimistic updates)
     handleSubmit(event);
   };
 
@@ -910,28 +918,36 @@ export function ChatWidget({
       const trimmed = question.trim();
       if (!trimmed) return;
 
-      let threadId = activeThreadId;
-      if (!threadId) {
-        const thread = await createThread();
-        threadId = thread?.id ?? null;
-        if (!threadId) {
-          logger.error(
-            "Failed to create thread before sending FAQ question",
-            undefined,
-            { selectedNodeId },
-          );
-          return;
-        }
-        setActiveThreadId(threadId);
-      }
-
-      activeThreadRef.current = threadId;
-
+      // Set input and show UI feedback immediately
+      setInput(trimmed);
       setSources([]);
       setIsLoading(true);
       setStatusMessage("Processing request...");
       setStreamingMessageId("streaming");
-      setInput(trimmed);
+
+      // Create thread in background if needed
+      if (!activeThreadId) {
+        void createThread().then((thread) => {
+          if (thread) {
+            setActiveThreadId(thread.id);
+            activeThreadRef.current = thread.id;
+          } else {
+            // Thread creation failed - reset UI
+            setIsLoading(false);
+            setStatusMessage(null);
+            setStreamingMessageId(null);
+            logger.error(
+              "Failed to create thread before sending FAQ question",
+              undefined,
+              { selectedNodeId },
+            );
+          }
+        });
+      } else {
+        activeThreadRef.current = activeThreadId;
+      }
+
+      // Submit immediately
       handleSubmit();
     },
     [
@@ -1135,8 +1151,13 @@ export function ChatWidget({
             size="sm"
             variant="secondary"
             onClick={() => void createThread()}
-            disabled={isCreatingThread}
-            className="h-8 bg-white/20 text-white hover:bg-white/30"
+            disabled={isCreatingThread || messages.length === 0}
+            className="h-8 bg-white/20 text-white hover:bg-white/30 disabled:opacity-40"
+            title={
+              messages.length === 0
+                ? "Start a conversation first"
+                : "Start new chat"
+            }
           >
             <Plus size={14} className="mr-1" /> New
           </Button>
@@ -1186,18 +1207,35 @@ export function ChatWidget({
         );
       }
 
+      // Show welcome message when no active thread (will auto-create on first message)
       return (
-        <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-sm text-gray-200">
-          <p>Select a saved chat on the left or start a new one.</p>
-          <Button
-            size="sm"
-            variant="secondary"
-            className="bg-white/10 text-white hover:bg-white/20"
-            onClick={() => void createThread()}
-            disabled={isCreatingThread}
-          >
-            <Plus size={14} className="mr-1" /> New chat
-          </Button>
+        <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
+          <div className="rounded-full bg-gradient-to-br from-teal-500/20 to-blue-500/20 p-4">
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-teal-600 dark:text-teal-400"
+            >
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              <line x1="9" y1="10" x2="15" y2="10" />
+              <line x1="12" y1="7" x2="12" y2="13" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+              What do you want to learn about?
+            </p>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              Ask me anything about your roadmap journey, requirements, or
+              career path.
+            </p>
+          </div>
         </div>
       );
     }
@@ -1240,8 +1278,33 @@ export function ChatWidget({
       }
 
       return (
-        <div className="flex h-full items-center justify-center p-6 text-sm text-gray-600">
-          Start a conversation about your roadmap journey.
+        <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
+          <div className="rounded-full bg-gradient-to-br from-teal-500/20 to-blue-500/20 p-4">
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-teal-600 dark:text-teal-400"
+            >
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              <line x1="9" y1="10" x2="15" y2="10" />
+              <line x1="12" y1="7" x2="12" y2="13" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+              What do you want to learn about?
+            </p>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              Ask me anything about your roadmap journey, requirements, or
+              career path.
+            </p>
+          </div>
         </div>
       );
     }
@@ -1449,6 +1512,23 @@ export function ChatWidget({
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                {isSignedIn && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => void createThread()}
+                    disabled={isCreatingThread || messages.length === 0}
+                    className="text-gray-700 hover:bg-gray-100 disabled:opacity-40 dark:text-white dark:hover:bg-white/10"
+                    aria-label="Start new chat"
+                    title={
+                      messages.length === 0
+                        ? "Start a conversation first"
+                        : "Start new chat"
+                    }
+                  >
+                    <Plus size={18} />
+                  </Button>
+                )}
                 {isDesktop && isSignedIn && (
                   <Button
                     variant="ghost"
