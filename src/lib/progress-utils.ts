@@ -140,24 +140,6 @@ export function calculateNodeProgress(
     }
   }
 
-  // Case 2: Hub node (has its own resources) - NO LONGER APPLIES
-  // Hub progress is now just the sum of its descendant checklists.
-  // Resources are handled within their own category node.
-  /*
-  if (nodeType === "hub") {
-    const content = contentMap.get(nodeId);
-    if (content?.resources) {
-      total += content.resources.length;
-      content.resources.forEach((_, idx) => {
-        const resourceId = `resource-${nodeId}-${idx}`;
-        if (nodeStatuses[resourceId] === "completed") {
-          completed++;
-        }
-      });
-    }
-  }
-  */
-
   const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return {
