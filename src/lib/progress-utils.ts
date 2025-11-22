@@ -107,7 +107,7 @@ export function calculateNodeProgress(
         if (parentContent?.resources) {
           // Add resources to the total count
           // Virtual ID convention: resource-{parentId}-{index}
-          parentContent.resources.forEach((_, idx) => {
+          parentContent.resources.forEach(() => {
             // We don't add to targetNodes because they are not graph nodes
             // We'll handle the counting manually
           });
@@ -123,7 +123,7 @@ export function calculateNodeProgress(
   ).length;
 
   // Add virtual resource items if applicable
-  // Case 1: Resources category node (inherits resources from parent hub)
+  // Resources category node (inherits resources from parent hub)
   if (nodeId.includes("-resources")) {
     const node = graphNodes.find((n) => n.id === nodeId);
     if (node?.parentId) {
@@ -139,61 +139,6 @@ export function calculateNodeProgress(
       }
     }
   }
-
-  // Case 2: Hub node (has its own resources) - NO LONGER APPLIES
-  // Hub progress is now just the sum of its descendant checklists.
-  // Resources are handled within their own category node.
-  /*
-  if (nodeType === "hub") {
-    const content = contentMap.get(nodeId);
-    if (content?.resources) {
-      total += content.resources.length;
-      content.resources.forEach((_, idx) => {
-        const resourceId = `resource-${nodeId}-${idx}`;
-        if (nodeStatuses[resourceId] === "completed") {
-          completed++;
-        }
-      });
-    }
-  }
-  */
-
-  // Add virtual resource items if applicable
-  // Case 1: Resources category node (inherits resources from parent hub)
-  if (nodeId.includes("-resources")) {
-    const node = graphNodes.find((n) => n.id === nodeId);
-    if (node?.parentId) {
-      const parentContent = contentMap.get(node.parentId);
-      if (parentContent?.resources) {
-        total += parentContent.resources.length;
-        parentContent.resources.forEach((_, idx) => {
-        parentContent.resources.forEach((_, idx) => {
-          const resourceId = `resource-${node.parentId}-${idx}`;
-          if (nodeStatuses[resourceId] === "completed") {
-            completed++;
-          }
-        });
-      }
-    }
-  }
-
-  // Case 2: Hub node (has its own resources) - NO LONGER APPLIES
-  // Hub progress is now just the sum of its descendant checklists.
-  // Resources are handled within their own category node.
-  /*
-  if (nodeType === "hub") {
-    const content = contentMap.get(nodeId);
-    if (content?.resources) {
-      total += content.resources.length;
-      content.resources.forEach((_, idx) => {
-        const resourceId = `resource-${nodeId}-${idx}`;
-        if (nodeStatuses[resourceId] === "completed") {
-          completed++;
-        }
-      });
-    }
-  }
-  */
 
   const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
