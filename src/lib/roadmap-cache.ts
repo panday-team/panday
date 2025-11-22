@@ -6,7 +6,19 @@ interface CacheEntry {
   timestamp: number;
 }
 
-const CACHE_TTL_MS = 5 * 60 * 1000;
+/**
+ * Cache Configuration
+ *
+ * TTL: Infinity - Roadmap content is static between deployments. Server restart
+ * clears cache automatically, ensuring fresh content after updates. No need for
+ * time-based expiration.
+ *
+ * Size Limit: 10 roadmaps - Supports multi-roadmap vision (plumber-bc, carpenter-bc,
+ * etc.). Memory footprint: ~20MB max (10 roadmaps × ~2MB each), which is negligible
+ * for modern Node.js servers. LRU eviction handles rare cases where 10+ roadmaps
+ * are accessed.
+ */
+const CACHE_TTL_MS = Infinity;
 const MAX_CACHE_SIZE = 10;
 
 class RoadmapCache {
