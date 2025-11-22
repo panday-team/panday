@@ -1072,7 +1072,9 @@ function RoadmapFlowInner({
           method: "POST",
         });
       } catch (error) {
-        console.error("Failed to mark tutorial as completed:", error);
+        logger.error("Failed to mark tutorial as completed", error as Error, {
+          component: "roadmap-flow",
+        });
       }
     }
   }, [userProfile]);

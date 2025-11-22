@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 export interface ValidationError {
   type:
     | "missing-parent"
@@ -97,9 +99,10 @@ export function formatValidationErrors(errors: ValidationError[]): string[] {
 export function logValidationErrors(errors: ValidationError[]): void {
   if (errors.length === 0) return;
 
-  console.error("\n⚠️  Validation errors found:");
-  formatValidationErrors(errors).forEach((error) =>
-    console.error(`  ${error}`),
-  );
-  console.error("");
+  const formattedErrors = formatValidationErrors(errors);
+  logger.error("Graph validation errors found", {
+    errorCount: errors.length,
+    errors: formattedErrors,
+    component: "graph-validation",
+  });
 }

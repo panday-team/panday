@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import matter from "gray-matter";
+import { logger } from "@/lib/logger";
 import type {
   RoadmapMetadata,
   RoadmapGraph,
@@ -293,16 +294,19 @@ async function loadChecklistNodes(
       if (h1Match?.[1]) {
         const title = h1Match[1].trim();
         if (contentByTitle.has(title)) {
-          console.warn(
-            `[roadmap-loader] Duplicate H1 title found in ${fileName}: "${title}"`,
-          );
+          logger.warn("Duplicate H1 title found in checklist file", {
+            fileName,
+            title,
+            component: "roadmap-loader",
+          });
         }
         contentByTitle.set(title, section);
       } else {
-        console.warn(
-          `[roadmap-loader] Content section without H1 header in ${fileName}`,
-          { preview: section.substring(0, 100) },
-        );
+        logger.warn("Content section without H1 header", {
+          fileName,
+          preview: section.substring(0, 100),
+          component: "roadmap-loader",
+        });
       }
     }
 
@@ -316,9 +320,12 @@ async function loadChecklistNodes(
         !node.id.startsWith("shared-")
       ) {
         // Financial Aid and shared nodes may not have content in every checklist file
-        console.warn(
-          `[roadmap-loader] No content found for node "${node.id}" with title "${node.title}" in ${fileName}`,
-        );
+        logger.warn("No content found for node in checklist file", {
+          nodeId: node.id,
+          nodeTitle: node.title,
+          fileName,
+          component: "roadmap-loader",
+        });
       }
 
       contentMap.set(node.id, {

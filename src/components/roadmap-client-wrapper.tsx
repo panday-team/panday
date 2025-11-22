@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { RoadmapFlow } from "@/components/roadmap-flow";
+import { logger } from "@/lib/logger";
 import type { Roadmap } from "@/data/types/roadmap";
 import type { UserProfile } from "@/lib/profile-types";
 
@@ -57,7 +58,11 @@ export function RoadmapClientWrapper({
           setNewlyCreatedNodeId(nodeId);
         }
       } catch (error) {
-        console.error("Failed to refresh custom nodes:", error);
+        logger.error("Failed to refresh custom nodes", error as Error, {
+          userId,
+          roadmapId: roadmap.metadata.id,
+          component: "roadmap-client-wrapper",
+        });
         // Don't show alert here - errors are handled at the call site
       }
     },

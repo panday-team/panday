@@ -74,3 +74,6 @@ build/
 # Embeddings PDFs (served from src/data/embeddings)
 /public/embeddings/
 .aider*
+
+
+REFACTORING.md
