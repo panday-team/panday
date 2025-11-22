@@ -5,7 +5,6 @@ import type { CSSProperties } from "react";
 import {
   Background,
   BackgroundVariant,
-  MarkerType,
   ReactFlow,
   ReactFlowProvider,
   type Edge,

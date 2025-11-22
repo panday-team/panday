@@ -1,17 +1,30 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { getBezierPath, type EdgeProps, Position } from "@xyflow/react";
 
-// Base flow color (kept consistent with existing edges)
-const FLOW_COLOR = "#35C1B9";
-const CHEVRON_SIZE = 40; // Size of the traveling arrow chevrons
+// Animation configuration constants
+const ANIMATION_CONFIG = {
+  flowColor: "#35C1B9",
+  chevronSize: 40,
+  chevronOpacity: 0.85,
+  animationDuration: "8.0s",
+  chevronDelays: [0, 0.6, 1.2], // Staggered delays for 3 traveling chevrons
+} as const;
 
 /**
  * AnimatedDirectionEdge
+ *
  * Custom edge that shows: (1) a dashed, flowing stroke; (2) a static arrow head;
  * (3) 3 small arrow chevrons that traverse the path to indicate forward direction.
- * Uses SVG <animateMotion> for smooth icon travel; falls back to dash animation alone if SMIL unsupported.
+ *
+ * Performance Considerations:
+ * - Creates 4 concurrent animations per edge (1 path + 3 chevrons)
+ * - Uses SVG SMIL animateMotion for smooth icon travel
+ * - Component is memoized to prevent unnecessary re-renders
+ * - Respects prefers-reduced-motion for accessibility
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/SVG/Element/animateMotion
  */
 function AnimatedDirectionEdge(props: EdgeProps) {
   const {
@@ -34,36 +47,40 @@ function AnimatedDirectionEdge(props: EdgeProps) {
     targetPosition,
   });
 
-  const strokeColor = (style?.stroke as string) || FLOW_COLOR;
+  const strokeColor = (style?.stroke as string) || ANIMATION_CONFIG.flowColor;
   const markerId = `animated-direction-arrow-${id}`;
   const pathId = `animated-direction-path-${id}`;
 
-  // Render three travelling arrow chevrons with staggered delays
-  const travellingArrows = [0, 0.6, 1.2].map((delay, idx) => (
-    <g
-      key={idx}
-      className="animated-direction-edge-arrow"
-      style={{ animationDelay: `${delay}s` }}
-    >
-      {/* Small chevron */}
-      <path
-        d={`M0 0 L${CHEVRON_SIZE} ${CHEVRON_SIZE / 2} L0 ${CHEVRON_SIZE} Z`}
-        fill={strokeColor}
-        opacity={0.85}
-        transform={`translate(-${CHEVRON_SIZE / 2}, -${CHEVRON_SIZE / 2})`}
-      >
-        {/* animateMotion for smooth travel along the path */}
-        <animateMotion
-          dur="8.0s"
-          begin={`${delay}s`}
-          repeatCount="indefinite"
-          rotate="auto"
+  // Memoize traveling arrows to avoid recreation on every render
+  const travellingArrows = useMemo(
+    () =>
+      ANIMATION_CONFIG.chevronDelays.map((delay, idx) => (
+        <g
+          key={idx}
+          className="animated-direction-edge-arrow"
+          style={{ animationDelay: `${delay}s` }}
         >
-          <mpath href={`#${pathId}`} />
-        </animateMotion>
-      </path>
-    </g>
-  ));
+          {/* Small chevron */}
+          <path
+            d={`M0 0 L${ANIMATION_CONFIG.chevronSize} ${ANIMATION_CONFIG.chevronSize / 2} L0 ${ANIMATION_CONFIG.chevronSize} Z`}
+            fill={strokeColor}
+            opacity={ANIMATION_CONFIG.chevronOpacity}
+            transform={`translate(-${ANIMATION_CONFIG.chevronSize / 2}, -${ANIMATION_CONFIG.chevronSize / 2})`}
+          >
+            {/* animateMotion for smooth travel along the path */}
+            <animateMotion
+              dur={ANIMATION_CONFIG.animationDuration}
+              begin={`${delay}s`}
+              repeatCount="indefinite"
+              rotate="auto"
+            >
+              <mpath href={`#${pathId}`} />
+            </animateMotion>
+          </path>
+        </g>
+      )),
+    [strokeColor, pathId],
+  );
 
   return (
     <g className="animated-direction-edge">
