@@ -304,5 +304,17 @@ function ChecklistNodeComponent({ id, data }: NodeProps<ChecklistNodeType>) {
   );
 }
 
-export const ChecklistNode = memo(ChecklistNodeComponent);
+// Custom equality check to prevent unnecessary re-renders
+export const ChecklistNode = memo(ChecklistNodeComponent, (prev, next) => {
+  return (
+    prev.id === next.id &&
+    prev.data.label === next.data.label &&
+    prev.data.status === next.data.status &&
+    prev.data.isSelected === next.data.isSelected &&
+    prev.data.animationIndex === next.data.animationIndex &&
+    prev.data.isCustom === next.data.isCustom &&
+    prev.selected === next.selected &&
+    prev.dragging === next.dragging
+  );
+});
 ChecklistNode.displayName = "ChecklistNode";

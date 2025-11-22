@@ -242,5 +242,19 @@ function MainPathNodeComponent({
   );
 }
 
-export const MainPathNode = memo(MainPathNodeComponent);
+// Custom equality check to prevent unnecessary re-renders
+export const MainPathNode = memo(MainPathNodeComponent, (prev, next) => {
+  return (
+    prev.id === next.id &&
+    prev.data.label === next.data.label &&
+    prev.data.status === next.data.status &&
+    prev.data.glow === next.data.glow &&
+    prev.data.isSelected === next.data.isSelected &&
+    prev.color === next.color &&
+    prev.colorName === next.colorName &&
+    prev.icon === next.icon &&
+    prev.selected === next.selected &&
+    prev.dragging === next.dragging
+  );
+});
 MainPathNode.displayName = "MainPathNode";

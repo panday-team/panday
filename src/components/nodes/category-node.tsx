@@ -222,5 +222,18 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
   );
 }
 
-export const CategoryNode = memo(CategoryNodeComponent);
+// Custom equality check to prevent unnecessary re-renders
+export const CategoryNode = memo(CategoryNodeComponent, (prev, next) => {
+  return (
+    prev.id === next.id &&
+    prev.data.label === next.data.label &&
+    prev.data.icon === next.data.icon &&
+    prev.data.color === next.data.color &&
+    prev.data.isSelected === next.data.isSelected &&
+    prev.data.isExpanded === next.data.isExpanded &&
+    prev.data.isDimmed === next.data.isDimmed &&
+    prev.selected === next.selected &&
+    prev.dragging === next.dragging
+  );
+});
 CategoryNode.displayName = "CategoryNode";

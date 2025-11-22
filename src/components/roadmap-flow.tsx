@@ -253,49 +253,84 @@ function RoadmapFlowInner({
     return calculateViewportForNode(currentNodeId, roadmap.graph.nodes);
   }, [userProfile, roadmap.graph.nodes]);
 
-  const initialNodes = useMemo<FlowNode[]>(() => {
-    // Get personalization data from user profile
-    const completedLevelIds = userProfile
-      ? getCompletedLevels(userProfile.currentLevel)
-      : [];
-    const irrelevantNodeIds = userProfile
-      ? getIrrelevantNodes(userProfile.specialization, userProfile.currentLevel)
-      : [];
-    const currentLevelNodeId = userProfile
-      ? getCurrentLevelNodeId(
-          userProfile.currentLevel,
-          userProfile.specialization,
-        )
-      : null;
+  // OPTIMIZATION: Split initialNodes into smaller memos to reduce recalculation
 
-    // Use pre-computed node relationships from shared memo
+  // 1. Profile-derived data (only recalculates when profile changes)
+  const profileData = useMemo(() => {
+    if (!userProfile) {
+      return {
+        completedLevelIds: [],
+        irrelevantNodeIds: [],
+        currentLevelNodeId: null,
+      };
+    }
+    return {
+      completedLevelIds: getCompletedLevels(userProfile.currentLevel),
+      irrelevantNodeIds: getIrrelevantNodes(
+        userProfile.specialization,
+        userProfile.currentLevel,
+      ),
+      currentLevelNodeId: getCurrentLevelNodeId(
+        userProfile.currentLevel,
+        userProfile.specialization,
+      ),
+    };
+  }, [userProfile]);
+
+  // 2. Visibility filter (recalculates when selection changes)
+  const visibleNodeIds = useMemo(() => {
     const { hubNodeIds, nodesByParent } = nodeRelationships;
+    const visible = new Set<string>();
 
-    //build nodes from graph/content
-    const builtNodes: FlowNode[] = roadmap.graph.nodes
-      .filter((graphNode) => {
-        const parents =
-          graphNode.parentIds ??
-          (graphNode.parentId ? [graphNode.parentId] : []);
+    for (const graphNode of roadmap.graph.nodes) {
+      const parents =
+        graphNode.parentIds ?? (graphNode.parentId ? [graphNode.parentId] : []);
 
-        // Always show hub and category nodes (nodes with no parents)
-        if (parents.length === 0) return true; // Hub/terminal nodes
+      // Always show hub and category nodes (nodes with no parents)
+      if (parents.length === 0) {
+        visible.add(graphNode.id);
+        continue;
+      }
 
-        // Category nodes have a hub as parent (O(1) lookup)
-        if (parents.some((parentId) => hubNodeIds.has(parentId))) return true;
+      // Category nodes have a hub as parent (O(1) lookup)
+      if (parents.some((parentId) => hubNodeIds.has(parentId))) {
+        visible.add(graphNode.id);
+        continue;
+      }
 
-        // Checklist nodes: show if ANY parent category is selected OR any sibling is selected
-        for (const parentId of parents) {
-          // Show if the parent category itself is selected
-          if (selectedNodeId === parentId) return true;
-
-          // Show if any sibling (same parent) is selected (O(siblings) instead of O(all nodes))
-          const siblings = nodesByParent.get(parentId) ?? [];
-          if (siblings.some((n) => n.id === selectedNodeId)) return true;
+      // Checklist nodes: show if ANY parent category is selected OR any sibling is selected
+      let shouldShow = false;
+      for (const parentId of parents) {
+        // Show if the parent category itself is selected
+        if (selectedNodeId === parentId) {
+          shouldShow = true;
+          break;
         }
 
-        return false;
-      })
+        // Show if any sibling (same parent) is selected
+        const siblings = nodesByParent.get(parentId) ?? [];
+        if (siblings.some((n) => n.id === selectedNodeId)) {
+          shouldShow = true;
+          break;
+        }
+      }
+
+      if (shouldShow) {
+        visible.add(graphNode.id);
+      }
+    }
+
+    return visible;
+  }, [roadmap.graph.nodes, selectedNodeId, nodeRelationships]);
+
+  const initialNodes = useMemo<FlowNode[]>(() => {
+    const { completedLevelIds, irrelevantNodeIds, currentLevelNodeId } =
+      profileData;
+    const { nodesByParent } = nodeRelationships;
+
+    //build nodes from graph/content (using pre-computed visibility)
+    const builtNodes: FlowNode[] = roadmap.graph.nodes
+      .filter((graphNode) => visibleNodeIds.has(graphNode.id))
       .map((graphNode) => {
         const content = roadmap.content.get(graphNode.id);
 
@@ -522,10 +557,11 @@ function RoadmapFlowInner({
   }, [
     roadmap,
     nodeStatuses,
-    userProfile,
-    selectedNodeId,
+    profileData,
+    visibleNodeIds,
     nodeRelationships,
     customNodes,
+    selectedNodeId,
   ]);
 
   const initialEdges = useMemo<FlowEdge[]>(() => {
@@ -723,16 +759,24 @@ function RoadmapFlowInner({
     setNodes(initialNodes);
   }, [initialNodes, setNodes]);
 
-  // Update nodes when statuses change
+  // Update nodes when statuses change (optimized to only update changed nodes)
   useEffect(() => {
     setNodes((currentNodes) =>
-      currentNodes.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          status: nodeStatuses[node.id] ?? "base",
-        },
-      })),
+      currentNodes.map((node) => {
+        const newStatus = nodeStatuses[node.id] ?? "base";
+        // Only update nodes that have a status property (skip CategoryNodeData)
+        if ("status" in node.data && node.data.status !== newStatus) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              status: newStatus,
+            },
+          };
+        }
+        // Return same reference = no re-render for this node
+        return node;
+      }),
     );
   }, [nodeStatuses, setNodes]);
 
@@ -1011,12 +1055,20 @@ function RoadmapFlowInner({
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: FlowNodeType) => {
       setSelectedNodeId(node.id);
-      // Update nodes to set isSelected flag
+      // Update nodes to set isSelected flag (optimized to only update changed nodes)
       setNodes((currentNodes) =>
-        currentNodes.map((n) => ({
-          ...n,
-          data: { ...n.data, isSelected: n.id === node.id },
-        })),
+        currentNodes.map((n) => {
+          const shouldBeSelected = n.id === node.id;
+          // Only create new object if isSelected state changed
+          if (n.data.isSelected !== shouldBeSelected) {
+            return {
+              ...n,
+              data: { ...n.data, isSelected: shouldBeSelected },
+            };
+          }
+          // Return same reference = no re-render for this node
+          return n;
+        }),
       );
 
       // Notify tutorial of node click
@@ -1027,12 +1079,19 @@ function RoadmapFlowInner({
 
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null);
-    // Clear isSelected flag from all nodes
+    // Clear isSelected flag from all nodes (optimized to only update changed nodes)
     setNodes((currentNodes) =>
-      currentNodes.map((n) => ({
-        ...n,
-        data: { ...n.data, isSelected: false },
-      })),
+      currentNodes.map((n) => {
+        // Only create new object if node was previously selected
+        if (n.data.isSelected === true) {
+          return {
+            ...n,
+            data: { ...n.data, isSelected: false },
+          };
+        }
+        // Return same reference = no re-render for this node
+        return n;
+      }),
     );
   }, [setNodes]);
 
@@ -1050,13 +1109,19 @@ function RoadmapFlowInner({
       void setNodeStatus(roadmap.metadata.id, nodeId, status);
       setNodeStatuses((prev) => ({ ...prev, [nodeId]: status }));
 
-      // Update the node data
+      // Update the node data (optimized to only update the specific node)
       setNodes((currentNodes) =>
-        currentNodes.map((node) =>
-          node.id === nodeId
-            ? { ...node, data: { ...node.data, status } }
-            : node,
-        ),
+        currentNodes.map((node) => {
+          if (
+            node.id === nodeId &&
+            "status" in node.data &&
+            node.data.status !== status
+          ) {
+            return { ...node, data: { ...node.data, status } };
+          }
+          // Return same reference for unchanged nodes
+          return node;
+        }),
       );
     },
     [roadmap.metadata.id, setNodes],
@@ -1443,10 +1508,18 @@ function RoadmapFlowInner({
       // Select the node (this will automatically show its category's subnodes)
       setSelectedNodeId(nodeId);
       setNodes((currentNodes) =>
-        currentNodes.map((n) => ({
-          ...n,
-          data: { ...n.data, isSelected: n.id === nodeId },
-        })),
+        currentNodes.map((n) => {
+          const shouldBeSelected = n.id === nodeId;
+          // Only create new object if isSelected state changed
+          if (n.data.isSelected !== shouldBeSelected) {
+            return {
+              ...n,
+              data: { ...n.data, isSelected: shouldBeSelected },
+            };
+          }
+          // Return same reference = no re-render for this node
+          return n;
+        }),
       );
 
       // Wait for nodes to update before centering viewport
