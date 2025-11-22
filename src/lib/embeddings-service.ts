@@ -7,6 +7,7 @@ import {
 import path from "path";
 import { env } from "@/env";
 import { logger } from "@/lib/logger";
+import { APP_CONFIG } from "@/config/app-config";
 import { generateNodeUrl, extractNodeInfo } from "./url-utils";
 
 export interface SourceDocument {
@@ -32,10 +33,10 @@ export interface QueryRequest {
   roadmap_id?: string;
 }
 
-const DEFAULT_ROADMAP_ID = "electrician-bc";
+const DEFAULT_ROADMAP_ID = APP_CONFIG.embeddings.defaultRoadmapId;
 const EMBEDDINGS_BASE_PATH = path.join(process.cwd(), "src/data/embeddings");
 
-const INDEX_CACHE_TTL_MS = 60 * 60 * 1000;
+const INDEX_CACHE_TTL_MS = APP_CONFIG.embeddings.indexCacheTtl;
 
 interface CachedIndex {
   index: VectorStoreIndex;

@@ -5,12 +5,13 @@ import { getChatModel } from "@/lib/ai-model";
 import { logger } from "@/lib/logger";
 import { db } from "@/server/db";
 import { requireCronAuth } from "@/server/cron-auth";
+import { APP_CONFIG } from "@/config/app-config";
 
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
-const SESSION_IDLE_TIMEOUT_MS = 1000 * 60 * 30; // 30 minutes
-const MAX_SESSIONS_PER_RUN = 5;
+const SESSION_IDLE_TIMEOUT_MS = APP_CONFIG.chat.sessionIdleTimeout;
+const MAX_SESSIONS_PER_RUN = APP_CONFIG.cron.maxSessionsPerRun;
 
 type SessionWithMessages = Prisma.ChatSessionGetPayload<{
   include: { messages: true };
@@ -56,7 +57,9 @@ export async function GET(request: NextRequest) {
     try {
       totalPairs += await extractPairsForSession(session);
     } catch (error) {
-      logger.error("Failed to extract Q&A pairs", error, { sessionId: session.id });
+      logger.error("Failed to extract Q&A pairs", error, {
+        sessionId: session.id,
+      });
     }
   }
 
@@ -151,7 +154,9 @@ ${conversation}
       });
       return completion.object.pairs;
     } catch (err) {
-      logger.error("Extractor model call failed", err, { sessionId: session.id });
+      logger.error("Extractor model call failed", err, {
+        sessionId: session.id,
+      });
       return null;
     }
   })();
@@ -167,7 +172,9 @@ ${conversation}
     if (!question || !answer) continue;
 
     const sanitizedIds = Array.isArray(qa.messageIds)
-      ? qa.messageIds.filter((id) => session.messages.some((message) => message.id === id))
+      ? qa.messageIds.filter((id) =>
+          session.messages.some((message) => message.id === id),
+        )
       : [];
 
     await db.qAPair.create({

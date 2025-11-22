@@ -48,3 +48,26 @@ export const databaseConnectionConfig: {
   resolvedDatabaseUrl,
   resolvedDirectUrl,
 };
+
+// Graceful shutdown: disconnect Prisma client on process termination
+// This prevents connection leaks and ensures clean shutdown
+if (typeof process !== "undefined") {
+  const cleanup = async () => {
+    await db.$disconnect();
+  };
+
+  // Handle normal process exit
+  process.on("beforeExit", () => {
+    void cleanup();
+  });
+
+  // Handle SIGINT (Ctrl+C)
+  process.on("SIGINT", () => {
+    void cleanup().then(() => process.exit(0));
+  });
+
+  // Handle SIGTERM (docker stop, k8s termination)
+  process.on("SIGTERM", () => {
+    void cleanup().then(() => process.exit(0));
+  });
+}

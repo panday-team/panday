@@ -2,6 +2,7 @@ import { OpenAI } from "openai";
 import { db as prisma } from "@/server/db";
 import { env } from "@/env";
 import { logger } from "@/lib/logger";
+import { APP_CONFIG } from "@/config/app-config";
 import type {
   QueryRequest,
   QueryResponse,
@@ -9,8 +10,8 @@ import type {
 } from "./embeddings-service";
 import { generateNodeUrl, extractNodeInfo } from "./url-utils";
 
-const DEFAULT_ROADMAP_ID = "electrician-bc";
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const DEFAULT_ROADMAP_ID = APP_CONFIG.embeddings.defaultRoadmapId;
+const CACHE_TTL_MS = APP_CONFIG.embeddings.cacheTtl;
 
 interface CachedQueryResult {
   response: QueryResponse;

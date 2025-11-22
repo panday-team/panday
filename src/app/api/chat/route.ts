@@ -12,6 +12,7 @@ import { getCookieName } from "@/lib/user-identifier";
 import { loadNodeContent } from "@/lib/roadmap-loader";
 import { db } from "@/server/db";
 import { buildMessagePreview, deriveThreadTitle } from "@/lib/chat-threads";
+import { APP_CONFIG } from "@/config/app-config";
 
 import {
   createCustomNode,
@@ -47,8 +48,8 @@ const ChatRequestSchema = z.object({
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 
-const SESSION_IDLE_TIMEOUT_MS = 1000 * 60 * 30; // 30 minutes
-const MAX_MESSAGES_PER_SESSION = 30;
+const SESSION_IDLE_TIMEOUT_MS = APP_CONFIG.chat.sessionIdleTimeout;
+const MAX_MESSAGES_PER_SESSION = APP_CONFIG.chat.maxMessagesPerSession;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

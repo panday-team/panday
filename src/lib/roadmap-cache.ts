@@ -1,5 +1,6 @@
 import type { Roadmap } from "@/data/types/roadmap";
 import { buildRoadmap } from "./roadmap-loader";
+import { APP_CONFIG } from "@/config/app-config";
 
 interface CacheEntry {
   data: Roadmap;
@@ -13,13 +14,14 @@ interface CacheEntry {
  * clears cache automatically, ensuring fresh content after updates. No need for
  * time-based expiration.
  *
- * Size Limit: 10 roadmaps - Supports multi-roadmap vision (plumber-bc, carpenter-bc,
- * etc.). Memory footprint: ~20MB max (10 roadmaps × ~2MB each), which is negligible
+ * Size Limit: Configurable via ROADMAP_CACHE_MAX_SIZE (default: 10 roadmaps)
+ * Supports multi-roadmap vision (plumber-bc, carpenter-bc, etc.).
+ * Memory footprint: ~20MB max (10 roadmaps × ~2MB each), which is negligible
  * for modern Node.js servers. LRU eviction handles rare cases where 10+ roadmaps
  * are accessed.
  */
-const CACHE_TTL_MS = Infinity;
-const MAX_CACHE_SIZE = 10;
+const CACHE_TTL_MS = APP_CONFIG.cache.roadmapTtl;
+const MAX_CACHE_SIZE = APP_CONFIG.cache.roadmapMaxSize;
 
 class RoadmapCache {
   private cache = new Map<string, CacheEntry>();
