@@ -527,6 +527,276 @@ describe("custom-nodes", () => {
     });
   });
 
+  describe("XSS Sanitization", () => {
+    it("sanitizes script tags in title", async () => {
+      const mockNode: CustomNode = {
+        id: "node-xss",
+        userId: "user-123",
+        roadmapId: "electrician-bc",
+        parentId: "red-seal",
+        title: "Clean Title",
+        description: "Test",
+        type: "checklist",
+        status: "in-progress",
+        content: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      vi.mocked(db.customNode.create).mockResolvedValue(mockNode);
+
+      const input: CreateCustomNodeInput = {
+        roadmapId: "electrician-bc",
+        parentId: "red-seal",
+        title: "<script>alert('xss')</script>Clean Title",
+        description: "Test",
+        type: "checklist",
+      };
+
+      await createCustomNode("user-123", input);
+
+      expect(db.customNode.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          title: "Clean Title", // Script tag removed
+        }),
+      });
+    });
+
+    it("sanitizes description allowing basic formatting", async () => {
+      const mockNode: CustomNode = {
+        id: "node-fmt",
+        userId: "user-123",
+        roadmapId: "electrician-bc",
+        parentId: "red-seal",
+        title: "Test",
+        description: "<b>Bold</b> text",
+        type: "checklist",
+        status: "in-progress",
+        content: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      vi.mocked(db.customNode.create).mockResolvedValue(mockNode);
+
+      const input: CreateCustomNodeInput = {
+        roadmapId: "electrician-bc",
+        parentId: "red-seal",
+        title: "Test",
+        description:
+          "<b>Bold</b> text <script>alert('xss')</script><i>italic</i>",
+        type: "checklist",
+      };
+
+      await createCustomNode("user-123", input);
+
+      expect(db.customNode.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          description: "<b>Bold</b> text <i>italic</i>", // Safe tags preserved
+        }),
+      });
+    });
+
+    it("sanitizes JSON content recursively", async () => {
+      const mockNode: CustomNode = {
+        id: "node-json",
+        userId: "user-123",
+        roadmapId: "electrician-bc",
+        parentId: "red-seal",
+        title: "Test",
+        description: "Test",
+        type: "checklist",
+        status: "in-progress",
+        content: {
+          notes: "Clean notes",
+          items: ["<b>Item</b>"],
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      vi.mocked(db.customNode.create).mockResolvedValue(mockNode);
+
+      const input: CreateCustomNodeInput = {
+        roadmapId: "electrician-bc",
+        parentId: "red-seal",
+        title: "Test",
+        description: "Test",
+        type: "checklist",
+        content: {
+          notes: "<script>xss</script>Clean notes",
+          items: ["<b>Item</b>", "<script>bad</script>"],
+        },
+      };
+
+      await createCustomNode("user-123", input);
+
+      expect(db.customNode.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          content: {
+            notes: "Clean notes",
+            items: ["<b>Item</b>", ""],
+          },
+        }),
+      });
+    });
+
+    it("handles event handler injection", async () => {
+      const mockNode: CustomNode = {
+        id: "node-evt",
+        userId: "user-123",
+        roadmapId: "electrician-bc",
+        parentId: "red-seal",
+        title: "Click me",
+        description: "Text",
+        type: "checklist",
+        status: "in-progress",
+        content: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      vi.mocked(db.customNode.create).mockResolvedValue(mockNode);
+
+      const input: CreateCustomNodeInput = {
+        roadmapId: "electrician-bc",
+        parentId: "red-seal",
+        title: "<div onclick='alert(1)'>Click me</div>",
+        description: "<b onclick='evil()'>Text</b>",
+        type: "checklist",
+      };
+
+      await createCustomNode("user-123", input);
+
+      const callArgs = vi.mocked(db.customNode.create).mock.calls[0]?.[0];
+      expect(callArgs?.data.title).not.toContain("onclick");
+      expect(callArgs?.data.description).not.toContain("onclick");
+    });
+
+    it("strips javascript: protocol links", async () => {
+      const mockNode: CustomNode = {
+        id: "node-js",
+        userId: "user-123",
+        roadmapId: "electrician-bc",
+        parentId: "red-seal",
+        title: "Test",
+        description: "Click",
+        type: "checklist",
+        status: "in-progress",
+        content: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      vi.mocked(db.customNode.create).mockResolvedValue(mockNode);
+
+      const input: CreateCustomNodeInput = {
+        roadmapId: "electrician-bc",
+        parentId: "red-seal",
+        title: "Test",
+        description: '<a href="javascript:alert(1)">Click</a>',
+        type: "checklist",
+      };
+
+      await createCustomNode("user-123", input);
+
+      const callArgs = vi.mocked(db.customNode.create).mock.calls[0]?.[0];
+      expect(callArgs?.data.description).not.toContain("javascript:");
+    });
+
+    it("removes style injection attempts", async () => {
+      const mockNode: CustomNode = {
+        id: "node-style",
+        userId: "user-123",
+        roadmapId: "electrician-bc",
+        parentId: "red-seal",
+        title: "Test",
+        description: "<b>Styled</b>",
+        type: "checklist",
+        status: "in-progress",
+        content: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      vi.mocked(db.customNode.create).mockResolvedValue(mockNode);
+
+      const input: CreateCustomNodeInput = {
+        roadmapId: "electrician-bc",
+        parentId: "red-seal",
+        title: "Test",
+        description:
+          "<b style='background:url(javascript:alert(1))'>Styled</b>",
+        type: "checklist",
+      };
+
+      await createCustomNode("user-123", input);
+
+      const callArgs = vi.mocked(db.customNode.create).mock.calls[0]?.[0];
+      expect(callArgs?.data.description).not.toContain("style=");
+      expect(callArgs?.data.description).toBe("<b>Styled</b>");
+    });
+
+    it("sanitizes deeply nested JSON content", async () => {
+      const mockNode: CustomNode = {
+        id: "node-deep",
+        userId: "user-123",
+        roadmapId: "electrician-bc",
+        parentId: "red-seal",
+        title: "Test",
+        description: "Test",
+        type: "checklist",
+        status: "in-progress",
+        content: {
+          level1: {
+            level2: {
+              level3: {
+                value: "Safe",
+              },
+            },
+          },
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      vi.mocked(db.customNode.create).mockResolvedValue(mockNode);
+
+      const input: CreateCustomNodeInput = {
+        roadmapId: "electrician-bc",
+        parentId: "red-seal",
+        title: "Test",
+        description: "Test",
+        type: "checklist",
+        content: {
+          level1: {
+            level2: {
+              level3: {
+                value: "<script>alert('deep')</script>Safe",
+              },
+            },
+          },
+        },
+      };
+
+      await createCustomNode("user-123", input);
+
+      expect(db.customNode.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          content: {
+            level1: {
+              level2: {
+                level3: {
+                  value: "Safe",
+                },
+              },
+            },
+          },
+        }),
+      });
+    });
+  });
+
   describe("Content field edge cases", () => {
     it("accepts empty content object", async () => {
       const mockNode: CustomNode = {

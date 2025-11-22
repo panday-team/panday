@@ -1,6 +1,11 @@
 import { db } from "@/server/db";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import {
+  sanitizePlainText,
+  sanitizeBasicFormat,
+  sanitizeJsonContent,
+} from "@/lib/sanitize";
 
 import type { CustomNode } from "@prisma/client";
 
@@ -40,15 +45,22 @@ export async function createCustomNode(
 ) {
   const validated = CreateCustomNodeSchema.parse(input);
 
+  // Sanitize user input to prevent XSS attacks
+  const sanitizedTitle = sanitizePlainText(validated.title);
+  const sanitizedDescription = sanitizeBasicFormat(validated.description);
+  const sanitizedContent = validated.content
+    ? sanitizeJsonContent(validated.content, "BASIC_FORMAT")
+    : null;
+
   return db.customNode.create({
     data: {
       userId,
       roadmapId: validated.roadmapId,
       parentId: validated.parentId,
-      title: validated.title,
-      description: validated.description,
+      title: sanitizedTitle,
+      description: sanitizedDescription,
       type: validated.type,
-      content: (validated.content as Prisma.JsonValue) ?? Prisma.JsonNull,
+      content: (sanitizedContent as Prisma.JsonValue) ?? Prisma.JsonNull,
     },
   });
 }
@@ -72,19 +84,32 @@ export async function updateCustomNode(
     throw new Error("Custom node not found or access denied");
   }
 
+  // Sanitize user input to prevent XSS attacks
+  const sanitizedTitle = validated.title
+    ? sanitizePlainText(validated.title)
+    : undefined;
+  const sanitizedDescription =
+    validated.description !== undefined
+      ? sanitizeBasicFormat(validated.description)
+      : undefined;
+  const sanitizedContent =
+    validated.content !== undefined
+      ? sanitizeJsonContent(validated.content, "BASIC_FORMAT")
+      : undefined;
+
   return db.customNode.update({
     where: {
       id: nodeId,
     },
     data: {
-      ...(validated.title && { title: validated.title }),
-      ...(validated.description !== undefined && {
-        description: validated.description,
+      ...(sanitizedTitle && { title: sanitizedTitle }),
+      ...(sanitizedDescription !== undefined && {
+        description: sanitizedDescription,
       }),
       ...(validated.parentId && { parentId: validated.parentId }),
       ...(validated.type && { type: validated.type }),
-      ...(validated.content !== undefined && {
-        content: (validated.content as Prisma.JsonValue) ?? Prisma.JsonNull,
+      ...(sanitizedContent !== undefined && {
+        content: (sanitizedContent as Prisma.JsonValue) ?? Prisma.JsonNull,
       }),
     },
   });
