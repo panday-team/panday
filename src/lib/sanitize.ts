@@ -2,10 +2,9 @@
  * XSS Sanitization Module
  *
  * Provides utilities to sanitize user-generated content and prevent XSS attacks.
- * Uses DOMPurify for HTML sanitization with strict configuration profiles.
+ * Uses simple regex-based sanitization for server-side operations.
+ * For client-side sanitization with DOM manipulation, use dompurify directly.
  */
-
-import DOMPurify from "isomorphic-dompurify";
 
 /**
  * Sanitization profiles for different content types
@@ -71,7 +70,20 @@ export function sanitizePlainText(input: string | null | undefined): string {
   const trimmed = input.trim();
   if (!trimmed) return "";
 
-  return DOMPurify.sanitize(trimmed, SanitizationProfiles.TEXT_ONLY);
+  // Strip dangerous tags and their content first (script, style, iframe, object, embed)
+  let sanitized = trimmed.replace(
+    /<(script|style|iframe|object|embed|svg)[^>]*>[\s\S]*?<\/\1>/gi,
+    "",
+  );
+
+  // Strip self-closing dangerous tags
+  sanitized = sanitized.replace(
+    /<(script|style|iframe|object|embed|svg)[^>]*\/>/gi,
+    "",
+  );
+
+  // Strip all remaining HTML tags
+  return sanitized.replace(/<[^>]*>/g, "");
 }
 
 /**
@@ -90,7 +102,35 @@ export function sanitizeBasicFormat(input: string | null | undefined): string {
   const trimmed = input.trim();
   if (!trimmed) return "";
 
-  return DOMPurify.sanitize(trimmed, SanitizationProfiles.BASIC_FORMAT);
+  // Strip dangerous tags and their content first
+  let sanitized = trimmed.replace(
+    /<(script|style|iframe|object|embed|svg)[^>]*>[\s\S]*?<\/\1>/gi,
+    "",
+  );
+
+  // Strip self-closing dangerous tags
+  sanitized = sanitized.replace(
+    /<(script|style|iframe|object|embed|svg)[^>]*\/>/gi,
+    "",
+  );
+
+  // Allow only safe formatting tags (without attributes)
+  const allowedTags = ["b", "i", "em", "strong", "u", "br"];
+
+  // Replace tags - keep only allowed tags and strip all attributes
+  sanitized = sanitized.replace(
+    /<\/?([a-z][a-z0-9]*)\b[^>]*>/gi,
+    (match, tag: string) => {
+      const tagLower = tag.toLowerCase();
+      if (allowedTags.includes(tagLower)) {
+        // Return tag without attributes
+        return match.startsWith("</") ? `</${tagLower}>` : `<${tagLower}>`;
+      }
+      return "";
+    },
+  );
+
+  return sanitized;
 }
 
 /**
@@ -109,7 +149,65 @@ export function sanitizeRichContent(input: string | null | undefined): string {
   const trimmed = input.trim();
   if (!trimmed) return "";
 
-  return DOMPurify.sanitize(trimmed, SanitizationProfiles.RICH_CONTENT);
+  // Strip dangerous tags and their content first
+  let sanitized = trimmed.replace(
+    /<(script|style|iframe|object|embed|svg|form|input|meta)[^>]*>[\s\S]*?<\/\1>/gi,
+    "",
+  );
+
+  // Strip self-closing dangerous tags
+  sanitized = sanitized.replace(
+    /<(script|style|iframe|object|embed|svg|form|input|meta)[^>]*\/>/gi,
+    "",
+  );
+
+  // Allow safe rich content tags
+  const allowedTags = [
+    "b",
+    "i",
+    "em",
+    "strong",
+    "u",
+    "br",
+    "p",
+    "a",
+    "ul",
+    "ol",
+    "li",
+    "code",
+    "pre",
+  ];
+
+  // Remove all tags except allowed ones, strip all dangerous attributes
+  sanitized = sanitized.replace(
+    /<\/?([a-z][a-z0-9]*)\b([^>]*)>/gi,
+    (match, tag: string, attrs: string) => {
+      const tagLower = tag.toLowerCase();
+      if (!allowedTags.includes(tagLower)) {
+        return "";
+      }
+
+      // For closing tags, just return without attributes
+      if (match.startsWith("</")) {
+        return `</${tagLower}>`;
+      }
+
+      // For anchor tags, preserve only https/http href
+      if (tagLower === "a" && attrs) {
+        const hrefPattern = /href\s*=\s*["'](https?:\/\/[^"']*)["']/i;
+        const hrefMatch = hrefPattern.exec(attrs);
+        if (hrefMatch?.[1]) {
+          return `<a href="${hrefMatch[1]}">`;
+        }
+        return "<a>";
+      }
+
+      // For other tags, strip all attributes
+      return `<${tagLower}>`;
+    },
+  );
+
+  return sanitized;
 }
 
 /**
