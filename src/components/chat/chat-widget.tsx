@@ -22,6 +22,7 @@ import {
   Pencil,
   ChevronLeft,
   ChevronRight,
+  Mic,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -29,6 +30,7 @@ import Image from "next/image";
 import { ChatButton } from "./chat-button";
 import ChatLoading from "./chat-loading";
 import Typewriter from "./typewriter";
+import { useVoiceRecording } from "@/lib/hooks/use-voice-recording";
 import type { SourceDocument } from "@/lib/embeddings-service";
 import { useAuth, SignInButton, SignedIn } from "@clerk/nextjs";
 import { CHAT_CONFIG } from "@/lib/chat-config";
@@ -236,6 +238,14 @@ export function ChatWidget({
   const [faqLoading, setFaqLoading] = useState(false);
   const [hasLoadedFaqs, setHasLoadedFaqs] = useState(false);
 
+  const {
+    isRecording,
+    isTranscribing,
+    error: voiceError,
+    startRecording,
+    stopRecording,
+  } = useVoiceRecording();
+
   const activeThreadRef = useRef<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const didMountRef = useRef(false);
@@ -337,9 +347,13 @@ export function ChatWidget({
       ...rest
     }) => {
       const filtered = filterEmptyMessages(outgoingMessages);
+      // Limit to most recent 50 messages to stay within backend validation limits
+      const messagesToSend = filtered.length > 0 ? filtered : outgoingMessages;
+      const limitedMessages = messagesToSend.slice(-50);
+
       return {
         ...rest,
-        messages: filtered.length > 0 ? filtered : outgoingMessages,
+        messages: limitedMessages,
         roadmap_id: roadmapId,
         selected_node_id: selectedNodeId ?? undefined,
         user_profile: userProfile,
@@ -403,18 +417,18 @@ export function ChatWidget({
           prev.map((thread) =>
             thread.id === threadId
               ? {
-                  ...thread,
-                  lastMessageAt:
-                    data.messages[data.messages.length - 1]?.createdAt ??
-                    thread.lastMessageAt,
-                  messagePreview:
-                    data.messages.length > 0
-                      ? buildMessagePreview(
-                          data.messages[data.messages.length - 1]!.content,
-                        )
-                      : thread.messagePreview,
-                  messagesCount: data.messages.length,
-                }
+                ...thread,
+                lastMessageAt:
+                  data.messages[data.messages.length - 1]?.createdAt ??
+                  thread.lastMessageAt,
+                messagePreview:
+                  data.messages.length > 0
+                    ? buildMessagePreview(
+                      data.messages[data.messages.length - 1]!.content,
+                    )
+                    : thread.messagePreview,
+                messagesCount: data.messages.length,
+              }
               : thread,
           ),
         );
@@ -1650,13 +1664,41 @@ export function ChatWidget({
                     <Input
                       type="text"
                       placeholder={
-                        !isSignedIn ? "Sign in to chat" : "Write your message"
+                        !isSignedIn
+                          ? "Sign in to chat"
+                          : isTranscribing
+                            ? "Transcribing..."
+                            : "Write your message"
                       }
-                      disabled={!isSignedIn}
+                      disabled={!isSignedIn || isTranscribing}
                       value={input}
                       onChange={handleInputChange}
                       className="border-none bg-transparent text-sm text-black placeholder:text-black/40 focus-visible:ring-0 dark:text-white dark:placeholder:text-white/40"
                     />
+                    <button
+                      type="button"
+                      disabled={!isSignedIn || isLoading || isTranscribing}
+                      onClick={async () => {
+                        if (isRecording) {
+                          const transcript = await stopRecording();
+                          if (transcript) {
+                            setInput(transcript);
+                          }
+                        } else {
+                          await startRecording();
+                        }
+                      }}
+                      className={cn(
+                        "rounded-full p-2 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-white/10",
+                        isRecording
+                          ? "animate-pulse text-red-500"
+                          : "text-gray-600 dark:text-white/70",
+                      )}
+                      aria-label={isRecording ? "Stop recording" : "Start voice recording"}
+                      title={isRecording ? "Stop recording" : "Voice input"}
+                    >
+                      <Mic size={18} />
+                    </button>
                     <button
                       type="submit"
                       disabled={isLoading || !input.trim() || !isSignedIn}
@@ -1677,6 +1719,11 @@ export function ChatWidget({
                       </svg>
                     </button>
                   </div>
+                  {voiceError && (
+                    <p className="mt-2 text-xs text-red-500 dark:text-red-400">
+                      {voiceError}
+                    </p>
+                  )}
                   {faqEntries.length > 0 && (
                     <div className="mt-3 space-y-2">
                       <p className="text-[11px] font-medium tracking-wide text-gray-400 uppercase dark:text-white/40">
