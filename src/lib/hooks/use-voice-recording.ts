@@ -1,5 +1,7 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { logger } from "@/lib/logger";
+import { VOICE_CONFIG } from "@/lib/chat-config";
+import { z } from "zod";
 
 type VoiceRecordingState = {
   isRecording: boolean;
@@ -7,13 +9,30 @@ type VoiceRecordingState = {
   error: string | null;
 };
 
-type TranscriptionResponse = {
-  transcript: string;
-  language: string;
-  translation?: string;
-  finalText: string;
-};
+/**
+ * Zod schema for transcription API response
+ * Matches the server-side TranscriptionResponse type
+ */
+const TranscriptionResponseSchema = z.object({
+  transcript: z.string(),
+  language: z.string(),
+  translation: z.string().optional(),
+  finalText: z.string(),
+});
 
+/**
+ * Hook for voice recording with OpenAI Whisper transcription
+ *
+ * Features:
+ * - Automatic MIME type detection (webm > ogg > wav)
+ * - Recording duration limit (2 minutes max)
+ * - Audio bitrate optimization (128kbps)
+ * - Proper cleanup on unmount
+ * - Memory leak prevention (clears audio chunks after upload)
+ * - Type-safe API responses with Zod validation
+ *
+ * @returns Voice recording controls and state
+ */
 export function useVoiceRecording() {
   const [state, setState] = useState<VoiceRecordingState>({
     isRecording: false,
@@ -23,20 +42,55 @@ export function useVoiceRecording() {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  /**
+   * Cleanup function to stop recording and release resources
+   */
+  const cleanup = useCallback(() => {
+    const mediaRecorder = mediaRecorderRef.current;
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+      if (mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+      }
+    }
+    if (recordingTimeoutRef.current) {
+      clearTimeout(recordingTimeoutRef.current);
+      recordingTimeoutRef.current = null;
+    }
+    audioChunksRef.current = [];
+    mediaRecorderRef.current = null;
+  }, []);
+
+  /**
+   * Cleanup on unmount to prevent memory leaks
+   */
+  useEffect(() => {
+    return () => {
+      cleanup();
+    };
+  }, [cleanup]);
 
   const startRecording = useCallback(async () => {
     try {
       // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Determine supported MIME type
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : MediaRecorder.isTypeSupported("audio/ogg")
-          ? "audio/ogg"
-          : "audio/wav";
+      // Determine supported MIME type (prefer webm > ogg > wav)
+      let mimeType = "audio/webm";
+      for (const type of VOICE_CONFIG.MIME_TYPES) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          mimeType = type;
+          break;
+        }
+      }
 
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType,
+        audioBitsPerSecond: VOICE_CONFIG.AUDIO_BITRATE,
+      });
+
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -49,14 +103,30 @@ export function useVoiceRecording() {
       mediaRecorder.start();
       setState({ isRecording: true, isTranscribing: false, error: null });
 
+      // Auto-stop recording after max duration
+      recordingTimeoutRef.current = setTimeout(() => {
+        if (mediaRecorderRef.current?.state === "recording") {
+          logger.info("Recording auto-stopped due to duration limit", {
+            maxDuration: VOICE_CONFIG.MAX_RECORDING_DURATION_MS,
+          });
+          // Trigger stop directly on the recorder
+          mediaRecorderRef.current.stop();
+        }
+      }, VOICE_CONFIG.MAX_RECORDING_DURATION_MS);
+
       logger.info("Voice recording started", { mimeType });
     } catch (error) {
-      logger.error("Failed to start recording", error);
+      logger.error(
+        "Failed to start recording",
+        error instanceof Error ? error : new Error(String(error)),
+      );
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to access microphone";
-      setState({ isRecording: false, isTranscribing: false, error: errorMessage });
+        error instanceof Error ? error.message : "Failed to access microphone";
+      setState({
+        isRecording: false,
+        isTranscribing: false,
+        error: errorMessage,
+      });
     }
   }, []);
 
@@ -66,6 +136,12 @@ export function useVoiceRecording() {
       if (!mediaRecorder || mediaRecorder.state === "inactive") {
         resolve(null);
         return;
+      }
+
+      // Clear timeout if recording is stopped manually
+      if (recordingTimeoutRef.current) {
+        clearTimeout(recordingTimeoutRef.current);
+        recordingTimeoutRef.current = null;
       }
 
       mediaRecorder.onstop = async () => {
@@ -83,12 +159,25 @@ export function useVoiceRecording() {
         });
 
         // Check if recording is too short
-        if (audioBlob.size < 1000) {
+        if (audioBlob.size < VOICE_CONFIG.MIN_BLOB_SIZE_BYTES) {
           setState({
             isRecording: false,
             isTranscribing: false,
             error: "Recording too short. Please try again.",
           });
+          audioChunksRef.current = []; // Clean up memory
+          resolve(null);
+          return;
+        }
+
+        // Check if recording exceeds size limit (shouldn't happen with duration limit, but safety check)
+        if (audioBlob.size > VOICE_CONFIG.MAX_FILE_SIZE_BYTES) {
+          setState({
+            isRecording: false,
+            isTranscribing: false,
+            error: "Recording too large. Please try a shorter recording.",
+          });
+          audioChunksRef.current = []; // Clean up memory
           resolve(null);
           return;
         }
@@ -119,16 +208,26 @@ export function useVoiceRecording() {
           }
 
           const dataJson: unknown = await response.json();
-          const data = dataJson as TranscriptionResponse;
+
+          // Validate response with Zod schema
+          const data = TranscriptionResponseSchema.parse(dataJson);
+
           logger.info("Transcription successful", {
             language: data.language,
             hasTranslation: !!data.translation,
           });
 
           setState({ isRecording: false, isTranscribing: false, error: null });
+
+          // Clean up audio chunks after successful upload (prevent memory leak)
+          audioChunksRef.current = [];
+
           resolve(data.finalText);
         } catch (error) {
-          logger.error("Failed to transcribe audio", error);
+          logger.error(
+            "Failed to transcribe audio",
+            error instanceof Error ? error : new Error(String(error)),
+          );
           const errorMessage =
             error instanceof Error
               ? error.message
@@ -138,6 +237,10 @@ export function useVoiceRecording() {
             isTranscribing: false,
             error: errorMessage,
           });
+
+          // Clean up audio chunks after failed upload
+          audioChunksRef.current = [];
+
           resolve(null);
         }
       };
@@ -147,14 +250,9 @@ export function useVoiceRecording() {
   }, []);
 
   const cancelRecording = useCallback(() => {
-    const mediaRecorder = mediaRecorderRef.current;
-    if (mediaRecorder && mediaRecorder.state !== "inactive") {
-      mediaRecorder.stream.getTracks().forEach((track) => track.stop());
-      mediaRecorder.stop();
-      audioChunksRef.current = [];
-    }
+    cleanup();
     setState({ isRecording: false, isTranscribing: false, error: null });
-  }, []);
+  }, [cleanup]);
 
   return {
     isRecording: state.isRecording,

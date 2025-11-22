@@ -120,8 +120,8 @@ export function LandingFeatures() {
               </h3>
               <p className="font-inria-sans text-base leading-relaxed text-white/90">
                 Mark milestones complete, save your progress, and visualize how
-                far you&apos;ve come. Your personalized dashboard shows your path
-                from entry to certification.
+                far you&apos;ve come. Your personalized dashboard shows your
+                path from entry to certification.
               </p>
             </div>
           </div>
