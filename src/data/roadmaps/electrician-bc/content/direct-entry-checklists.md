@@ -1458,8 +1458,6 @@ Long-Term Perspective:
 
 Remember: Preparation prevents problems. Investing time in preparation before starting demonstrates professionalism and sets you up for apprenticeship success. Employers notice and appreciate apprentices who arrive prepared and ready to work.
 
-#
-
 ---
 
 # Securing Your Sponsor
