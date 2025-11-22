@@ -309,3 +309,50 @@
 .animate-tutorial-slide-down {
   animation: tutorial-slide-down 0.3s ease-out forwards;
 }
+
+/* Animated roadmap direction edges */
+.animated-direction-edge-path {
+  stroke-dasharray: 6 10;
+  animation: flow-dash 1.4s linear infinite;
+  filter: drop-shadow(0 0 4px rgba(53, 193, 185, 0.35));
+  will-change: stroke-dashoffset;
+}
+
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+
+.animated-direction-edge-arrow path {
+  animation: arrow-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes arrow-pulse {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.85;
+  }
+  70% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Accessibility: Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animated-direction-edge-path {
+    animation: none;
+    stroke-dasharray: none;
+    will-change: auto;
+  }
+
+  .animated-direction-edge-arrow path {
+    animation: none;
+    opacity: 0;
+  }
+}

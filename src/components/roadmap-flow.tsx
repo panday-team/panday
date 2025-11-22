@@ -5,11 +5,11 @@ import type { CSSProperties } from "react";
 import {
   Background,
   BackgroundVariant,
-  MarkerType,
   ReactFlow,
   ReactFlowProvider,
   type Edge,
   type NodeTypes,
+  type EdgeTypes,
   Position,
   type Node as FlowNodeType,
   useNodesState,
@@ -68,6 +68,7 @@ import {
 import { calculateViewportForNode } from "@/lib/viewport-utils";
 import { calculateNodeProgress } from "@/lib/progress-utils";
 import { useResponsive } from "@/lib/use-responsive";
+import AnimatedDirectionEdge from "@/components/edges/animated-direction-edge";
 
 type FlowNode =
   | HubNodeType
@@ -93,12 +94,7 @@ const baseEdgeStyle: CSSProperties = {
   strokeLinejoin: "round",
 };
 
-const arrowMarker = {
-  type: MarkerType.ArrowClosed,
-  color: flowColor,
-  width: 18,
-  height: 18,
-} as const;
+// Legacy marker kept for reference; not used now that animatedDirection edges render their own markers.
 
 interface RoadmapFlowProps {
   roadmap: Roadmap;
@@ -616,9 +612,9 @@ function RoadmapFlowInner({
         target: graphEdge.target,
         sourceHandle: graphEdge.sourceHandle,
         targetHandle: graphEdge.targetHandle,
-        type: graphEdge.type ?? "bezier",
+        // Use animated direction edge for primary roadmap flow
+        type: "animatedDirection",
         style: baseEdgeStyle,
-        markerEnd: arrowMarker,
       }));
 
     // Helper function to determine correct handle based on relative position
@@ -992,6 +988,13 @@ function RoadmapFlowInner({
       requirement: HubNode,
       portal: HubNode,
       checkpoint: HubNode,
+    }),
+    [],
+  );
+
+  const edgeTypes = useMemo<EdgeTypes>(
+    () => ({
+      animatedDirection: AnimatedDirectionEdge,
     }),
     [],
   );
@@ -1502,6 +1505,7 @@ function RoadmapFlowInner({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
         defaultViewport={initialViewport}
         minZoom={0.2}
