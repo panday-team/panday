@@ -1,21 +1,20 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 
 import { db } from "@/server/db";
-import { createLogger } from "@/lib/logger";
 import {
   buildMessagePreview,
   isSupportedRole,
   toThreadMessageResponse,
 } from "@/lib/chat-threads";
-
-const logger = createLogger({ context: "chat-thread-messages-api" });
-
-const paramsSchema = z.object({
-  threadId: z.string().min(1),
-});
+import {
+  withErrorHandling,
+  parseSearchParams,
+  parseJsonBody,
+  notFound,
+  type ApiContext,
+} from "@/lib/api-handler";
 
 const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).optional(),
@@ -34,99 +33,70 @@ const appendSchema = z.object({
     .max(20),
 });
 
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ threadId: string }> },
-) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const GET = withErrorHandling(
+  async (
+    req: Request,
+    { userId }: ApiContext,
+    _context: { params: Promise<{ threadId: string }> },
+  ) => {
+    // userId is guaranteed non-null due to requireAuth: true
+    // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
+    const authenticatedUserId = userId as string;
+    const { threadId } = await _context.params;
+    const { limit } = parseSearchParams(req, paginationSchema);
 
-  const parsedParams = paramsSchema.safeParse(await context.params);
-  if (!parsedParams.success) {
-    return NextResponse.json({ error: "Invalid thread id" }, { status: 400 });
-  }
+    const thread = await db.chatThread.findFirst({
+      where: {
+        id: threadId,
+        userId: authenticatedUserId,
+        deletedAt: null,
+      },
+    });
 
-  const parsedLimit = paginationSchema.safeParse({
-    limit: req.nextUrl.searchParams.get("limit") ?? undefined,
-  });
+    if (!thread) {
+      return notFound("Thread not found");
+    }
 
-  if (!parsedLimit.success) {
-    return NextResponse.json(
-      { error: "Invalid limit", details: parsedLimit.error.flatten() },
-      { status: 400 },
-    );
-  }
+    const messages = await db.chatThreadMessage.findMany({
+      where: { threadId: thread.id },
+      orderBy: { createdAt: "asc" },
+      ...(limit ? { take: limit } : {}),
+    });
 
-  const thread = await db.chatThread.findFirst({
-    where: {
-      id: parsedParams.data.threadId,
-      userId,
-      deletedAt: null,
-    },
-  });
+    return NextResponse.json({
+      messages: messages.map(toThreadMessageResponse),
+    });
+  },
+  { requireAuth: true, loggerContext: "chat-thread-messages:list" },
+);
 
-  if (!thread) {
-    return NextResponse.json({ error: "Thread not found" }, { status: 404 });
-  }
+export const POST = withErrorHandling(
+  async (
+    req: Request,
+    { userId, logger }: ApiContext,
+    _context: { params: Promise<{ threadId: string }> },
+  ) => {
+    // userId is guaranteed non-null due to requireAuth: true
+    // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
+    const authenticatedUserId = userId as string;
+    const { threadId } = await _context.params;
+    const data = await parseJsonBody(req, appendSchema);
 
-  const messages = await db.chatThreadMessage.findMany({
-    where: { threadId: thread.id },
-    orderBy: { createdAt: "asc" },
-    ...(parsedLimit.data.limit ? { take: parsedLimit.data.limit } : {}),
-  });
+    const thread = await db.chatThread.findFirst({
+      where: {
+        id: threadId,
+        userId: authenticatedUserId,
+        deletedAt: null,
+      },
+    });
 
-  return NextResponse.json({
-    messages: messages.map(toThreadMessageResponse),
-  });
-}
+    if (!thread) {
+      return notFound("Thread not found");
+    }
 
-export async function POST(
-  req: NextRequest,
-  context: { params: Promise<{ threadId: string }> },
-) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const parsedParams = paramsSchema.safeParse(await context.params);
-  if (!parsedParams.success) {
-    return NextResponse.json({ error: "Invalid thread id" }, { status: 400 });
-  }
-
-  let payload: unknown;
-  try {
-    payload = await req.json();
-  } catch {
-    payload = {};
-  }
-
-  const parsedBody = appendSchema.safeParse(payload);
-  if (!parsedBody.success) {
-    return NextResponse.json(
-      { error: "Invalid payload", details: parsedBody.error.flatten() },
-      { status: 400 },
-    );
-  }
-
-  const thread = await db.chatThread.findFirst({
-    where: {
-      id: parsedParams.data.threadId,
-      userId,
-      deletedAt: null,
-    },
-  });
-
-  if (!thread) {
-    return NextResponse.json({ error: "Thread not found" }, { status: 404 });
-  }
-
-  try {
     const results = await db.$transaction(async (tx) => {
       const created = [];
-      for (const message of parsedBody.data.messages) {
+      for (const message of data.messages) {
         const entry = await tx.chatThreadMessage.create({
           data: {
             threadId: thread.id,
@@ -153,17 +123,15 @@ export async function POST(
       return created;
     });
 
+    logger.info("Messages appended to thread", {
+      threadId,
+      userId: authenticatedUserId,
+      messageCount: results.length,
+    });
+
     return NextResponse.json({
       messages: results.map(toThreadMessageResponse),
     });
-  } catch (error) {
-    logger.error("Failed to append messages", error, {
-      threadId: parsedParams.data.threadId,
-      userId,
-    });
-    return NextResponse.json(
-      { error: "Failed to append messages" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  { requireAuth: true, loggerContext: "chat-thread-messages:append" },
+);

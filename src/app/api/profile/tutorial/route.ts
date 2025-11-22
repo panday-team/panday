@@ -1,47 +1,37 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { db as prisma } from "@/server/db";
-import { createLogger } from "@/lib/logger";
-
-const tutorialLogger = createLogger({ context: "tutorial-api" });
+import { withErrorHandling, notFound } from "@/lib/api-handler";
 
 /**
  * POST /api/profile/tutorial - Mark tutorial as completed
  */
-export async function POST() {
-  try {
-    const { userId } = await auth();
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export const POST = withErrorHandling<Request>(
+  async (_request, { userId, logger }) => {
+    // userId is guaranteed non-null due to requireAuth: true
+    // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
+    const authenticatedUserId = userId as string;
 
     // Check if profile exists
     const existingProfile = await prisma.userProfile.findUnique({
-      where: { clerkUserId: userId },
+      where: { clerkUserId: authenticatedUserId },
     });
 
     if (!existingProfile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+      return notFound("Profile not found");
     }
 
     // Update tutorial completion timestamp
     const profile = await prisma.userProfile.update({
-      where: { clerkUserId: userId },
+      where: { clerkUserId: authenticatedUserId },
       data: { tutorialCompletedAt: new Date() },
     });
 
-    tutorialLogger.info("Tutorial marked as completed", {
-      userId,
+    logger.info("Tutorial marked as completed", {
+      userId: authenticatedUserId,
       profileId: profile.id,
     });
 
     return NextResponse.json({ success: true, profile });
-  } catch (error) {
-    tutorialLogger.error("Failed to mark tutorial as completed", error as Error);
-    return NextResponse.json(
-      { error: "Failed to update tutorial status" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  { requireAuth: true, loggerContext: "tutorial:complete" },
+);

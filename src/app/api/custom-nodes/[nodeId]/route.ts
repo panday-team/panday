@@ -1,120 +1,107 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import {
   updateCustomNode,
   deleteCustomNode,
   UpdateCustomNodeSchema,
 } from "@/lib/custom-nodes";
-import { logger } from "@/lib/logger";
 import { chatRateLimit } from "@/lib/rate-limit";
+import {
+  withErrorHandling,
+  parseJsonBody,
+  notFound,
+  type ApiContext,
+} from "@/lib/api-handler";
 
 export const dynamic = "force-dynamic";
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ nodeId: string }> },
-) {
-  const { userId } = await auth();
+export const PATCH = withErrorHandling(
+  async (
+    request: Request,
+    { userId, logger }: ApiContext,
+    _context: { params: Promise<{ nodeId: string }> },
+  ) => {
+    // userId is guaranteed non-null due to requireAuth: true
+    // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
+    const authenticatedUserId = userId as string;
 
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+    const { nodeId } = await _context.params;
+    const validated = await parseJsonBody(request, UpdateCustomNodeSchema);
 
-  const { nodeId } = await params;
+    try {
+      const updatedNode = await updateCustomNode(
+        authenticatedUserId,
+        nodeId,
+        validated,
+      );
 
-  try {
-    const body = await request.json();
-    const validated = UpdateCustomNodeSchema.parse(body);
+      logger.info("Custom node updated", {
+        nodeId,
+        userId: authenticatedUserId,
+        updates: Object.keys(validated),
+      });
 
-    const updatedNode = await updateCustomNode(userId, nodeId, validated);
+      return NextResponse.json({
+        success: true,
+        node: updatedNode,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("not found")) {
+        return notFound("Custom node not found or access denied");
+      }
+      throw error;
+    }
+  },
+  {
+    requireAuth: true,
+    loggerContext: "custom-nodes-api",
+    errorPrefix: "Failed to update custom node",
+  },
+);
 
-    logger.info("Custom node updated", {
-      nodeId,
-      userId,
-      updates: Object.keys(validated),
-    });
+export const DELETE = withErrorHandling(
+  async (
+    _request: Request,
+    { userId, logger }: ApiContext,
+    _context: { params: Promise<{ nodeId: string }> },
+  ) => {
+    // userId is guaranteed non-null due to requireAuth: true
+    // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
+    const authenticatedUserId = userId as string;
 
-    return NextResponse.json({
-      success: true,
-      node: updatedNode,
-    });
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("not found")) {
+    // Rate limiting: 30 requests per minute per user (shared with chat)
+    const rateLimitResult = await chatRateLimit.limit(authenticatedUserId);
+    if (!rateLimitResult.success) {
+      logger.warn("Rate limit exceeded for custom node deletion", {
+        userId: authenticatedUserId,
+        limit: rateLimitResult.limit,
+        remaining: rateLimitResult.remaining,
+      });
       return NextResponse.json(
-        { error: "Custom node not found or access denied" },
-        { status: 404 },
+        {
+          error: "Too many requests. Please try again later.",
+          retryAfter: rateLimitResult.reset,
+        },
+        { status: 429 },
       );
     }
 
-    logger.error("Failed to update custom node", error, {
-      nodeId,
-      userId,
-    });
-
-    return NextResponse.json(
-      { error: "Failed to update custom node" },
-      { status: 500 },
-    );
-  }
-}
-
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ nodeId: string }> },
-) {
-  const { userId } = await auth();
-
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // Rate limiting: 30 requests per minute per user (shared with chat)
-  const rateLimitResult = await chatRateLimit.limit(userId);
-  if (!rateLimitResult.success) {
-    logger.warn("Rate limit exceeded for custom node deletion", {
-      userId,
-      limit: rateLimitResult.limit,
-      remaining: rateLimitResult.remaining,
-    });
-    return NextResponse.json(
-      {
-        error: "Too many requests. Please try again later.",
-        retryAfter: rateLimitResult.reset,
-      },
-      { status: 429 },
-    );
-  }
-
-  const { nodeId } = await params;
-
-  try {
-    const result = await deleteCustomNode(userId, nodeId);
+    const { nodeId } = await _context.params;
+    const result = await deleteCustomNode(authenticatedUserId, nodeId);
 
     if (result.count === 0) {
-      return NextResponse.json(
-        { error: "Custom node not found or access denied" },
-        { status: 404 },
-      );
+      return notFound("Custom node not found or access denied");
     }
 
-    logger.info("Custom node deleted", {
-      nodeId,
-      userId,
-    });
+    logger.info("Custom node deleted", { nodeId, userId: authenticatedUserId });
 
     return NextResponse.json({
       success: true,
       deletedCount: result.count,
     });
-  } catch (error) {
-    logger.error("Failed to delete custom node", error, {
-      nodeId,
-      userId,
-    });
-
-    return NextResponse.json(
-      { error: "Failed to delete custom node" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  {
+    requireAuth: true,
+    loggerContext: "custom-nodes-api",
+    errorPrefix: "Failed to delete custom node",
+  },
+);

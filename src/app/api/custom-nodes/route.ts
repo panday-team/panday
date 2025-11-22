@@ -1,31 +1,27 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { getCustomNodes } from "@/lib/custom-nodes";
-import { logger } from "@/lib/logger";
+import { withErrorHandling } from "@/lib/api-handler";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
-  const { userId } = await auth();
+export const GET = withErrorHandling(
+  async (request: Request, { userId, logger }) => {
+    const { searchParams } = new URL(request.url);
+    const roadmapId = searchParams.get("roadmapId") ?? "electrician-bc";
 
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+    const nodes = await getCustomNodes(userId!, roadmapId);
 
-  const { searchParams } = new URL(request.url);
-  const roadmapId = searchParams.get("roadmapId") ?? "electrician-bc";
-
-  try {
-    const nodes = await getCustomNodes(userId, roadmapId);
-
-    return NextResponse.json({
-      nodes,
+    logger.info("Custom nodes fetched", {
+      userId,
+      roadmapId,
+      count: nodes.length,
     });
-  } catch (error) {
-    logger.error("Failed to fetch custom nodes", error, { userId, roadmapId });
-    return NextResponse.json(
-      { error: "Failed to fetch custom nodes" },
-      { status: 500 },
-    );
-  }
-}
+
+    return NextResponse.json({ nodes });
+  },
+  {
+    requireAuth: true,
+    loggerContext: "custom-nodes-api",
+    errorPrefix: "Failed to fetch custom nodes",
+  },
+);

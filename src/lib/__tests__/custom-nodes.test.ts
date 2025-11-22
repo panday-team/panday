@@ -164,7 +164,7 @@ describe("custom-nodes", () => {
       const result = CreateCustomNodeSchema.parse(input);
       const content = result.content!;
       expect(content?.metadata).toBeDefined();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       expect((content?.checklistItems as any)?.[0]?.subtasks).toHaveLength(1);
     });
   });

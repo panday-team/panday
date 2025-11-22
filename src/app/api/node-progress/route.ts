@@ -1,13 +1,18 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db as prisma } from "@/server/db";
-import { createLogger } from "@/lib/logger";
-
-const nodeProgressLogger = createLogger({ context: "node-progress-api" });
+import {
+  withErrorHandling,
+  parseSearchParams,
+  parseJsonBody,
+} from "@/lib/api-handler";
 
 // Validation schemas
 const nodeStatusSchema = z.enum(["base", "in-progress", "completed"]);
+
+const getQuerySchema = z.object({
+  roadmapId: z.string().min(1),
+});
 
 const updateNodeProgressSchema = z.object({
   roadmapId: z.string().min(1),
@@ -18,27 +23,16 @@ const updateNodeProgressSchema = z.object({
 /**
  * GET /api/node-progress?roadmapId={roadmapId} - Fetch all node progress for a roadmap
  */
-export async function GET(request: NextRequest) {
-  try {
-    const { userId } = await auth();
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const roadmapId = searchParams.get("roadmapId");
-
-    if (!roadmapId) {
-      return NextResponse.json(
-        { error: "roadmapId is required" },
-        { status: 400 },
-      );
-    }
+export const GET = withErrorHandling<Request>(
+  async (request, { userId, logger }) => {
+    // userId is guaranteed non-null due to requireAuth: true
+    // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
+    const authenticatedUserId = userId as string;
+    const { roadmapId } = parseSearchParams(request, getQuerySchema);
 
     const nodeProgress = await prisma.nodeProgress.findMany({
       where: {
-        userId,
+        userId: authenticatedUserId,
         roadmapId,
       },
     });
@@ -52,79 +46,55 @@ export async function GET(request: NextRequest) {
       {} as Record<string, string>,
     );
 
-    nodeProgressLogger.info("Node progress fetched", {
-      userId,
+    logger.info("Node progress fetched", {
+      userId: authenticatedUserId,
       roadmapId,
       count: nodeProgress.length,
     });
 
     return NextResponse.json(progressMap);
-  } catch (error) {
-    nodeProgressLogger.error("Failed to fetch node progress", error as Error);
-    return NextResponse.json(
-      { error: "Failed to fetch node progress" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  { requireAuth: true, loggerContext: "node-progress:get" },
+);
 
 /**
  * PATCH /api/node-progress - Update node progress
  */
-export async function PATCH(request: NextRequest) {
-  try {
-    const { userId } = await auth();
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = (await request.json()) as unknown;
-    const validatedData = updateNodeProgressSchema.parse(body);
+export const PATCH = withErrorHandling<Request>(
+  async (request, { userId, logger }) => {
+    // userId is guaranteed non-null due to requireAuth: true
+    // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
+    const authenticatedUserId = userId as string;
+    const data = await parseJsonBody(request, updateNodeProgressSchema);
 
     // Upsert node progress (create or update)
     const nodeProgress = await prisma.nodeProgress.upsert({
       where: {
         userId_roadmapId_nodeId: {
-          userId,
-          roadmapId: validatedData.roadmapId,
-          nodeId: validatedData.nodeId,
+          userId: authenticatedUserId,
+          roadmapId: data.roadmapId,
+          nodeId: data.nodeId,
         },
       },
       update: {
-        status: validatedData.status,
+        status: data.status,
       },
       create: {
-        userId,
-        roadmapId: validatedData.roadmapId,
-        nodeId: validatedData.nodeId,
-        status: validatedData.status,
+        userId: authenticatedUserId,
+        roadmapId: data.roadmapId,
+        nodeId: data.nodeId,
+        status: data.status,
       },
     });
 
-    nodeProgressLogger.info("Node progress updated", {
-      userId,
-      roadmapId: validatedData.roadmapId,
-      nodeId: validatedData.nodeId,
-      status: validatedData.status,
+    logger.info("Node progress updated", {
+      userId: authenticatedUserId,
+      roadmapId: data.roadmapId,
+      nodeId: data.nodeId,
+      status: data.status,
     });
 
     return NextResponse.json(nodeProgress);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      nodeProgressLogger.warn("Node progress validation failed", {
-        error: error.errors,
-      });
-      return NextResponse.json(
-        { error: "Invalid node progress data", details: error.errors },
-        { status: 400 },
-      );
-    }
-
-    nodeProgressLogger.error("Failed to update node progress", error as Error);
-    return NextResponse.json(
-      { error: "Failed to update node progress" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  { requireAuth: true, loggerContext: "node-progress:update" },
+);

@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
 import { db as prisma } from "@/server/db";
 import {
@@ -8,9 +7,12 @@ import {
   ELECTRICIAN_SPECIALIZATION,
   RESIDENCY_STATUS,
 } from "@/lib/profile-types";
-import { createLogger } from "@/lib/logger";
-
-const profileLogger = createLogger({ context: "profile-api" });
+import {
+  withErrorHandling,
+  parseJsonBody,
+  notFound,
+  created,
+} from "@/lib/api-handler";
 
 // Validation schemas
 const createProfileSchema = z.object({
@@ -41,130 +43,87 @@ const updateProfileSchema = createProfileSchema.partial();
 /**
  * GET /api/profile - Fetch current user's profile
  */
-export async function GET() {
-  try {
-    const { userId } = await auth();
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export const GET = withErrorHandling(
+  async (_request, { userId, logger }) => {
     const profile = await prisma.userProfile.findUnique({
-      where: { clerkUserId: userId },
+      where: { clerkUserId: userId! },
     });
 
     if (!profile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+      return notFound("Profile not found");
     }
 
-    profileLogger.info("Profile fetched", { userId });
+    logger.info("Profile fetched", { userId });
 
     return NextResponse.json(profile);
-  } catch (error) {
-    profileLogger.error("Failed to fetch profile", error as Error);
-    return NextResponse.json(
-      { error: "Failed to fetch profile" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  { requireAuth: true, loggerContext: "profile-api" },
+);
 
 /**
  * POST /api/profile - Create or update user profile
  */
-export async function POST(request: NextRequest) {
-  try {
-    const { userId } = await auth();
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = (await request.json()) as unknown;
-    const validatedData = createProfileSchema.parse(body);
+export const POST = withErrorHandling(
+  async (request: NextRequest, { userId, logger }) => {
+    const validatedData = await parseJsonBody(request, createProfileSchema);
 
     // Upsert profile (create or update)
     const profile = await prisma.userProfile.upsert({
-      where: { clerkUserId: userId },
+      where: { clerkUserId: userId! },
       update: {
         ...validatedData,
         onboardingCompletedAt: new Date(),
       },
       create: {
-        clerkUserId: userId,
+        clerkUserId: userId!,
         ...validatedData,
         onboardingCompletedAt: new Date(),
       },
     });
 
-    profileLogger.info("Profile created/updated", {
+    logger.info("Profile created/updated", {
       userId,
       profileId: profile.id,
     });
 
-    return NextResponse.json(profile, { status: 201 });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      profileLogger.warn("Profile validation failed", { error: error.errors });
-      return NextResponse.json(
-        { error: "Invalid profile data", details: error.errors },
-        { status: 400 },
-      );
-    }
-
-    profileLogger.error("Failed to create/update profile", error as Error);
-    return NextResponse.json(
-      { error: "Failed to create profile" },
-      { status: 500 },
-    );
-  }
-}
+    return created(profile);
+  },
+  {
+    requireAuth: true,
+    loggerContext: "profile-api",
+    errorPrefix: "Failed to create/update profile",
+  },
+);
 
 /**
  * PATCH /api/profile - Update existing user profile
  */
-export async function PATCH(request: NextRequest) {
-  try {
-    const { userId } = await auth();
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = (await request.json()) as unknown;
-    const validatedData = updateProfileSchema.parse(body);
+export const PATCH = withErrorHandling(
+  async (request: NextRequest, { userId, logger }) => {
+    const validatedData = await parseJsonBody(request, updateProfileSchema);
 
     // Check if profile exists
     const existingProfile = await prisma.userProfile.findUnique({
-      where: { clerkUserId: userId },
+      where: { clerkUserId: userId! },
     });
 
     if (!existingProfile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+      return notFound("Profile not found");
     }
 
     // Update profile
     const profile = await prisma.userProfile.update({
-      where: { clerkUserId: userId },
+      where: { clerkUserId: userId! },
       data: validatedData,
     });
 
-    profileLogger.info("Profile updated", { userId, profileId: profile.id });
+    logger.info("Profile updated", { userId, profileId: profile.id });
 
     return NextResponse.json(profile);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      profileLogger.warn("Profile validation failed", { error: error.errors });
-      return NextResponse.json(
-        { error: "Invalid profile data", details: error.errors },
-        { status: 400 },
-      );
-    }
-
-    profileLogger.error("Failed to update profile", error as Error);
-    return NextResponse.json(
-      { error: "Failed to update profile" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  {
+    requireAuth: true,
+    loggerContext: "profile-api",
+    errorPrefix: "Failed to update profile",
+  },
+);

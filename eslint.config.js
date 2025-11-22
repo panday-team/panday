@@ -53,9 +53,25 @@ export default tseslint.config(
   {
     files: ["**/__tests__/**/*.ts", "**/*.test.ts"],
     rules: {
+      // ⚠️ RELAXED TYPE SAFETY FOR TEST FILES ⚠️
+      // These rules are disabled for test files to reduce friction with mocking libraries.
+      // However, this weakens type safety in tests and should be addressed in future:
+      //
+      // - unbound-method: Vitest's vi.fn() creates unbound methods
+      // - no-unsafe-*: Mock return values are often typed as 'any' (e.g., Clerk's auth mock)
+      // - no-explicit-any: Used for quick mock typing (e.g., `as any` assertions)
+      //
+      // TODO: Create proper TypeScript utility types for common mocks:
+      //   - ClerkAuthMock type for auth() mocks
+      //   - PrismaClientMock type for database mocks
+      //   - Replace `as any` with proper type assertions
+      //
+      // See: https://vitest.dev/guide/mocking.html for better typing patterns
+      "@typescript-eslint/unbound-method": "off",
       "@typescript-eslint/no-unsafe-assignment": "off",
       "@typescript-eslint/no-unsafe-member-access": "off",
-      "@typescript-eslint/unbound-method": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
   {

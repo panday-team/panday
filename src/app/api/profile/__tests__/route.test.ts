@@ -41,10 +41,12 @@ describe("Profile API Route", () => {
   describe("GET /api/profile", () => {
     it("should return 401 if user is not authenticated", async () => {
       const { auth } = await import("@clerk/nextjs/server");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: null } as any);
 
-      const response = await GET();
+      const request = new NextRequest("http://localhost:3000/api/profile");
+       
+      const response = await GET(request as any);
       const data = await response.json();
 
       expect(response.status).toBe(401);
@@ -55,15 +57,17 @@ describe("Profile API Route", () => {
       const { auth } = await import("@clerk/nextjs/server");
       const { db } = await import("@/server/db");
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(null);
 
-      const response = await GET();
+      const request = new NextRequest("http://localhost:3000/api/profile");
+       
+      const response = await GET(request as any);
       const data = await response.json();
 
       expect(response.status).toBe(404);
-      expect(data.error).toBe("Profile not found");
+      expect(data.error).toBe("Not found");
     });
 
     it("should return user profile if it exists", async () => {
@@ -83,11 +87,13 @@ describe("Profile API Route", () => {
         updatedAt: new Date("2024-01-01"),
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(mockProfile);
 
-      const response = await GET();
+      const request = new NextRequest("http://localhost:3000/api/profile");
+       
+      const response = await GET(request as any);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -105,24 +111,26 @@ describe("Profile API Route", () => {
       const { auth } = await import("@clerk/nextjs/server");
       const { db } = await import("@/server/db");
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockRejectedValueOnce(
         new Error("Database error"),
       );
 
-      const response = await GET();
+      const request = new NextRequest("http://localhost:3000/api/profile");
+       
+      const response = await GET(request as any);
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data.error).toBe("Failed to fetch profile");
+      expect(data.error).toBe("Internal server error");
     });
   });
 
   describe("POST /api/profile", () => {
     it("should return 401 if user is not authenticated", async () => {
       const { auth } = await import("@clerk/nextjs/server");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: null } as any);
 
       const request = new NextRequest("http://localhost:3000/api/profile", {
@@ -144,7 +152,7 @@ describe("Profile API Route", () => {
 
     it("should return 400 for invalid profile data", async () => {
       const { auth } = await import("@clerk/nextjs/server");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
 
       const request = new NextRequest("http://localhost:3000/api/profile", {
@@ -161,7 +169,7 @@ describe("Profile API Route", () => {
       const data = await response.json();
 
       expect(response.status).toBe(400);
-      expect(data.error).toBe("Invalid profile data");
+      expect(data.error).toBe("Validation error");
       expect(data.details).toBeDefined();
     });
 
@@ -182,7 +190,7 @@ describe("Profile API Route", () => {
         updatedAt: new Date(),
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.upsert).mockResolvedValueOnce(mockProfile);
 
@@ -236,7 +244,7 @@ describe("Profile API Route", () => {
         updatedAt: new Date(),
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.upsert).mockResolvedValueOnce(mockProfile);
 
@@ -261,7 +269,7 @@ describe("Profile API Route", () => {
   describe("PATCH /api/profile", () => {
     it("should return 401 if user is not authenticated", async () => {
       const { auth } = await import("@clerk/nextjs/server");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: null } as any);
 
       const request = new NextRequest("http://localhost:3000/api/profile", {
@@ -282,7 +290,7 @@ describe("Profile API Route", () => {
       const { auth } = await import("@clerk/nextjs/server");
       const { db } = await import("@/server/db");
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(null);
 
@@ -297,7 +305,7 @@ describe("Profile API Route", () => {
       const data = await response.json();
 
       expect(response.status).toBe(404);
-      expect(data.error).toBe("Profile not found");
+      expect(data.error).toBe("Not found");
     });
 
     it("should update a single field (currentLevel)", async () => {
@@ -323,7 +331,7 @@ describe("Profile API Route", () => {
         updatedAt: new Date(),
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(
         existingProfile,
@@ -371,7 +379,7 @@ describe("Profile API Route", () => {
         updatedAt: new Date(),
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(
         existingProfile,
@@ -415,7 +423,7 @@ describe("Profile API Route", () => {
         updatedAt: new Date(),
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(
         existingProfile,
@@ -459,7 +467,7 @@ describe("Profile API Route", () => {
         updatedAt: new Date(),
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(
         existingProfile,
@@ -504,7 +512,7 @@ describe("Profile API Route", () => {
         updatedAt: new Date(),
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(
         existingProfile,
@@ -551,7 +559,7 @@ describe("Profile API Route", () => {
         updatedAt: new Date("2024-01-01"),
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(
         existingProfile,
@@ -568,7 +576,7 @@ describe("Profile API Route", () => {
       const data = await response.json();
 
       expect(response.status).toBe(400);
-      expect(data.error).toBe("Invalid profile data");
+      expect(data.error).toBe("Validation error");
       expect(data.details).toBeDefined();
     });
 
@@ -589,7 +597,7 @@ describe("Profile API Route", () => {
         updatedAt: new Date("2024-01-01"),
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(
         existingProfile,
@@ -627,7 +635,7 @@ describe("Profile API Route", () => {
         updatedAt: new Date("2024-01-01"),
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(
         existingProfile,
@@ -647,7 +655,7 @@ describe("Profile API Route", () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data.error).toBe("Failed to update profile");
+      expect(data.error).toBe("Internal server error");
     });
   });
 });

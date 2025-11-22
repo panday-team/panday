@@ -1,16 +1,15 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@clerk/nextjs/server";
 
 import { db } from "@/server/db";
-import { createLogger } from "@/lib/logger";
 import { toThreadResponse } from "@/lib/chat-threads";
-
-const logger = createLogger({ context: "chat-thread-api" });
-
-const paramsSchema = z.object({
-  threadId: z.string().min(1),
-});
+import {
+  withErrorHandling,
+  parseJsonBody,
+  notFound,
+  noContent,
+  type ApiContext,
+} from "@/lib/api-handler";
 
 const updateSchema = z.object({
   title: z.string().trim().min(1).max(120).optional(),
@@ -18,131 +17,87 @@ const updateSchema = z.object({
   selectedNodeId: z.string().nullable().optional(),
 });
 
-export async function GET(
-  _req: NextRequest,
-  context: { params: Promise<{ threadId: string }> },
-) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const GET = withErrorHandling(
+  async (
+    _req: Request,
+    { userId }: ApiContext,
+    _context: { params: Promise<{ threadId: string }> },
+  ) => {
+    // userId is guaranteed non-null due to requireAuth: true
+    // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
+    const authenticatedUserId = userId as string;
+    const { threadId } = await _context.params;
 
-  const parsedParams = paramsSchema.safeParse(await context.params);
-  if (!parsedParams.success) {
-    return NextResponse.json({ error: "Invalid thread id" }, { status: 400 });
-  }
+    const thread = await db.chatThread.findFirst({
+      where: { id: threadId, userId: authenticatedUserId, deletedAt: null },
+      include: { _count: { select: { messages: true } } },
+    });
 
-  const thread = await db.chatThread.findFirst({
-    where: { id: parsedParams.data.threadId, userId, deletedAt: null },
-    include: { _count: { select: { messages: true } } },
-  });
+    if (!thread) {
+      return notFound("Thread not found");
+    }
 
-  if (!thread) {
-    return NextResponse.json({ error: "Thread not found" }, { status: 404 });
-  }
+    return NextResponse.json({ thread: toThreadResponse(thread) });
+  },
+  { requireAuth: true, loggerContext: "chat-thread:get" },
+);
 
-  return NextResponse.json({ thread: toThreadResponse(thread) });
-}
+export const PATCH = withErrorHandling(
+  async (
+    req: Request,
+    { userId }: ApiContext,
+    _context: { params: Promise<{ threadId: string }> },
+  ) => {
+    // userId is guaranteed non-null due to requireAuth: true
+    // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
+    const authenticatedUserId = userId as string;
+    const { threadId } = await _context.params;
+    const data = await parseJsonBody(req, updateSchema);
 
-export async function PATCH(
-  req: NextRequest,
-  context: { params: Promise<{ threadId: string }> },
-) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const parsedParams = paramsSchema.safeParse(await context.params);
-  if (!parsedParams.success) {
-    return NextResponse.json({ error: "Invalid thread id" }, { status: 400 });
-  }
-
-  let payload: unknown;
-  try {
-    payload = await req.json();
-  } catch {
-    payload = {};
-  }
-
-  const parsedBody = updateSchema.safeParse(payload);
-  if (!parsedBody.success) {
-    return NextResponse.json(
-      { error: "Invalid payload", details: parsedBody.error.flatten() },
-      { status: 400 },
-    );
-  }
-
-  try {
     const thread = await db.chatThread.update({
-      where: { id: parsedParams.data.threadId, userId },
+      where: { id: threadId, userId: authenticatedUserId },
       data: {
-        ...(parsedBody.data.title ? { title: parsedBody.data.title } : {}),
-        ...(parsedBody.data.roadmapId !== undefined
-          ? { roadmapId: parsedBody.data.roadmapId }
-          : {}),
-        ...(parsedBody.data.selectedNodeId !== undefined
-          ? { selectedNodeId: parsedBody.data.selectedNodeId }
+        ...(data.title ? { title: data.title } : {}),
+        ...(data.roadmapId !== undefined ? { roadmapId: data.roadmapId } : {}),
+        ...(data.selectedNodeId !== undefined
+          ? { selectedNodeId: data.selectedNodeId }
           : {}),
       },
       include: { _count: { select: { messages: true } } },
     });
 
     return NextResponse.json({ thread: toThreadResponse(thread) });
-  } catch (error) {
-    logger.error("Failed to update thread", error, {
-      threadId: parsedParams.data.threadId,
-      userId,
-    });
-    return NextResponse.json(
-      { error: "Failed to update thread" },
-      { status: 500 },
-    );
-  }
-}
+  },
+  { requireAuth: true, loggerContext: "chat-thread:update" },
+);
 
-export async function DELETE(
-  _req: NextRequest,
-  context: { params: Promise<{ threadId: string }> },
-) {
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const DELETE = withErrorHandling(
+  async (
+    _req: Request,
+    { userId, logger }: ApiContext,
+    _context: { params: Promise<{ threadId: string }> },
+  ) => {
+    // userId is guaranteed non-null due to requireAuth: true
+    // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
+    const authenticatedUserId = userId as string;
+    const { threadId } = await _context.params;
 
-  const parsedParams = paramsSchema.safeParse(await context.params);
-  if (!parsedParams.success) {
-    return NextResponse.json({ error: "Invalid thread id" }, { status: 400 });
-  }
-
-  try {
     const result = await db.chatThread.updateMany({
       where: {
-        id: parsedParams.data.threadId,
-        userId,
+        id: threadId,
+        userId: authenticatedUserId,
         deletedAt: null,
       },
       data: { deletedAt: new Date() },
     });
 
     if (result.count === 0) {
-      return NextResponse.json({ error: "Thread not found" }, { status: 404 });
+      return notFound("Thread not found");
     }
 
-    logger.info("Thread deleted", {
-      threadId: parsedParams.data.threadId,
-      userId,
-    });
+    logger.info("Thread deleted", { threadId, userId: authenticatedUserId });
 
-    return new NextResponse(null, { status: 204 });
-  } catch (error) {
-    logger.error("Failed to delete thread", error, {
-      threadId: parsedParams.data.threadId,
-      userId,
-    });
-    return NextResponse.json(
-      { error: "Failed to delete thread" },
-      { status: 500 },
-    );
-  }
-}
+    return noContent();
+  },
+  { requireAuth: true, loggerContext: "chat-thread:delete" },
+);
