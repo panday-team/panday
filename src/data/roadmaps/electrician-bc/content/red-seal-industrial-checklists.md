@@ -278,7 +278,7 @@ Review the complete Industrial Electrician program profile.
 
 ---
 
-# Exam Anxiety and Preparation
+# Exam Anxiety & Prep
 
 The Red Seal exam is comprehensive and high-stakes, creating significant pressure and anxiety for many apprentices.
 
@@ -313,7 +313,7 @@ The Red Seal exam is comprehensive and high-stakes, creating significant pressur
 
 ---
 
-# Work Experience Documentation
+# Work Experience Docs
 
 Proving full-scope experience across all required areas can be challenging, especially if your employment has been specialized.
 
@@ -349,7 +349,7 @@ Proving full-scope experience across all required areas can be challenging, espe
 
 ---
 
-# Financial Pressure During Exam Prep
+# Financial Pressure
 
 Taking time off work to study and paying for exam resources can create financial strain.
 
