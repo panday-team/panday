@@ -9,15 +9,13 @@ import {
   Fragment,
 } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { useChat, type Message } from "@ai-sdk/react";
+import { useChat } from "@ai-sdk/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   X,
   ArrowDown,
   Plus,
-  Trash2,
-  Pencil,
   ChevronLeft,
   ChevronRight,
   Mic,
@@ -48,14 +46,13 @@ import {
   isMetadataEvent,
   isSourceDocument,
   filterEmptyMessages,
-  formatRelativeTime,
   mapThreadMessagesToChatMessages,
   extractLatestSources,
 } from "./utils";
 
 // Import extracted components
-import { HistorySkeleton } from "./history-skeleton";
 import { SourcesDisplay } from "./sources-display";
+import { HistoryList } from "./history-list";
 
 export function ChatWidget({
   selectedNodeId,
@@ -89,10 +86,6 @@ export function ChatWidget({
   const [hasFetchedThreads, setHasFetchedThreads] = useState(false);
   const [isCreatingThread, setIsCreatingThread] = useState(false);
   const [pendingThreadId, setPendingThreadId] = useState<string | null>(null);
-  const [renameState, setRenameState] = useState<{
-    id: string;
-    value: string;
-  } | null>(null);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
     null,
   );
@@ -486,7 +479,6 @@ export function ChatWidget({
         setThreads((prev) =>
           prev.map((thread) => (thread.id === threadId ? data.thread : thread)),
         );
-        setRenameState(null);
       } catch (err) {
         logger.error("Failed to rename chat thread", err, { threadId });
       } finally {
@@ -854,164 +846,20 @@ export function ChatWidget({
     setIsHistoryDrawerOpen(false);
   };
 
-  const renderHistoryList = () => {
-    if (!isSignedIn) {
-      return (
-        <div className="flex h-full flex-col items-center justify-center gap-4 px-4 text-center text-sm text-white/70">
-          <p>Sign in to save and revisit your conversations.</p>
-          <SignInButton mode="modal">
-            <Button
-              size="sm"
-              variant="secondary"
-              className="bg-white/20 text-white hover:bg-white/30"
-            >
-              Sign in
-            </Button>
-          </SignInButton>
-        </div>
-      );
-    }
-
-    if (threadsLoading) {
-      return <HistorySkeleton />;
-    }
-
-    if (threadsError) {
-      return (
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
-          <p className="mb-3">{threadsError}</p>
-          <Button
-            size="sm"
-            variant="secondary"
-            className="w-full bg-white/10 text-white hover:bg-white/20"
-            onClick={() => loadThreads()}
-          >
-            Try again
-          </Button>
-        </div>
-      );
-    }
-
-    if (threads.length === 0) {
-      return (
-        <div className="rounded-xl border border-dashed border-white/10 p-4 text-sm text-white/60">
-          <p className="font-medium text-white">No conversations yet</p>
-          <p className="mt-1 text-xs">
-            Start a new chat to keep track of your progress.
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-2">
-        {threads.map((thread) => {
-          const isActive = thread.id === activeThreadId;
-          const isRenaming = renameState?.id === thread.id;
-          const isDisabled = pendingThreadId === thread.id;
-
-          return (
-            <div
-              key={thread.id}
-              role="button"
-              tabIndex={isDisabled ? -1 : 0}
-              aria-disabled={isDisabled}
-              onClick={() => {
-                if (!isDisabled) handleThreadSelect(thread.id);
-              }}
-              onKeyDown={(event) => {
-                if (isDisabled) return;
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  handleThreadSelect(thread.id);
-                }
-              }}
-              className={cn(
-                "group flex w-full flex-col rounded-2xl border border-white/5 bg-white/0 p-3 text-left transition hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none",
-                isActive && "border-white/20 bg-white/10",
-                isDisabled && "cursor-not-allowed opacity-60",
-              )}
-            >
-              <div className="flex min-w-0 items-center justify-between gap-2">
-                {isRenaming ? (
-                  <Input
-                    value={renameState?.value ?? ""}
-                    autoFocus
-                    onChange={(e) =>
-                      setRenameState((prev) =>
-                        prev
-                          ? { ...prev, value: e.target.value }
-                          : { id: thread.id, value: e.target.value },
-                      )
-                    }
-                    onBlur={() => {
-                      const trimmed = renameState?.value?.trim();
-                      if (trimmed && trimmed !== thread.title) {
-                        void handleRenameThread(thread.id, trimmed);
-                      } else {
-                        setRenameState(null);
-                      }
-                    }}
-                    onKeyDown={(event) => {
-                      const trimmed = renameState?.value?.trim();
-                      if (event.key === "Enter" && trimmed) {
-                        event.preventDefault();
-                        void handleRenameThread(thread.id, trimmed);
-                      }
-                      if (event.key === "Escape") {
-                        setRenameState(null);
-                      }
-                    }}
-                    className="h-8 rounded-lg border-white/20 bg-white/10 text-white placeholder:text-white/40"
-                  />
-                ) : (
-                  <div className="min-w-0 flex-1 overflow-hidden">
-                    <p className="truncate text-sm leading-tight font-semibold text-white">
-                      {thread.title}
-                    </p>
-                    <p className="truncate text-xs leading-tight text-white/60">
-                      {thread.messagePreview ?? "No messages yet"}
-                    </p>
-                  </div>
-                )}
-
-                {isSignedIn && !isRenaming && (
-                  <div className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100">
-                    <button
-                      type="button"
-                      aria-label="Rename"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setRenameState({ id: thread.id, value: thread.title });
-                      }}
-                      className="rounded-full p-1 text-white/60 hover:bg-white/10 hover:text-white"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Delete conversation"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        void handleDeleteThread(thread.id);
-                      }}
-                      className="rounded-full p-1 text-white/60 hover:bg-white/10 hover:text-white"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                )}
-              </div>
-              <div className="mt-2 flex items-center justify-between text-[11px] text-white/50">
-                <span>{thread.roadmapId ?? "General"}</span>
-                <span>{formatRelativeTime(thread.lastMessageAt)}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
+  const renderHistoryList = () => (
+    <HistoryList
+      isSignedIn={!!isSignedIn}
+      threads={threads}
+      activeThreadId={activeThreadId}
+      pendingThreadId={pendingThreadId}
+      threadsLoading={threadsLoading}
+      threadsError={threadsError}
+      onThreadSelect={handleThreadSelect}
+      onThreadRename={handleRenameThread}
+      onThreadDelete={handleDeleteThread}
+      onRetry={loadThreads}
+    />
+  );
 
   const renderSidebarContent = () => (
     <div className="flex h-full flex-col px-4 py-5">
