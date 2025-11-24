@@ -14,8 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   X,
-  ExternalLink,
-  FileText,
   ArrowDown,
   Plus,
   Trash2,
@@ -42,156 +40,22 @@ import {
 } from "@/lib/chat-threads";
 import { cn } from "@/lib/utils";
 
-interface ChatWidgetProps {
-  selectedNodeId?: string | null;
-  selectedNodeTitle?: string | null;
-  roadmapId?: string;
-  userProfile?: {
-    trade?: string;
-    currentLevel?: string;
-    specialization?: string;
-    residencyStatus?: string;
-  };
-  onChatOpen?: () => void;
-  forceClose?: boolean;
-  onCustomNodeCreated?: (nodeId?: string) => void;
-}
+// Import extracted types and utilities
+import type { ChatWidgetProps, FaqQuickEntry } from "./types";
+import {
+  isRecord,
+  isStatusEvent,
+  isMetadataEvent,
+  isSourceDocument,
+  filterEmptyMessages,
+  formatRelativeTime,
+  mapThreadMessagesToChatMessages,
+  extractLatestSources,
+} from "./utils";
 
-type StreamStatusEvent = {
-  type: "status";
-  message: string;
-};
-
-type StreamMetadataEvent = {
-  type: "metadata";
-  roadmapId?: string;
-  sources?: unknown;
-};
-
-type FaqQuickEntry = {
-  id: string;
-  question: string;
-  frequency: number;
-};
-
-type MinimalMessage = { content: string };
-
-const HISTORY_SKELETON_ITEMS = Array.from({ length: 3 });
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
-
-const isStatusEvent = (value: unknown): value is StreamStatusEvent =>
-  isRecord(value) &&
-  value.type === "status" &&
-  typeof value.message === "string";
-
-const isMetadataEvent = (value: unknown): value is StreamMetadataEvent =>
-  isRecord(value) && value.type === "metadata";
-
-const filterEmptyMessages = <T extends MinimalMessage>(messages: T[]): T[] =>
-  messages.filter((message) => message.content.trim().length > 0);
-
-const isSourceDocument = (value: unknown): value is SourceDocument => {
-  if (!isRecord(value)) return false;
-  return (
-    typeof value.node_id === "string" &&
-    typeof value.title === "string" &&
-    typeof value.score === "number" &&
-    typeof value.text_snippet === "string"
-  );
-};
-
-const formatRelativeTime = (isoDate: string): string => {
-  const timestamp = new Date(isoDate).getTime();
-  const diff = Date.now() - timestamp;
-  if (Number.isNaN(diff)) return "";
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-  if (diff < minute) return "Just now";
-  if (diff < hour) return `${Math.floor(diff / minute)}m ago`;
-  if (diff < day) return `${Math.floor(diff / hour)}h ago`;
-  return `${Math.floor(diff / day)}d ago`;
-};
-
-const mapThreadMessagesToChatMessages = (
-  messages: ThreadMessageResponse[],
-): Message[] =>
-  messages.map((message) => ({
-    id: message.id,
-    role: message.role,
-    content: message.content,
-  }));
-
-const extractLatestSources = (messages: ThreadMessageResponse[]) => {
-  for (let i = messages.length - 1; i >= 0; i -= 1) {
-    const candidate = messages[i]!;
-    if (
-      candidate.role === "assistant" &&
-      Array.isArray(candidate.sources) &&
-      candidate.sources.length > 0
-    ) {
-      return candidate.sources;
-    }
-  }
-  return [];
-};
-const HistorySkeleton = () => (
-  <div className="space-y-2">
-    {HISTORY_SKELETON_ITEMS.map((_, index) => (
-      <div
-        key={index}
-        className="h-[70px] animate-pulse rounded-2xl border border-white/5 bg-white/5"
-      />
-    ))}
-  </div>
-);
-
-function SourcesDisplay({ sources }: { sources: SourceDocument[] }) {
-  const filtered = sources
-    .filter((source) => source.score > CHAT_CONFIG.RELEVANCE_THRESHOLD)
-    .reduce<SourceDocument[]>((acc, current) => {
-      if (!acc.some((item) => item.title === current.title)) {
-        acc.push(current);
-      }
-      return acc;
-    }, []);
-
-  if (filtered.length === 0) return null;
-
-  return (
-    <div className="mt-3 border-t border-white/20 pt-3">
-      <div className="mb-2 flex items-center gap-2">
-        <FileText size={14} className="opacity-70" />
-        <span className="text-xs font-medium opacity-90">Sources</span>
-      </div>
-      <div className="space-y-1">
-        {filtered.map((source, index) => (
-          <div key={index} className="group flex items-center justify-between">
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs opacity-80">{source.title}</p>
-              <p className="text-xs opacity-60">
-                Relevance: {Math.round(source.score * 100)}%
-              </p>
-            </div>
-            {source.url && (
-              <a
-                href={source.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-2 rounded p-1 transition-colors hover:bg-white/10"
-                title="View source"
-              >
-                <ExternalLink size={12} className="opacity-70" />
-              </a>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+// Import extracted components
+import { HistorySkeleton } from "./history-skeleton";
+import { SourcesDisplay } from "./sources-display";
 
 export function ChatWidget({
   selectedNodeId,
@@ -417,18 +281,18 @@ export function ChatWidget({
           prev.map((thread) =>
             thread.id === threadId
               ? {
-                ...thread,
-                lastMessageAt:
-                  data.messages[data.messages.length - 1]?.createdAt ??
-                  thread.lastMessageAt,
-                messagePreview:
-                  data.messages.length > 0
-                    ? buildMessagePreview(
-                      data.messages[data.messages.length - 1]!.content,
-                    )
-                    : thread.messagePreview,
-                messagesCount: data.messages.length,
-              }
+                  ...thread,
+                  lastMessageAt:
+                    data.messages[data.messages.length - 1]?.createdAt ??
+                    thread.lastMessageAt,
+                  messagePreview:
+                    data.messages.length > 0
+                      ? buildMessagePreview(
+                          data.messages[data.messages.length - 1]!.content,
+                        )
+                      : thread.messagePreview,
+                  messagesCount: data.messages.length,
+                }
               : thread,
           ),
         );
@@ -1694,7 +1558,9 @@ export function ChatWidget({
                           ? "animate-pulse text-red-500"
                           : "text-gray-600 dark:text-white/70",
                       )}
-                      aria-label={isRecording ? "Stop recording" : "Start voice recording"}
+                      aria-label={
+                        isRecording ? "Stop recording" : "Start voice recording"
+                      }
                       title={isRecording ? "Stop recording" : "Voice input"}
                     >
                       <Mic size={18} />
