@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { generateNodeUrl, extractNodeInfo } from "../url-utils";
+import {
+  generateNodeUrl,
+  extractNodeInfo,
+  headingToAnchor,
+} from "../url-utils";
 
 describe("URL Utils", () => {
   describe("generateNodeUrl", () => {
@@ -22,6 +26,64 @@ describe("URL Utils", () => {
       });
 
       expect(url).toBe("/roadmap?roadmap=electrician-bc&node=level-1");
+    });
+
+    it("should include section anchor when provided", () => {
+      const url = generateNodeUrl({
+        roadmapId: "electrician-bc",
+        nodeId: "level-2",
+        section: "Technical Training Curriculum",
+      });
+
+      expect(url).toBe(
+        "/roadmap?roadmap=electrician-bc&node=level-2#technical-training-curriculum",
+      );
+    });
+
+    it("should include chunk index when provided", () => {
+      const url = generateNodeUrl({
+        roadmapId: "electrician-bc",
+        nodeId: "level-1",
+        chunkIndex: 3,
+      });
+
+      expect(url).toBe("/roadmap?roadmap=electrician-bc&node=level-1&chunk=3");
+    });
+
+    it("should handle both section and chunk index", () => {
+      const url = generateNodeUrl({
+        roadmapId: "electrician-bc",
+        nodeId: "level-3",
+        nodeType: "hub",
+        section: "Prerequisites",
+        chunkIndex: 2,
+      });
+
+      expect(url).toBe(
+        "/roadmap?roadmap=electrician-bc&node=level-3&type=hub&chunk=2#prerequisites",
+      );
+    });
+  });
+
+  describe("headingToAnchor", () => {
+    it("should convert heading to URL-safe anchor", () => {
+      expect(headingToAnchor("Technical Training Curriculum")).toBe(
+        "technical-training-curriculum",
+      );
+    });
+
+    it("should handle special characters", () => {
+      expect(headingToAnchor("AC Circuits (Inductance & Capacitance)")).toBe(
+        "ac-circuits-inductance-capacitance",
+      );
+    });
+
+    it("should handle multiple spaces and dashes", () => {
+      expect(headingToAnchor("Before   You   Begin")).toBe("before-you-begin");
+    });
+
+    it("should handle leading and trailing dashes", () => {
+      expect(headingToAnchor("- Section Name -")).toBe("section-name");
     });
   });
 

@@ -330,6 +330,11 @@ export async function POST(req: NextRequest) {
       title: source.title,
       score: source.score,
       text_snippet: source.text_snippet,
+      ...(source.excerpt && { excerpt: source.excerpt }),
+      ...(source.section_heading && {
+        section_heading: source.section_heading,
+      }),
+      ...(source.url && { url: source.url }),
     }));
 
     const metadataPayload: JsonValue = {
@@ -386,9 +391,42 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Inject user's current level content as additional context for the AI
+    // Note: We add this to the system prompt so the AI has personalized context,
+    // but we DON'T add it as a fake high-relevance source. The embeddings system
+    // will naturally include it in sources if the user's query is actually relevant
+    // to their current level content.
+    let levelContext = "";
+    if (validatedBody.user_profile?.currentLevel && validatedBody.roadmap_id) {
+      try {
+        // Normalize level ID (e.g., "2" -> "level-2", "level-2" -> "level-2")
+        const rawLevel = validatedBody.user_profile.currentLevel;
+        const levelId = rawLevel.startsWith("level-")
+          ? rawLevel
+          : `level-${rawLevel}`;
+
+        const levelContent = await loadNodeContent(
+          validatedBody.roadmap_id,
+          levelId,
+        );
+
+        if (levelContent) {
+          // Add the level content as context for the AI (but not as a displayed source)
+          levelContext = `Your Current Level (${levelContent.frontmatter.title}):\n${levelContent.content}\n\n`;
+        }
+      } catch (error) {
+        // Silent fail - level content is supplementary, not critical
+        logger.debug("Failed to load current level content", {
+          error: error instanceof Error ? error.message : String(error),
+          currentLevel: validatedBody.user_profile.currentLevel,
+          roadmapId: validatedBody.roadmap_id,
+        });
+      }
+    }
+
     const systemPrompt = `You are a helpful career guidance assistant for skilled trades in British Columbia, Canada.
 
-${userContext}${nodeContext}You have access to the following relevant information from the career roadmap database:
+${userContext}${levelContext}${nodeContext}You have access to the following relevant information from the career roadmap database:
 
 ${embeddingsResponse.context}
 

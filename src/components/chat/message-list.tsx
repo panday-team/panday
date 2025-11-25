@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useMemo } from "react";
 import type { Message } from "@ai-sdk/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -8,6 +8,7 @@ import type { SourceDocument } from "@/lib/embeddings-service";
 import ChatLoading from "./chat-loading";
 import Typewriter from "./typewriter";
 import { SourcesDisplay } from "./sources-display";
+import { createCitationTextRenderer } from "./inline-citation-renderer";
 
 interface MessageListProps {
   messages: Message[];
@@ -28,6 +29,12 @@ export function MessageList({
   streamingMessageId,
   containerRef,
 }: MessageListProps) {
+  // Create the citation text renderer once, memoized based on sources
+  const CitationText = useMemo(
+    () => createCitationTextRenderer(sources),
+    [sources],
+  );
+
   return (
     <div className="space-y-3 p-6">
       {messages.map((message) => (
@@ -117,6 +124,8 @@ export function MessageList({
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
+                    // Use custom text renderer for inline citations
+                    text: CitationText,
                     p: ({ children }) => (
                       <p className="mb-2 text-xs leading-relaxed last:mb-0">
                         {children}

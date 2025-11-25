@@ -146,10 +146,16 @@
 - **Endpoint**: `/api/chat` - RAG-powered chat using embeddings + AI
 - **Flow**: User query → Hybrid Embeddings Backend (JSON or Postgres) → AI Provider (system prompt + context) → Streamed response
 - **Authentication**: Clerk authentication required (enforced since Nov 2025)
-- **Source Citation**:
+- **Source Citation with Hover Previews** (Nov 2025):
+  - **Rich Source Data**: `SourceDocument` type includes `text_snippet` (full chunk for preview), `excerpt` (short inline display), `section_heading`, and `chunk_index` for precise deep linking
+  - **SourcePreview Component** (`src/components/chat/source-preview.tsx`): Radix UI HoverCard shows original source text on hover with "View in roadmap" link
+  - **SourcesDisplay Component** (`src/components/chat/sources-display.tsx`): Shows filtered sources with hover-to-preview functionality
   - Relevance threshold: 50% (configurable in `src/lib/chat-config.ts`)
   - Sources below threshold are filtered from display to reduce noise
-  - Threshold lowered from 70% to 50% to show moderately relevant context and prevent blank responses
+- **Current Level Context Injection**:
+  - User's current level markdown content (e.g., `level-2.md`) is automatically injected into AI system prompt
+  - Provides personalized context without user explicitly selecting the node
+  - Does NOT artificially inflate source relevance - the level content only appears in displayed sources if the embeddings system naturally finds it relevant to the user's query
 - **Security**:
   - Rate limiting: 10 requests/minute per IP via `@upstash/ratelimit` (Redis-backed sliding window)
   - Input validation: Zod schema enforces max 50 messages, 10k chars per message

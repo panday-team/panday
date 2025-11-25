@@ -136,6 +136,49 @@ async function searchSimilarDocuments(
 }
 
 /**
+ * Extract a short excerpt from text, preferring to start at a sentence boundary
+ */
+function extractExcerpt(text: string, maxLength = 100): string {
+  if (text.length <= maxLength) return text;
+
+  // Try to find a good break point (sentence end, comma, or space)
+  const trimmed = text.substring(0, maxLength);
+  const lastSentence = trimmed.lastIndexOf(". ");
+  const lastComma = trimmed.lastIndexOf(", ");
+  const lastSpace = trimmed.lastIndexOf(" ");
+
+  let breakPoint = maxLength;
+  if (lastSentence > maxLength * 0.5) {
+    breakPoint = lastSentence + 1;
+  } else if (lastComma > maxLength * 0.6) {
+    breakPoint = lastComma + 1;
+  } else if (lastSpace > maxLength * 0.7) {
+    breakPoint = lastSpace;
+  }
+
+  return text.substring(0, breakPoint).trim() + "...";
+}
+
+/**
+ * Extract section heading from text (first markdown heading or first line)
+ */
+function extractSectionHeading(text: string): string | undefined {
+  const lines = text.split("\n");
+  for (const line of lines) {
+    const trimmed = line.trim();
+    // Look for markdown headings
+    if (trimmed.startsWith("#")) {
+      return trimmed.replace(/^#+\s*/, "");
+    }
+    // Or return first non-empty line as fallback
+    if (trimmed.length > 0 && trimmed.length < 100) {
+      return trimmed;
+    }
+  }
+  return undefined;
+}
+
+/**
  * Build source document from search result
  */
 function buildSourceDocument(
@@ -148,10 +191,13 @@ function buildSourceDocument(
   index: number,
   roadmapId: string,
 ): SourceDocument {
+  // Keep full text for preview (up to 500 chars), but also create a short excerpt
   const textSnippet =
-    result.content.length > 200
-      ? result.content.substring(0, 200) + "..."
+    result.content.length > 500
+      ? result.content.substring(0, 500) + "..."
       : result.content;
+  const excerpt = extractExcerpt(result.content, 100);
+  const sectionHeading = extractSectionHeading(result.content);
 
   // Convert distance to similarity score (1 - distance)
   // Cosine distance is in range [0, 2], where 0 is most similar
@@ -184,6 +230,9 @@ function buildSourceDocument(
     title: nodeInfo.title ?? "Unknown",
     score,
     text_snippet: textSnippet,
+    excerpt,
+    section_heading: sectionHeading,
+    chunk_index: index,
     url,
     node_type: nodeInfo.nodeType,
     roadmap_id: roadmapId,

@@ -14,7 +14,14 @@ export interface SourceDocument {
   node_id: string;
   title: string;
   score: number;
+  /** Full text chunk from the source (for hover preview) */
   text_snippet: string;
+  /** Short excerpt for inline display (50-100 chars) */
+  excerpt?: string;
+  /** Section heading within the document */
+  section_heading?: string;
+  /** Position/chunk index for deep linking */
+  chunk_index?: number;
   url?: string;
   node_type?: string;
   roadmap_id?: string;
@@ -78,18 +85,66 @@ async function loadIndex(roadmapId: string): Promise<VectorStoreIndex> {
   return index;
 }
 
+/**
+ * Extract a short excerpt from text, preferring to start at a sentence boundary
+ */
+function extractExcerpt(text: string, maxLength = 100): string {
+  if (text.length <= maxLength) return text;
+
+  // Try to find a good break point (sentence end, comma, or space)
+  const trimmed = text.substring(0, maxLength);
+  const lastSentence = trimmed.lastIndexOf(". ");
+  const lastComma = trimmed.lastIndexOf(", ");
+  const lastSpace = trimmed.lastIndexOf(" ");
+
+  let breakPoint = maxLength;
+  if (lastSentence > maxLength * 0.5) {
+    breakPoint = lastSentence + 1;
+  } else if (lastComma > maxLength * 0.6) {
+    breakPoint = lastComma + 1;
+  } else if (lastSpace > maxLength * 0.7) {
+    breakPoint = lastSpace;
+  }
+
+  return text.substring(0, breakPoint).trim() + "...";
+}
+
+/**
+ * Extract section heading from text (first markdown heading or first line)
+ */
+function extractSectionHeading(text: string): string | undefined {
+  const lines = text.split("\n");
+  for (const line of lines) {
+    const trimmed = line.trim();
+    // Look for markdown headings
+    if (trimmed.startsWith("#")) {
+      return trimmed.replace(/^#+\s*/, "");
+    }
+    // Or return first non-empty line as fallback
+    if (trimmed.length > 0 && trimmed.length < 100) {
+      return trimmed;
+    }
+  }
+  return undefined;
+}
+
 function buildSourceDocument(
   nodeWithScore: {
     node: { metadata: Record<string, unknown>; text?: string };
     score?: number;
   },
   roadmapId: string,
+  chunkIndex?: number,
 ): SourceDocument {
   const node = nodeWithScore.node;
   const metadata = node.metadata;
-  const nodeText = ("text" in node ? node.text : "")!;
+  const nodeText = ("text" in node ? node.text : "") ?? "";
+
+  // Keep full text for preview (up to 500 chars), but also create a short excerpt
   const textSnippet =
-    nodeText.length > 200 ? nodeText.substring(0, 200) + "..." : nodeText;
+    nodeText.length > 500 ? nodeText.substring(0, 500) + "..." : nodeText;
+  const excerpt = extractExcerpt(nodeText, 100);
+  const sectionHeading = extractSectionHeading(nodeText);
 
   // Extract node information for URL generation
   const nodeInfo = extractNodeInfo(metadata);
@@ -116,6 +171,9 @@ function buildSourceDocument(
     title: nodeInfo.title ?? "Unknown",
     score: nodeWithScore.score ?? 0,
     text_snippet: textSnippet,
+    excerpt,
+    section_heading: sectionHeading,
+    chunk_index: chunkIndex,
     url,
     node_type: nodeInfo.nodeType,
     roadmap_id: roadmapId,
@@ -150,8 +208,11 @@ export async function queryEmbeddings(
   const sources: SourceDocument[] = [];
   const contextParts: string[] = [];
 
-  for (const nodeWithScore of nodes) {
-    const source = buildSourceDocument(nodeWithScore, roadmapId);
+  for (let i = 0; i < nodes.length; i++) {
+    const nodeWithScore = nodes[i];
+    if (!nodeWithScore) continue;
+
+    const source = buildSourceDocument(nodeWithScore, roadmapId, i);
     const nodeText =
       "text" in nodeWithScore.node ? (nodeWithScore.node.text as string) : "";
 
