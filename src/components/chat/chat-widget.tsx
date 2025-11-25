@@ -1199,6 +1199,14 @@ export function ChatWidget({
                       </div>
                     </div>
                   )}
+                  <FaqQuickQuestions
+                    faqEntries={faqEntries}
+                    faqError={faqError}
+                    faqLoading={faqLoading}
+                    isLoading={isLoading}
+                    isSignedIn={isSignedIn}
+                    onFaqClick={handleFaqClick}
+                  />
                   <div className="flex items-center gap-2 rounded-3xl bg-white px-3 py-1 shadow-sm dark:bg-white/10">
                     <Input
                       type="text"
@@ -1265,14 +1273,6 @@ export function ChatWidget({
                       {voiceError}
                     </p>
                   )}
-                  <FaqQuickQuestions
-                    faqEntries={faqEntries}
-                    faqError={faqError}
-                    faqLoading={faqLoading}
-                    isLoading={isLoading}
-                    isSignedIn={isSignedIn}
-                    onFaqClick={handleFaqClick}
-                  />
                 </form>
               </div>
             </div>
