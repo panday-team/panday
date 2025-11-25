@@ -10,11 +10,11 @@ interface ChatButtonProps {
   onClick: () => void;
 }
 
-const MASCOT_IMAGES = ["/mascot.webp", "/3.webp", "/4.webp"] as const;
+const MASCOT_IMAGES = ["/mascot.svg", "/3.svg", "/4.svg"] as const;
 
 export function ChatButton({ isExpanded, onClick }: ChatButtonProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [mascotImage, setMascotImage] = useState<string>("/mascot.webp");
+  const [mascotImage, setMascotImage] = useState<string>("/mascot.svg");
 
   // Select random mascot on client side only to avoid hydration mismatch
   useEffect(() => {

@@ -172,7 +172,7 @@ function MainPathNodeComponent({
               }}
             >
               <Image
-                src="/mascot.webp"
+                src="/mascot.svg"
                 alt="Panday Mascot"
                 width={160}
                 height={160}

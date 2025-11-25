@@ -13,7 +13,7 @@ interface NodeMascotProps {
 
 /**
  * Mascot component that appears on the currently selected node
- * Randomly selects one of 6 mascot variations (1.webp - 6.webp)
+ * Randomly selects one of 6 mascot variations (1.svg - 6.svg)
  * Uses React Flow's Panel component to render on top of the flow
  */
 export function NodeMascot({
@@ -24,10 +24,10 @@ export function NodeMascot({
 }: NodeMascotProps) {
   const [mounted, setMounted] = useState(false);
 
-  // Use the mascot.webp image
+  // Use the mascot.svg image
   const mascotImage = useMemo(() => {
     if (!nodeId) return null;
-    return "/mascot.webp";
+    return "/mascot.svg";
   }, [nodeId]);
 
   // Determine base mascot size based on node type

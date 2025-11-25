@@ -158,7 +158,7 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
               }}
             >
               <Image
-                src="/mascot.webp"
+                src="/mascot.svg"
                 alt="Panday Mascot"
                 width={200}
                 height={200}
