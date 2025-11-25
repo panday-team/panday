@@ -66,7 +66,7 @@ export function ThreadItem({
       className={cn(
         "group flex w-full flex-col rounded-2xl border border-white/5 bg-white/0 p-3 text-left transition hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none",
         isActive && "border-white/20 bg-white/10",
-        isDisabled && "cursor-not-allowed opacity-60",
+        isDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
       )}
     >
       <div className="flex min-w-0 items-center justify-between gap-2">
