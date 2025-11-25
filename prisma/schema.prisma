@@ -119,6 +119,7 @@ model ChatSession {
   qaPairs   QAPair[]
 
   @@index([userId, startedAt])
+  @@index([userId, endedAt]) // Optimizes getOrCreateChatSession query: { userId, endedAt: null }
   @@index([endedAt])
 }
 
@@ -203,6 +204,7 @@ model ChatThread {
   messages       ChatThreadMessage[]
 
   @@index([userId, lastMessageAt])
+  @@index([userId, deletedAt]) // Optimizes thread listing query: { userId, deletedAt: null }
   @@index([roadmapId])
   @@index([deletedAt])
 }
@@ -235,4 +237,18 @@ model CustomNode {
   user        UserProfile @relation(fields: [userId], references: [clerkUserId], onDelete: Cascade)
 
   @@index([userId, roadmapId])
+}
+
+/// LlamaIndex embeddings table - managed externally by Python embeddings generation scripts
+/// This table is created and populated by scripts/embeddings/generate.py
+/// Using @@ignore tells Prisma to leave this table alone during migrations
+model DataLlamaindexEmbeddings {
+  id        BigInt                 @id @default(autoincrement())
+  text      String                 @db.VarChar
+  metadata_ Json?                  @db.Json
+  node_id   String?                @db.VarChar
+  embedding Unsupported("vector")?
+
+  @@map("data_llamaindex_embeddings")
+  @@ignore
 }

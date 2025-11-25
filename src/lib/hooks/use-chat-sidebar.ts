@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 export interface UseChatSidebarReturn {
   /** Whether the sidebar/drawer is open */
@@ -52,8 +53,8 @@ export function useChatSidebar(): UseChatSidebarReturn {
         setIsCollapsed(stored === "true");
       }
     } catch (error) {
-      // Ignore localStorage errors
-      console.warn("Failed to load sidebar state:", error);
+      // Ignore localStorage errors (can happen in private browsing, etc.)
+      logger.warn("Failed to load sidebar state", { error });
     }
   }, []);
 
@@ -63,8 +64,8 @@ export function useChatSidebar(): UseChatSidebarReturn {
     try {
       localStorage.setItem(STORAGE_KEY, String(isCollapsed));
     } catch (error) {
-      // Ignore localStorage errors
-      console.warn("Failed to save sidebar state:", error);
+      // Ignore localStorage errors (can happen in private browsing, etc.)
+      logger.warn("Failed to save sidebar state", { error });
     }
   }, [isCollapsed]);
 
