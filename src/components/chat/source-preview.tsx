@@ -36,47 +36,97 @@ export function SourcePreview({
   const relevancePercent = Math.round(source.score * 100);
   const isInternal = source.url ? isInternalRoadmapLink(source.url) : false;
 
-  const trigger =
-    variant === "inline" ? (
-      <button
-        type="button"
-        className={cn(
-          "inline-flex items-center gap-1 rounded-md bg-white/10 px-1.5 py-0.5 text-xs font-medium text-white/90 transition-colors hover:bg-white/20",
-          className,
+  // Common styles for triggers
+  const inlineStyles = cn(
+    "inline-flex items-center gap-1 rounded-md bg-white/10 px-1.5 py-0.5 text-xs font-medium text-white/90 transition-colors hover:bg-white/20",
+    className,
+  );
+
+  const listStyles = cn(
+    "group flex w-full items-center justify-between rounded-md p-1.5 text-left transition-colors hover:bg-white/10",
+    className,
+  );
+
+  // For inline variant, create a clickable trigger that navigates on click
+  const inlineTriggerContent = (
+    <>
+      <FileText size={10} className="opacity-70" />
+      <span className="max-w-[150px] truncate">{source.title}</span>
+    </>
+  );
+
+  // For list variant, create a clickable trigger
+  const listTriggerContent = (
+    <>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-medium opacity-90">
+          {source.title}
+        </p>
+        {source.excerpt && (
+          <p className="mt-0.5 truncate text-xs opacity-60">{source.excerpt}</p>
         )}
-      >
-        <FileText size={10} className="opacity-70" />
-        <span className="max-w-[150px] truncate">{source.title}</span>
-      </button>
-    ) : (
-      <button
-        type="button"
-        className={cn(
-          "group flex w-full items-center justify-between rounded-md p-1.5 text-left transition-colors hover:bg-white/10",
-          className,
+      </div>
+      <div className="ml-2 flex shrink-0 items-center gap-1.5">
+        <span className="text-xs opacity-50">{relevancePercent}%</span>
+        {source.url && (
+          <ExternalLink
+            size={12}
+            className="opacity-50 group-hover:opacity-80"
+          />
         )}
-      >
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-medium opacity-90">
-            {source.title}
-          </p>
-          {source.excerpt && (
-            <p className="mt-0.5 truncate text-xs opacity-60">
-              {source.excerpt}
-            </p>
-          )}
-        </div>
-        <div className="ml-2 flex shrink-0 items-center gap-1.5">
-          <span className="text-xs opacity-50">{relevancePercent}%</span>
-          {source.url && (
-            <ExternalLink
-              size={12}
-              className="opacity-50 group-hover:opacity-80"
-            />
-          )}
-        </div>
-      </button>
-    );
+      </div>
+    </>
+  );
+
+  // Create the trigger element - if there's a URL, make it a link
+  const trigger = (() => {
+    if (source.url) {
+      if (isInternal) {
+        // Internal roadmap link - use Next.js Link
+        return variant === "inline" ? (
+          <Link href={source.url} className={inlineStyles}>
+            {inlineTriggerContent}
+          </Link>
+        ) : (
+          <Link href={source.url} className={listStyles}>
+            {listTriggerContent}
+          </Link>
+        );
+      } else {
+        // External link - use anchor with target="_blank"
+        return variant === "inline" ? (
+          <a
+            href={source.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={inlineStyles}
+          >
+            {inlineTriggerContent}
+          </a>
+        ) : (
+          <a
+            href={source.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={listStyles}
+          >
+            {listTriggerContent}
+          </a>
+        );
+      }
+    } else {
+      // No URL - just a button for hover preview
+      return variant === "inline" ? (
+        <button type="button" className={inlineStyles}>
+          {inlineTriggerContent}
+        </button>
+      ) : (
+        <button type="button" className={listStyles}>
+          {listTriggerContent}
+        </button>
+      );
+    }
+  })();
 
   // Render the link in the footer - internal links use Next.js Link (same window),
   // external links open in new tab
