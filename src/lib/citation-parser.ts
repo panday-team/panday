@@ -64,6 +64,30 @@ export function parseCitations(text: string): ParsedCitation[] {
 }
 
 /**
+ * Key terms that should be weighted heavily in matching
+ * These are important identifiers in the electrician roadmap
+ */
+const KEY_TERMS = new Set([
+  "level",
+  "1",
+  "2",
+  "3",
+  "4",
+  "red",
+  "seal",
+  "foundation",
+  "construction",
+  "industrial",
+  "apprentice",
+  "apprenticeship",
+  "common",
+  "core",
+  "training",
+  "exam",
+  "certification",
+]);
+
+/**
  * Find the best matching source document for a citation title
  * Uses fuzzy matching to handle slight variations in titles
  */
@@ -91,25 +115,79 @@ export function findMatchingSource(
   });
   if (containsMatch) return containsMatch;
 
-  // Try word overlap match (for partial matches)
-  const citationWords = new Set(normalizedCitation.split(/\s+/));
+  // Try word overlap match with key term weighting
+  const citationWords = normalizedCitation
+    .split(/\s+/)
+    .filter((w) => w.length > 0);
+  const citationWordSet = new Set(citationWords);
   let bestMatch: SourceDocument | null = null;
   let bestScore = 0;
 
   for (const source of sources) {
-    const sourceWords = new Set(normalizeTitle(source.title).split(/\s+/));
-    const overlapCount = [...citationWords].filter((word) =>
-      sourceWords.has(word),
-    ).length;
-    const score = overlapCount / Math.max(citationWords.size, sourceWords.size);
+    const sourceWords = normalizeTitle(source.title)
+      .split(/\s+/)
+      .filter((w) => w.length > 0);
+    const sourceWordSet = new Set(sourceWords);
 
-    if (score > bestScore && score >= 0.5) {
+    // Count overlapping words with extra weight for key terms
+    let weightedOverlap = 0;
+    let totalWeight = 0;
+
+    for (const word of citationWords) {
+      const weight = KEY_TERMS.has(word) ? 2 : 1;
+      totalWeight += weight;
+      if (sourceWordSet.has(word)) {
+        weightedOverlap += weight;
+      }
+    }
+
+    // Also check if source words appear in citation (bidirectional matching)
+    for (const word of sourceWords) {
+      if (!citationWordSet.has(word)) {
+        const weight = KEY_TERMS.has(word) ? 2 : 1;
+        totalWeight += weight;
+      }
+    }
+
+    const score = totalWeight > 0 ? weightedOverlap / totalWeight : 0;
+
+    if (score > bestScore) {
       bestScore = score;
       bestMatch = source;
     }
   }
 
-  return bestMatch;
+  // Lower threshold to 25% for more lenient matching
+  // This helps when AI slightly paraphrases titles
+  if (bestScore >= 0.25) {
+    return bestMatch;
+  }
+
+  // Fallback: If citation contains a level number (1-4) or "red seal",
+  // try to find a source that also contains it
+  const levelRegex = /level\s*(\d)/i;
+  const levelMatch = levelRegex.exec(normalizedCitation);
+  const hasRedSeal =
+    normalizedCitation.includes("red") && normalizedCitation.includes("seal");
+
+  if (levelMatch) {
+    const levelNum = levelMatch[1];
+    const levelSource = sources.find((s) => {
+      const normalized = normalizeTitle(s.title);
+      return normalized.includes(`level`) && normalized.includes(levelNum!);
+    });
+    if (levelSource) return levelSource;
+  }
+
+  if (hasRedSeal) {
+    const redSealSource = sources.find((s) => {
+      const normalized = normalizeTitle(s.title);
+      return normalized.includes("red") && normalized.includes("seal");
+    });
+    if (redSealSource) return redSealSource;
+  }
+
+  return null;
 }
 
 /**

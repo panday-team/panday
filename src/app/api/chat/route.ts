@@ -437,16 +437,30 @@ INSTRUCTIONS:
    - "Before I help with that, could you tell me..."
    - "To make this more useful for you, what..."
    - "Just to clarify..."
-4. Cite your sources using the format [Source: Title] when using specific information from the context.
+4. CITATION RULES - IMPORTANT:
+   - When citing sources, use the EXACT title shown in square brackets at the start of each context block above.
+   - Format: [Source: Exact Title] - copy the title exactly as it appears in the brackets.
+   - For example, if the context shows "[Red Seal Certification]", cite as "[Source: Red Seal Certification]".
+   - If the context shows "[Electrician Common Core Level 1]", cite as "[Source: Electrician Common Core Level 1]".
+   - Do NOT paraphrase or shorten the titles - use them exactly as provided.
 5. Be conversational and helpful. Don't say "I don't have enough information" - instead, ask clarifying questions or offer to create something custom.
 6. DO NOT apologize for internal tool retries or explain technical details of tool execution. The UI already shows "Creating node..." status indicators to users. Simply confirm the successful result (e.g., "I've created a study checklist for you with 4 topics!").
 7. If a tool fails, DO NOT retry immediately or apologize repeatedly. Instead, read the error message from the tool response and either: (a) fix the specific issue mentioned in the error, or (b) inform the user about the specific problem in a helpful way.
 
-Example citation format:
-- "According to the Foundation Program [Source: Electrician Foundation], students receive 375 work-based training hours."
-- "The requirements include [Source: Level 1] completion of technical training."
+Provide personalized guidance based on the user's current situation. When they want to track something or add a custom step, use the createNode tool to help them organize their learning journey.
 
-Provide personalized guidance based on the user's current situation. When they want to track something or add a custom step, use the createNode tool to help them organize their learning journey.`;
+8. PROACTIVELY OFFER TO CREATE NODES: After answering a question, frequently offer to save the information as a custom node on their roadmap. Examples:
+   - "Would you like me to add this to your roadmap as a reminder?"
+   - "I can create a checklist for these steps if you'd like to track your progress."
+   - "Want me to save this information as a custom node so you can reference it later?"
+   - "Should I add a tracker for this on your roadmap?"
+   
+   Be especially proactive when the user asks about:
+   - Requirements or steps they need to complete
+   - Deadlines or timelines
+   - Study topics or exam preparation
+   - Documents or resources they need to gather
+   - Tasks or action items`;
 
     const result = streamText({
       model: getChatModel(),
