@@ -130,11 +130,47 @@ export function ChatWidget({
     setInput,
     data: streamData,
     append,
+    reload,
   } = useChat({
     api: "/api/chat",
     streamProtocol: "text",
     maxSteps: 5,
     id: activeThreadId ?? undefined,
+    onFinish: (message) => {
+      console.log('Stream finished with message:', message);
+      console.log('Final messages state:', messages);
+      setIsLoading(false);
+      setStatusMessage(null);
+      setStreamingMessageId(null);
+      if (isSignedIn && activeThreadId) {
+        void fetchThreadMessages(activeThreadId, {
+          hydrate: true,
+          silent: true,
+        });
+      }
+
+      // Check if a custom node was created and extract the node ID
+      let createdNodeId: string | undefined;
+      if (streamData && Array.isArray(streamData)) {
+        const nodeCreatedEvent = streamData.find(
+          (event) =>
+            isRecord(event) &&
+            event.type === "custom_node_created" &&
+            typeof event.nodeId === "string",
+        );
+        if (nodeCreatedEvent && isRecord(nodeCreatedEvent)) {
+          createdNodeId = nodeCreatedEvent.nodeId as string;
+        }
+      }
+
+      // Notify parent to refresh custom nodes (seamless, no page reload)
+      if (onCustomNodeCreated) {
+        // Small delay to ensure database write completes
+        setTimeout(() => {
+          onCustomNodeCreated(createdNodeId);
+        }, 500);
+      }
+    },
     onToolCall: ({ toolCall }) => {
       // Display user-friendly status messages for tool calls
       const toolNames: Record<string, string> = {
@@ -628,22 +664,30 @@ export function ChatWidget({
   useEffect(() => {
     if (!streamData || streamData.length === 0) return;
     
-    // Look for text content in stream data
-    const textEvents = streamData.filter(event => 
-      isRecord(event) && 
-      typeof event.content === 'string' && 
-      event.role === 'assistant'
-    );
+    console.log('Processing stream data for messages:', streamData);
+    
+    // Look for all possible text content formats in stream data
+    const textEvents = streamData.filter(event => {
+      if (!isRecord(event)) return false;
+      
+      // Check for various text content formats
+      if (typeof event.text === 'string') return true;
+      if (typeof event.content === 'string' && event.role === 'assistant') return true;
+      if (typeof event.data === 'string') return true;
+      
+      return false;
+    });
     
     if (textEvents.length > 0) {
-      const latestTextEvent = textEvents[textEvents.length - 1];
-      if (latestTextEvent && isRecord(latestTextEvent)) {
-        const content = latestTextEvent.content as string;
+      const latestEvent = textEvents[textEvents.length - 1];
+      if (latestEvent && isRecord(latestEvent)) {
+        // Extract content from various possible fields
+        const content = (latestEvent.text || latestEvent.content || latestEvent.data) as string;
         const lastMessage = messages[messages.length - 1];
         
         // If the last message is not from assistant or content is different, append it
         if (!lastMessage || lastMessage.role !== 'assistant' || lastMessage.content !== content) {
-          console.log('Appending assistant message:', content);
+          console.log('Appending assistant message from stream:', content);
           append({
             role: 'assistant',
             content: content,
@@ -829,15 +873,6 @@ export function ChatWidget({
 
     // Submit immediately (useChat handles optimistic updates and loading states)
     handleSubmit(event);
-
-    // TEMPORARY: Add a test assistant message after 2 seconds
-    setTimeout(() => {
-      console.log('Adding test assistant message');
-      append({
-        role: 'assistant',
-        content: 'This is a test response from the assistant. The backend is working correctly.',
-      });
-    }, 2000);
   };
 
   const handleFaqClick = useCallback(
@@ -1276,6 +1311,23 @@ export function ChatWidget({
                     onFaqClick={handleFaqClick}
                   />
                   <div className="flex items-center gap-2 rounded-3xl bg-white px-3 py-1 shadow-sm dark:bg-white/10">
+                    {/* Temporary debug button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        console.log('=== DEBUG INFO ===');
+                        console.log('Messages:', messages);
+                        console.log('Stream Data:', streamData);
+                        console.log('Is Loading:', isLoading);
+                        console.log('Status Message:', statusMessage);
+                        console.log('Active Thread:', activeThreadId);
+                        console.log('==================');
+                      }}
+                      className="text-xs text-gray-500 hover:text-gray-700"
+                      title="Debug Info"
+                    >
+                      🐛
+                    </button>
                     <Input
                       type="text"
                       placeholder={
