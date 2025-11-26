@@ -12,6 +12,8 @@ export type Trade = (typeof TRADES)[keyof typeof TRADES];
 
 export const APPRENTICESHIP_LEVELS = {
   NOT_STARTED: "not-started",
+  ACE_IT: "ace-it",
+  DIRECT_ENTRY: "direct-entry",
   FOUNDATION: "foundation",
   LEVEL_1: "level-1",
   LEVEL_2: "level-2",
@@ -100,39 +102,49 @@ export const LEVEL_METADATA: Record<
   { label: string; shortLabel: string; description: string }
 > = {
   [APPRENTICESHIP_LEVELS.NOT_STARTED]: {
-    label: "Not Started",
+    label: "Not Started Yet",
     shortLabel: "Start",
-    description: "Haven't begun apprenticeship yet",
+    description: "Researching options, haven't enrolled in any program",
+  },
+  [APPRENTICESHIP_LEVELS.ACE_IT]: {
+    label: "ACE IT Program",
+    shortLabel: "ACE IT",
+    description: "High school accelerated credit enrollment program",
+  },
+  [APPRENTICESHIP_LEVELS.DIRECT_ENTRY]: {
+    label: "Direct Entry",
+    shortLabel: "Direct",
+    description: "Registered apprentice starting with an employer sponsor",
   },
   [APPRENTICESHIP_LEVELS.FOUNDATION]: {
     label: "Foundation Program",
     shortLabel: "Foundation",
-    description: "Completing foundation training",
+    description: "Completing pre-apprenticeship foundation training",
   },
   [APPRENTICESHIP_LEVELS.LEVEL_1]: {
     label: "Level 1",
     shortLabel: "L1",
-    description: "First year of apprenticeship",
+    description: "First year of apprenticeship training",
   },
   [APPRENTICESHIP_LEVELS.LEVEL_2]: {
     label: "Level 2",
     shortLabel: "L2",
-    description: "Second year of apprenticeship",
+    description: "Second year of apprenticeship training",
   },
   [APPRENTICESHIP_LEVELS.LEVEL_3]: {
     label: "Level 3",
     shortLabel: "L3",
-    description: "Third year of apprenticeship",
+    description: "Third year of apprenticeship training",
   },
   [APPRENTICESHIP_LEVELS.LEVEL_4]: {
     label: "Level 4",
     shortLabel: "L4",
-    description: "Final year of apprenticeship",
+    description: "Final year of apprenticeship training",
   },
   [APPRENTICESHIP_LEVELS.RED_SEAL]: {
     label: "Red Seal Certified",
     shortLabel: "Red Seal",
-    description: "Completed Red Seal certification",
+    description: "Already completed Red Seal certification",
   },
 };
 
@@ -194,6 +206,8 @@ export function getCompletedLevels(
 ): string[] {
   const levelOrder = [
     APPRENTICESHIP_LEVELS.NOT_STARTED,
+    APPRENTICESHIP_LEVELS.ACE_IT,
+    APPRENTICESHIP_LEVELS.DIRECT_ENTRY,
     APPRENTICESHIP_LEVELS.FOUNDATION,
     APPRENTICESHIP_LEVELS.LEVEL_1,
     APPRENTICESHIP_LEVELS.LEVEL_2,
@@ -234,13 +248,25 @@ export function getIrrelevantNodes(
 
   // Grey out irrelevant entry paths based on current level
   if (currentLevel) {
-    if (currentLevel === APPRENTICESHIP_LEVELS.LEVEL_1) {
+    if (currentLevel === APPRENTICESHIP_LEVELS.ACE_IT) {
+      // User in ACE IT - grey out other entry paths
+      irrelevantNodes.push("direct-entry", "foundation-program");
+    } else if (currentLevel === APPRENTICESHIP_LEVELS.DIRECT_ENTRY) {
+      // User in Direct Entry - grey out other entry paths
+      irrelevantNodes.push("ace-it-program", "foundation-program");
+    } else if (currentLevel === APPRENTICESHIP_LEVELS.FOUNDATION) {
+      // User in Foundation - grey out other entry paths
+      irrelevantNodes.push("ace-it-program", "direct-entry");
+    } else if (currentLevel === APPRENTICESHIP_LEVELS.LEVEL_1) {
       // User at Level 1 took Direct Entry - grey out other entry paths
       irrelevantNodes.push("ace-it-program", "foundation-program");
-    } else if (currentLevel !== APPRENTICESHIP_LEVELS.NOT_STARTED &&
-               currentLevel !== APPRENTICESHIP_LEVELS.FOUNDATION) {
+    } else if (currentLevel !== APPRENTICESHIP_LEVELS.NOT_STARTED) {
       // User at Level 2+ has passed entry stage - grey out all entry paths
-      irrelevantNodes.push("ace-it-program", "direct-entry", "foundation-program");
+      irrelevantNodes.push(
+        "ace-it-program",
+        "direct-entry",
+        "foundation-program",
+      );
     }
   }
 
@@ -280,6 +306,8 @@ export function getCurrentLevelNodeId(
 
   const levelNodeMap: Record<ApprenticeshipLevel, string | null> = {
     [APPRENTICESHIP_LEVELS.NOT_STARTED]: null,
+    [APPRENTICESHIP_LEVELS.ACE_IT]: "ace-it-program",
+    [APPRENTICESHIP_LEVELS.DIRECT_ENTRY]: "direct-entry",
     [APPRENTICESHIP_LEVELS.FOUNDATION]: "foundation-program",
     [APPRENTICESHIP_LEVELS.LEVEL_1]: "level-1",
     [APPRENTICESHIP_LEVELS.LEVEL_2]: "level-2",

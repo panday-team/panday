@@ -16,15 +16,34 @@ describe("profile-types utilities", () => {
       expect(result).toEqual([]);
     });
 
-    it("should return [NOT_STARTED] for FOUNDATION level", () => {
-      const result = getCompletedLevels(APPRENTICESHIP_LEVELS.FOUNDATION);
+    it("should return [NOT_STARTED] for ACE_IT level", () => {
+      const result = getCompletedLevels(APPRENTICESHIP_LEVELS.ACE_IT);
       expect(result).toEqual([APPRENTICESHIP_LEVELS.NOT_STARTED]);
     });
 
-    it("should return [NOT_STARTED, FOUNDATION] for LEVEL_1", () => {
+    it("should return [NOT_STARTED, ACE_IT] for DIRECT_ENTRY level", () => {
+      const result = getCompletedLevels(APPRENTICESHIP_LEVELS.DIRECT_ENTRY);
+      expect(result).toEqual([
+        APPRENTICESHIP_LEVELS.NOT_STARTED,
+        APPRENTICESHIP_LEVELS.ACE_IT,
+      ]);
+    });
+
+    it("should return entry paths and NOT_STARTED for FOUNDATION level", () => {
+      const result = getCompletedLevels(APPRENTICESHIP_LEVELS.FOUNDATION);
+      expect(result).toEqual([
+        APPRENTICESHIP_LEVELS.NOT_STARTED,
+        APPRENTICESHIP_LEVELS.ACE_IT,
+        APPRENTICESHIP_LEVELS.DIRECT_ENTRY,
+      ]);
+    });
+
+    it("should return all entry paths for LEVEL_1", () => {
       const result = getCompletedLevels(APPRENTICESHIP_LEVELS.LEVEL_1);
       expect(result).toEqual([
         APPRENTICESHIP_LEVELS.NOT_STARTED,
+        APPRENTICESHIP_LEVELS.ACE_IT,
+        APPRENTICESHIP_LEVELS.DIRECT_ENTRY,
         APPRENTICESHIP_LEVELS.FOUNDATION,
       ]);
     });
@@ -33,6 +52,8 @@ describe("profile-types utilities", () => {
       const result = getCompletedLevels(APPRENTICESHIP_LEVELS.LEVEL_2);
       expect(result).toEqual([
         APPRENTICESHIP_LEVELS.NOT_STARTED,
+        APPRENTICESHIP_LEVELS.ACE_IT,
+        APPRENTICESHIP_LEVELS.DIRECT_ENTRY,
         APPRENTICESHIP_LEVELS.FOUNDATION,
         APPRENTICESHIP_LEVELS.LEVEL_1,
       ]);
@@ -42,6 +63,8 @@ describe("profile-types utilities", () => {
       const result = getCompletedLevels(APPRENTICESHIP_LEVELS.LEVEL_3);
       expect(result).toEqual([
         APPRENTICESHIP_LEVELS.NOT_STARTED,
+        APPRENTICESHIP_LEVELS.ACE_IT,
+        APPRENTICESHIP_LEVELS.DIRECT_ENTRY,
         APPRENTICESHIP_LEVELS.FOUNDATION,
         APPRENTICESHIP_LEVELS.LEVEL_1,
         APPRENTICESHIP_LEVELS.LEVEL_2,
@@ -52,6 +75,8 @@ describe("profile-types utilities", () => {
       const result = getCompletedLevels(APPRENTICESHIP_LEVELS.LEVEL_4);
       expect(result).toEqual([
         APPRENTICESHIP_LEVELS.NOT_STARTED,
+        APPRENTICESHIP_LEVELS.ACE_IT,
+        APPRENTICESHIP_LEVELS.DIRECT_ENTRY,
         APPRENTICESHIP_LEVELS.FOUNDATION,
         APPRENTICESHIP_LEVELS.LEVEL_1,
         APPRENTICESHIP_LEVELS.LEVEL_2,
@@ -63,6 +88,8 @@ describe("profile-types utilities", () => {
       const result = getCompletedLevels(APPRENTICESHIP_LEVELS.RED_SEAL);
       expect(result).toEqual([
         APPRENTICESHIP_LEVELS.NOT_STARTED,
+        APPRENTICESHIP_LEVELS.ACE_IT,
+        APPRENTICESHIP_LEVELS.DIRECT_ENTRY,
         APPRENTICESHIP_LEVELS.FOUNDATION,
         APPRENTICESHIP_LEVELS.LEVEL_1,
         APPRENTICESHIP_LEVELS.LEVEL_2,

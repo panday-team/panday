@@ -7,12 +7,11 @@ import {
   type ApprenticeshipLevel,
   type ElectricianSpecialization,
   type ResidencyStatus,
-  TRADE_METADATA,
+  TRADES,
   LEVEL_METADATA,
   SPECIALIZATION_METADATA,
   RESIDENCY_STATUS_METADATA,
 } from "@/lib/profile-types";
-import { TradeSelector } from "@/components/onboarding/trade-selector";
 import { LevelSelector } from "@/components/onboarding/level-selector";
 import { SpecializationSelector } from "@/components/onboarding/specialization-selector";
 import { ResidencySelector } from "@/components/onboarding/residency-selector";
@@ -24,18 +23,17 @@ import { createLogger } from "@/lib/logger";
 
 const onboardingLogger = createLogger({ context: "onboarding" });
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 2;
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form state
-  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
-  const [selectedLevel, setSelectedLevel] = useState<ApprenticeshipLevel | null>(
-    null,
-  );
+  // Form state - trade is auto-selected as electrician
+  const [selectedTrade] = useState<Trade>(TRADES.ELECTRICIAN);
+  const [selectedLevel, setSelectedLevel] =
+    useState<ApprenticeshipLevel | null>(null);
   const [selectedSpecialization, setSelectedSpecialization] =
     useState<ElectricianSpecialization | null>(null);
   const [selectedResidency, setSelectedResidency] =
@@ -44,10 +42,8 @@ export default function OnboardingPage() {
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return selectedTrade !== null;
-      case 2:
         return selectedLevel !== null;
-      case 3:
+      case 2:
         return selectedSpecialization !== null && selectedResidency !== null;
       default:
         return false;
@@ -108,8 +104,8 @@ export default function OnboardingPage() {
       <div className="w-full max-w-3xl space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-bold">Welcome to Panday</h1>
-          <p className="mt-2 text-muted-foreground">
-            Let&apos;s personalize your apprenticeship roadmap
+          <p className="text-muted-foreground mt-2">
+            Let&apos;s personalize your electrician apprenticeship roadmap
           </p>
         </div>
 
@@ -117,20 +113,13 @@ export default function OnboardingPage() {
 
         <Card className="p-6 md:p-8">
           {currentStep === 1 && (
-            <TradeSelector
-              selectedTrade={selectedTrade}
-              onSelectTrade={setSelectedTrade}
-            />
-          )}
-
-          {currentStep === 2 && (
             <LevelSelector
               selectedLevel={selectedLevel}
               onSelectLevel={setSelectedLevel}
             />
           )}
 
-          {currentStep === 3 &&
+          {currentStep === 2 &&
             (selectedSpecialization === null || selectedResidency === null) && (
               <div className="space-y-8">
                 <SpecializationSelector
@@ -139,7 +128,7 @@ export default function OnboardingPage() {
                 />
 
                 {selectedSpecialization !== null && (
-                  <div className="border-t border-border pt-8">
+                  <div className="border-border border-t pt-8">
                     <ResidencySelector
                       selectedStatus={selectedResidency}
                       onSelectStatus={setSelectedResidency}
@@ -149,7 +138,7 @@ export default function OnboardingPage() {
               </div>
             )}
 
-          {currentStep === 3 &&
+          {currentStep === 2 &&
             selectedSpecialization !== null &&
             selectedResidency !== null && (
               <div className="space-y-6">
@@ -158,25 +147,19 @@ export default function OnboardingPage() {
                   <h2 className="mt-4 text-2xl font-bold">
                     Review Your Information
                   </h2>
-                  <p className="mt-2 text-muted-foreground">
+                  <p className="text-muted-foreground mt-2">
                     Make sure everything looks correct before continuing
                   </p>
                 </div>
 
-                <div className="space-y-4 rounded-lg bg-muted/50 p-6">
-                  <div className="flex justify-between border-b border-border pb-3">
-                    <span className="font-medium">Trade:</span>
-                    <span className="text-muted-foreground">
-                      {selectedTrade && TRADE_METADATA[selectedTrade].label}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-b border-border pb-3">
+                <div className="bg-muted/50 space-y-4 rounded-lg p-6">
+                  <div className="border-border flex justify-between border-b pb-3">
                     <span className="font-medium">Current Level:</span>
                     <span className="text-muted-foreground">
                       {selectedLevel && LEVEL_METADATA[selectedLevel].label}
                     </span>
                   </div>
-                  <div className="flex justify-between border-b border-border pb-3">
+                  <div className="border-border flex justify-between border-b pb-3">
                     <span className="font-medium">Specialization:</span>
                     <span className="text-muted-foreground">
                       {selectedSpecialization &&
