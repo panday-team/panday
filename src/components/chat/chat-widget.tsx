@@ -153,7 +153,8 @@ export function ChatWidget({
       setStreamingMessageId(null);
     },
     onResponse: () => {
-      setIsLoading(true);
+      // The AI SDK will handle loading state internally
+      // We only need to manage our custom status messages
       setStatusMessage(null);
     },
     onFinish: () => {
@@ -603,17 +604,21 @@ export function ChatWidget({
     }
   }, [forceClose]);
 
-  // Clear loading state when new messages appear (safety check)
+  // Debug: log messages to see what's happening
   useEffect(() => {
-    if (isLoading && messages.length > 0) {
-      // Check if the last message is from the assistant (indicating response has started)
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage && lastMessage.role === "assistant") {
-        setIsLoading(false);
-        setStatusMessage(null);
-      }
+    console.log('Messages state:', messages);
+    console.log('Is loading:', isLoading);
+    console.log('Status message:', statusMessage);
+  }, [messages, isLoading, statusMessage]);
+
+  // Clear loading state when assistant messages appear
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && lastMessage.role === "assistant") {
+      setIsLoading(false);
+      setStatusMessage(null);
     }
-  }, [messages, isLoading]);
+  }, [messages]);
 
   // Track scroll position to show/hide scroll-to-bottom button
   useEffect(() => {
@@ -769,12 +774,9 @@ export function ChatWidget({
 
     if (!input.trim()) return;
 
-    // Optimistically show UI feedback immediately
+    // Clear sources for new response
     setSources([]);
-    setIsLoading(true);
-    setStatusMessage("Processing request...");
-    setStreamingMessageId("streaming");
-
+    
     // Create thread in background if needed (don't block UI)
     if (!activeThreadId) {
       // Start thread creation but don't await - handleSubmit will handle it
@@ -783,9 +785,6 @@ export function ChatWidget({
           activeThreadRef.current = thread.id;
         } else {
           // Thread creation failed - reset UI
-          setIsLoading(false);
-          setStatusMessage(null);
-          setStreamingMessageId(null);
           logger.error("Failed to create thread before sending", undefined, {
             selectedNodeId,
           });
@@ -795,7 +794,7 @@ export function ChatWidget({
       activeThreadRef.current = activeThreadId;
     }
 
-    // Submit immediately (useChat handles optimistic updates)
+    // Submit immediately (useChat handles optimistic updates and loading states)
     handleSubmit(event);
   };
 
@@ -811,12 +810,9 @@ export function ChatWidget({
       const trimmed = question.trim();
       if (!trimmed) return;
 
-      // Set input and show UI feedback immediately
+      // Set input and clear sources
       setInput(trimmed);
       setSources([]);
-      setIsLoading(true);
-      setStatusMessage("Processing request...");
-      setStreamingMessageId("streaming");
 
       // Create thread in background if needed
       if (!activeThreadId) {
@@ -825,10 +821,6 @@ export function ChatWidget({
             setActiveThreadId(thread.id);
             activeThreadRef.current = thread.id;
           } else {
-            // Thread creation failed - reset UI
-            setIsLoading(false);
-            setStatusMessage(null);
-            setStreamingMessageId(null);
             logger.error(
               "Failed to create thread before sending FAQ question",
               undefined,
@@ -840,7 +832,7 @@ export function ChatWidget({
         activeThreadRef.current = activeThreadId;
       }
 
-      // Submit immediately
+      // Submit immediately (useChat handles the rest)
       handleSubmit();
     },
     [
