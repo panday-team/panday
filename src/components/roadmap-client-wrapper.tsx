@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { RoadmapFlow } from "@/components/roadmap-flow";
 import { logger } from "@/lib/logger";
 import type { Roadmap } from "@/data/types/roadmap";
@@ -26,10 +27,22 @@ export function RoadmapClientWrapper({
   initialCustomNodes,
   userId,
 }: RoadmapClientWrapperProps) {
+  const searchParams = useSearchParams();
   const [customNodes, setCustomNodes] = useState(initialCustomNodes);
   const [newlyCreatedNodeId, setNewlyCreatedNodeId] = useState<
     string | undefined
   >();
+
+  // Read initial node ID from URL query params for deep linking
+  // URL format: /roadmap?node=foundation-program
+  const [initialNodeId, setInitialNodeId] = useState<string | undefined>();
+
+  useEffect(() => {
+    const nodeParam = searchParams.get("node");
+    if (nodeParam) {
+      setInitialNodeId(nodeParam);
+    }
+  }, [searchParams]);
 
   const refreshCustomNodes = useCallback(
     async (nodeId?: string) => {
@@ -77,6 +90,8 @@ export function RoadmapClientWrapper({
       onRefreshCustomNodes={refreshCustomNodes}
       newlyCreatedNodeId={newlyCreatedNodeId}
       onNodePanned={() => setNewlyCreatedNodeId(undefined)}
+      initialSelectedNodeId={initialNodeId}
+      onInitialNodeHandled={() => setInitialNodeId(undefined)}
     />
   );
 }

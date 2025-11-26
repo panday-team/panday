@@ -71,8 +71,7 @@ build/
 *.egg
 /public/real--mascot.png
 
-# Embeddings PDFs (served from src/data/embeddings)
-/public/embeddings/
+# Note: /public/embeddings/ is NOT ignored - PDFs need to be deployed for source links to work
 .aider*
 
 

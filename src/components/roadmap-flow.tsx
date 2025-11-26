@@ -116,6 +116,10 @@ interface RoadmapFlowProps {
   onRefreshCustomNodes?: (nodeId?: string) => void;
   newlyCreatedNodeId?: string;
   onNodePanned?: () => void;
+  /** Initial node ID to select and navigate to (from URL deep link) */
+  initialSelectedNodeId?: string;
+  /** Callback when initial node navigation is complete */
+  onInitialNodeHandled?: () => void;
 }
 
 function stringToPosition(pos?: string): Position | undefined {
@@ -136,6 +140,8 @@ function RoadmapFlowInner({
   onRefreshCustomNodes,
   newlyCreatedNodeId,
   onNodePanned,
+  initialSelectedNodeId,
+  onInitialNodeHandled,
 }: RoadmapFlowProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const animationsRef = useRef<Map<string, () => void>>(new Map());
@@ -1572,6 +1578,32 @@ function RoadmapFlowInner({
     },
     [onRefreshCustomNodes, setNodes],
   );
+
+  // Handle initial node selection from URL deep link (e.g., /roadmap?node=foundation-program)
+  // Track if we've already handled this initial node to avoid re-running on nodes array changes
+  const initialNodeHandledRef = useRef(false);
+  useEffect(() => {
+    // Only handle once per initialSelectedNodeId
+    if (initialNodeHandledRef.current || !initialSelectedNodeId) {
+      return;
+    }
+    if (nodes.length > 0) {
+      // Check if the node exists in the roadmap
+      const nodeExists = nodes.some((n) => n.id === initialSelectedNodeId);
+      if (nodeExists) {
+        // Use the existing navigation function to select and pan to the node
+        handleNavigateToNode(initialSelectedNodeId);
+      }
+      // Mark as handled and clear the initial node ID
+      initialNodeHandledRef.current = true;
+      onInitialNodeHandled?.();
+    }
+  }, [
+    initialSelectedNodeId,
+    nodes,
+    handleNavigateToNode,
+    onInitialNodeHandled,
+  ]);
 
   return (
     <div className="relative h-screen w-full overflow-hidden bg-[#EDF2F6] dark:bg-[#0C1020]">

@@ -8,7 +8,10 @@ import type { SourceDocument } from "@/lib/embeddings-service";
 import ChatLoading from "./chat-loading";
 import Typewriter from "./typewriter";
 import { SourcesDisplay } from "./sources-display";
-import { createCitationTextRenderer } from "./inline-citation-renderer";
+import {
+  createCitationParagraphRenderer,
+  createCitationListItemRenderer,
+} from "./inline-citation-renderer";
 
 interface MessageListProps {
   messages: Message[];
@@ -29,9 +32,13 @@ export function MessageList({
   streamingMessageId,
   containerRef,
 }: MessageListProps) {
-  // Create the citation text renderer once, memoized based on sources
-  const CitationText = useMemo(
-    () => createCitationTextRenderer(sources),
+  // Create the citation renderers once, memoized based on sources
+  const CitationParagraph = useMemo(
+    () => createCitationParagraphRenderer(sources),
+    [sources],
+  );
+  const CitationListItem = useMemo(
+    () => createCitationListItemRenderer(sources),
     [sources],
   );
 
@@ -124,13 +131,9 @@ export function MessageList({
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
-                    // Use custom text renderer for inline citations
-                    text: CitationText,
-                    p: ({ children }) => (
-                      <p className="mb-2 text-xs leading-relaxed last:mb-0">
-                        {children}
-                      </p>
-                    ),
+                    // Use custom paragraph and list item renderers for inline citations
+                    p: CitationParagraph,
+                    li: CitationListItem,
                     ul: ({ children }) => (
                       <ul className="mb-2 list-disc space-y-0.5 pl-5 text-xs">
                         {children}
@@ -140,9 +143,6 @@ export function MessageList({
                       <ol className="mb-2 list-decimal space-y-0.5 pl-5 text-xs">
                         {children}
                       </ol>
-                    ),
-                    li: ({ children }) => (
-                      <li className="leading-relaxed">{children}</li>
                     ),
                     strong: ({ children }) => (
                       <strong className="font-semibold text-white">
