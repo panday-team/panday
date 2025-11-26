@@ -129,10 +129,12 @@ export function ChatWidget({
     setMessages,
     setInput,
     data: streamData,
+    append,
   } = useChat({
     api: "/api/chat",
-    streamProtocol: "data",
+    streamProtocol: "text",
     maxSteps: 5,
+    id: activeThreadId ?? undefined,
     onToolCall: ({ toolCall }) => {
       // Display user-friendly status messages for tool calls
       const toolNames: Record<string, string> = {
@@ -152,12 +154,13 @@ export function ChatWidget({
       setStatusMessage(null);
       setStreamingMessageId(null);
     },
-    onResponse: () => {
-      // The AI SDK will handle loading state internally
-      // We only need to manage our custom status messages
+    onResponse: (response) => {
+      console.log('Response received:', response);
+      setIsLoading(true);
       setStatusMessage(null);
     },
-    onFinish: () => {
+    onFinish: (message) => {
+      console.log('Stream finished:', message);
       setIsLoading(false);
       setStatusMessage(null);
       setStreamingMessageId(null);
@@ -609,7 +612,8 @@ export function ChatWidget({
     console.log('Messages state:', messages);
     console.log('Is loading:', isLoading);
     console.log('Status message:', statusMessage);
-  }, [messages, isLoading, statusMessage]);
+    console.log('Stream data:', streamData);
+  }, [messages, isLoading, statusMessage, streamData]);
 
   // Clear loading state when assistant messages appear
   useEffect(() => {
@@ -619,6 +623,35 @@ export function ChatWidget({
       setStatusMessage(null);
     }
   }, [messages]);
+
+  // Handle stream data to manually add assistant messages if needed
+  useEffect(() => {
+    if (!streamData || streamData.length === 0) return;
+    
+    // Look for text content in stream data
+    const textEvents = streamData.filter(event => 
+      isRecord(event) && 
+      typeof event.content === 'string' && 
+      event.role === 'assistant'
+    );
+    
+    if (textEvents.length > 0) {
+      const latestTextEvent = textEvents[textEvents.length - 1];
+      if (latestTextEvent && isRecord(latestTextEvent)) {
+        const content = latestTextEvent.content as string;
+        const lastMessage = messages[messages.length - 1];
+        
+        // If the last message is not from assistant or content is different, append it
+        if (!lastMessage || lastMessage.role !== 'assistant' || lastMessage.content !== content) {
+          console.log('Appending assistant message:', content);
+          append({
+            role: 'assistant',
+            content: content,
+          });
+        }
+      }
+    }
+  }, [streamData, messages, append]);
 
   // Track scroll position to show/hide scroll-to-bottom button
   useEffect(() => {
@@ -796,6 +829,15 @@ export function ChatWidget({
 
     // Submit immediately (useChat handles optimistic updates and loading states)
     handleSubmit(event);
+
+    // TEMPORARY: Add a test assistant message after 2 seconds
+    setTimeout(() => {
+      console.log('Adding test assistant message');
+      append({
+        role: 'assistant',
+        content: 'This is a test response from the assistant. The backend is working correctly.',
+      });
+    }, 2000);
   };
 
   const handleFaqClick = useCallback(
