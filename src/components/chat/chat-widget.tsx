@@ -150,6 +150,7 @@ export function ChatWidget({
       logger.error("Chat error", chatError);
       setIsLoading(false);
       setStatusMessage(null);
+      setStreamingMessageId(null);
     },
     onResponse: () => {
       setIsLoading(true);
@@ -187,6 +188,10 @@ export function ChatWidget({
           onCustomNodeCreated(createdNodeId);
         }, 500);
       }
+    },
+    onToolResult: () => {
+      // Clear status message when tool execution completes and AI response starts
+      setStatusMessage(null);
     },
     experimental_prepareRequestBody: ({
       messages: outgoingMessages,
@@ -554,19 +559,36 @@ export function ChatWidget({
   }, [isHydrated, isSignedIn, messages]);
 
   useEffect(() => {
+    if (streamData && streamData.length > 0) {
+      console.log('All stream events:', streamData);
+      streamData.forEach((event, index) => {
+        console.log(`Event ${index}:`, event);
+      });
+    }
+
     if (!streamData || streamData.length === 0) return;
+    
     const latestEvent = streamData[streamData.length - 1];
+    
     if (isStatusEvent(latestEvent)) {
       setStatusMessage(latestEvent.message);
       return;
     }
+    
     if (isMetadataEvent(latestEvent) && Array.isArray(latestEvent.sources)) {
       const parsedSources = latestEvent.sources.filter(isSourceDocument);
       if (parsedSources.length > 0) {
         setSources(parsedSources);
       }
+      return;
     }
-  }, [streamData]);
+    
+    // Clear status message when we start receiving actual AI response content
+    // The useChat hook will automatically handle adding the message to the messages array
+    if (streamData.length > 0 && statusMessage) {
+      setStatusMessage(null);
+    }
+  }, [streamData, statusMessage]);
 
   useEffect(() => {
     if (!isExpanded) {
@@ -580,6 +602,18 @@ export function ChatWidget({
       setIsExpanded(false);
     }
   }, [forceClose]);
+
+  // Clear loading state when new messages appear (safety check)
+  useEffect(() => {
+    if (isLoading && messages.length > 0) {
+      // Check if the last message is from the assistant (indicating response has started)
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage && lastMessage.role === "assistant") {
+        setIsLoading(false);
+        setStatusMessage(null);
+      }
+    }
+  }, [messages, isLoading]);
 
   // Track scroll position to show/hide scroll-to-bottom button
   useEffect(() => {
