@@ -129,8 +129,6 @@ export function ChatWidget({
     setMessages,
     setInput,
     data: streamData,
-    append,
-    reload,
   } = useChat({
     api: "/api/chat",
     streamProtocol: "text",
@@ -155,11 +153,11 @@ export function ChatWidget({
       setStatusMessage(null);
       setStreamingMessageId(null);
     },
-    onResponse: (response) => {
+    onResponse: () => {
       setIsLoading(true);
       setStatusMessage(null);
     },
-    onFinish: (message) => {
+    onFinish: () => {
       setIsLoading(false);
       setStatusMessage(null);
       setStreamingMessageId(null);
@@ -191,10 +189,6 @@ export function ChatWidget({
           onCustomNodeCreated(createdNodeId);
         }, 500);
       }
-    },
-    onToolResult: () => {
-      // Clear status message when tool execution completes and AI response starts
-      setStatusMessage(null);
     },
     experimental_prepareRequestBody: ({
       messages: outgoingMessages,
