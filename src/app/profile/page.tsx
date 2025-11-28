@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import {
   type Trade,
   type ApprenticeshipLevel,
@@ -19,7 +20,19 @@ import { TradeSelector } from "@/components/onboarding/trade-selector";
 import { LevelSelector } from "@/components/onboarding/level-selector";
 import { SpecializationSelector } from "@/components/onboarding/specialization-selector";
 import { ResidencySelector } from "@/components/onboarding/residency-selector";
-import { Edit2, ArrowLeft, Home, Check, X, LogOut } from "lucide-react";
+import {
+  Pencil,
+  ArrowLeft,
+  Check,
+  X,
+  LogOut,
+  Settings,
+  User,
+  Zap,
+  GraduationCap,
+  MapPin,
+  Calendar,
+} from "lucide-react";
 import Link from "next/link";
 import { SignOutButton } from "@clerk/nextjs";
 import { createLogger } from "@/lib/logger";
@@ -47,6 +60,7 @@ type EditableField =
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { user } = useUser();
   const [profile, setProfile] = useState<UserProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [editingField, setEditingField] = useState<EditableField>(null);
@@ -187,7 +201,10 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">Loading profile...</p>
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-500 border-t-transparent" />
+          <p className="text-muted-foreground text-sm">Loading profile...</p>
+        </div>
       </div>
     );
   }
@@ -201,315 +218,287 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center p-4 pt-20">
-      <div className="absolute top-4 right-4 md:top-10 md:right-10">
-        <ThemeToggle />
-      </div>
+    <div className="bg-background min-h-screen">
+      {/* Header */}
+      <header className="border-border/40 bg-card/50 sticky top-0 z-10 border-b backdrop-blur-sm">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
+          <Link
+            href="/roadmap"
+            className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-sm transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Roadmap</span>
+          </Link>
+          <ThemeToggle />
+        </div>
+      </header>
 
-      <div className="w-full max-w-2xl space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Your Profile</h1>
-            <p className="text-muted-foreground mt-1">
-              Click the edit button next to any field to update it
-            </p>
+      <main className="mx-auto max-w-3xl px-4 py-8">
+        {/* Profile Header Card */}
+        <Card className="mb-8 overflow-hidden">
+          <div className="from-primary/10 via-primary/5 h-24 bg-gradient-to-r to-transparent" />
+          <div className="px-6 pb-6">
+            <div className="-mt-12 flex items-end gap-4">
+              {/* Avatar */}
+              <div className="ring-background flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-teal-600 text-3xl font-bold text-white ring-4">
+                {user?.firstName?.[0]?.toUpperCase() ??
+                  user?.emailAddresses[0]?.emailAddress[0]?.toUpperCase() ??
+                  "U"}
+              </div>
+              <div className="mb-2 flex-1">
+                <h1 className="text-2xl font-bold">
+                  {user?.firstName
+                    ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}`
+                    : "Your Profile"}
+                </h1>
+                <p className="text-muted-foreground text-sm">
+                  {user?.emailAddresses[0]?.emailAddress ??
+                    "Manage your apprenticeship journey"}
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Link href="/">
-              <Button variant="outline">
-                <Home className="mr-2 h-4 w-4" />
-                Home
-              </Button>
-            </Link>
-            <Link href="/roadmap">
-              <Button variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Roadmap
-              </Button>
-            </Link>
-          </div>
+        </Card>
+
+        {/* Settings Section */}
+        <div className="mb-6 flex items-center gap-2">
+          <Settings className="text-muted-foreground h-5 w-5" />
+          <h2 className="text-lg font-semibold">Apprenticeship Settings</h2>
         </div>
 
         <div className="space-y-4">
           {/* Trade Field */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <CardTitle className="text-base font-medium">Trade</CardTitle>
-              {editingField !== "trade" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => startEditing("trade")}
-                >
-                  <Edit2 className="h-4 w-4" />
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              {editingField === "trade" ? (
-                <div className="space-y-4">
-                  <TradeSelector
-                    selectedTrade={editTrade}
-                    onSelectTrade={setEditTrade}
-                  />
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={cancelEditing}
-                      disabled={isSaving}
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={saveField}
-                      disabled={!editTrade || isSaving}
-                      className="bg-teal-500 hover:bg-teal-600"
-                    >
-                      <Check className="mr-2 h-4 w-4" />
-                      {isSaving ? "Saving..." : "Save"}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <p className="font-medium">
-                    {TRADE_METADATA[profile.trade].label}
-                  </p>
-                  <p className="text-muted-foreground text-sm">
-                    {TRADE_METADATA[profile.trade].icon}{" "}
-                    {TRADE_METADATA[profile.trade].description}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ProfileField
+            icon={<Zap className="h-4 w-4" />}
+            label="Trade"
+            value={TRADE_METADATA[profile.trade].label}
+            description={TRADE_METADATA[profile.trade].description}
+            isEditing={editingField === "trade"}
+            onEdit={() => startEditing("trade")}
+            onCancel={cancelEditing}
+            onSave={saveField}
+            isSaving={isSaving}
+            canSave={!!editTrade}
+            editContent={
+              <TradeSelector
+                selectedTrade={editTrade}
+                onSelectTrade={setEditTrade}
+              />
+            }
+          />
 
           {/* Current Level Field */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <CardTitle className="text-base font-medium">
-                Current Level
-              </CardTitle>
-              {editingField !== "currentLevel" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => startEditing("currentLevel")}
-                >
-                  <Edit2 className="h-4 w-4" />
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              {editingField === "currentLevel" ? (
-                <div className="space-y-4">
-                  <LevelSelector
-                    selectedLevel={editLevel}
-                    onSelectLevel={setEditLevel}
-                  />
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={cancelEditing}
-                      disabled={isSaving}
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={saveField}
-                      disabled={!editLevel || isSaving}
-                      className="bg-teal-500 hover:bg-teal-600"
-                    >
-                      <Check className="mr-2 h-4 w-4" />
-                      {isSaving ? "Saving..." : "Save"}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <p className="font-medium">
-                    {LEVEL_METADATA[profile.currentLevel].label}
-                  </p>
-                  <p className="text-muted-foreground text-sm">
-                    {LEVEL_METADATA[profile.currentLevel].description}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ProfileField
+            icon={<GraduationCap className="h-4 w-4" />}
+            label="Current Level"
+            value={LEVEL_METADATA[profile.currentLevel].label}
+            description={LEVEL_METADATA[profile.currentLevel].description}
+            isEditing={editingField === "currentLevel"}
+            onEdit={() => startEditing("currentLevel")}
+            onCancel={cancelEditing}
+            onSave={saveField}
+            isSaving={isSaving}
+            canSave={!!editLevel}
+            editContent={
+              <LevelSelector
+                selectedLevel={editLevel}
+                onSelectLevel={setEditLevel}
+              />
+            }
+          />
 
           {/* Specialization Field */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <CardTitle className="text-base font-medium">
-                Specialization
-              </CardTitle>
-              {editingField !== "specialization" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => startEditing("specialization")}
-                >
-                  <Edit2 className="h-4 w-4" />
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              {editingField === "specialization" ? (
-                <div className="space-y-4">
-                  <SpecializationSelector
-                    selectedSpecialization={editSpecialization}
-                    onSelectSpecialization={setEditSpecialization}
-                  />
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={cancelEditing}
-                      disabled={isSaving}
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={saveField}
-                      disabled={!editSpecialization || isSaving}
-                      className="bg-teal-500 hover:bg-teal-600"
-                    >
-                      <Check className="mr-2 h-4 w-4" />
-                      {isSaving ? "Saving..." : "Save"}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <p className="font-medium">
-                    {SPECIALIZATION_METADATA[profile.specialization].label}
-                  </p>
-                  <p className="text-muted-foreground text-sm">
-                    Red Seal{" "}
-                    {
-                      SPECIALIZATION_METADATA[profile.specialization]
-                        .redSealCode
-                    }
-                  </p>
-                  <p className="text-muted-foreground text-sm">
-                    {
-                      SPECIALIZATION_METADATA[profile.specialization]
-                        .description
-                    }
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ProfileField
+            icon={<User className="h-4 w-4" />}
+            label="Specialization"
+            value={SPECIALIZATION_METADATA[profile.specialization].label}
+            description={
+              SPECIALIZATION_METADATA[profile.specialization].description
+            }
+            badge={
+              profile.specialization !== "undecided"
+                ? `Red Seal ${SPECIALIZATION_METADATA[profile.specialization].redSealCode}`
+                : undefined
+            }
+            isEditing={editingField === "specialization"}
+            onEdit={() => startEditing("specialization")}
+            onCancel={cancelEditing}
+            onSave={saveField}
+            isSaving={isSaving}
+            canSave={!!editSpecialization}
+            editContent={
+              <SpecializationSelector
+                selectedSpecialization={editSpecialization}
+                onSelectSpecialization={setEditSpecialization}
+              />
+            }
+          />
 
           {/* Residency Status Field */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <CardTitle className="text-base font-medium">
-                Residency Status
-              </CardTitle>
-              {editingField !== "residencyStatus" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => startEditing("residencyStatus")}
-                >
-                  <Edit2 className="h-4 w-4" />
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              {editingField === "residencyStatus" ? (
-                <div className="space-y-4">
-                  <ResidencySelector
-                    selectedStatus={editResidency}
-                    onSelectStatus={setEditResidency}
-                  />
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={cancelEditing}
-                      disabled={isSaving}
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={saveField}
-                      disabled={!editResidency || isSaving}
-                      className="bg-teal-500 hover:bg-teal-600"
-                    >
-                      <Check className="mr-2 h-4 w-4" />
-                      {isSaving ? "Saving..." : "Save"}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <p className="font-medium">
-                    {RESIDENCY_STATUS_METADATA[profile.residencyStatus].label}
-                  </p>
-                  <p className="text-muted-foreground text-sm">
-                    {
-                      RESIDENCY_STATUS_METADATA[profile.residencyStatus]
-                        .description
-                    }
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ProfileField
+            icon={<MapPin className="h-4 w-4" />}
+            label="Residency Status"
+            value={RESIDENCY_STATUS_METADATA[profile.residencyStatus].label}
+            description={
+              RESIDENCY_STATUS_METADATA[profile.residencyStatus].description
+            }
+            isEditing={editingField === "residencyStatus"}
+            onEdit={() => startEditing("residencyStatus")}
+            onCancel={cancelEditing}
+            onSave={saveField}
+            isSaving={isSaving}
+            canSave={!!editResidency}
+            editContent={
+              <ResidencySelector
+                selectedStatus={editResidency}
+                onSelectStatus={setEditResidency}
+              />
+            }
+          />
         </div>
 
-        <Card className="p-6">
-          <h2 className="mb-4 text-xl font-semibold">Account Details</h2>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Profile Created:</span>
-              <span>
-                {new Date(profile.createdAt).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Last Updated:</span>
-              <span>
-                {new Date(profile.updatedAt).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </span>
-            </div>
-          </div>
+        {/* Account Section */}
+        <div className="mt-10 mb-6 flex items-center gap-2">
+          <Calendar className="text-muted-foreground h-5 w-5" />
+          <h2 className="text-lg font-semibold">Account</h2>
+        </div>
 
-          <div className="border-border mt-6 border-t pt-6">
-            <SignOutButton>
+        <Card>
+          <CardContent className="p-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Member Since
+                </p>
+                <p className="mt-1 font-medium">
+                  {new Date(profile.createdAt).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Last Updated
+                </p>
+                <p className="mt-1 font-medium">
+                  {new Date(profile.updatedAt).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </p>
+              </div>
+            </div>
+
+            <div className="border-border mt-6 border-t pt-6">
+              <SignOutButton>
+                <Button
+                  variant="outline"
+                  className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/20 dark:hover:text-red-300"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </Button>
+              </SignOutButton>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  );
+}
+
+interface ProfileFieldProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  description: string;
+  badge?: string;
+  isEditing: boolean;
+  onEdit: () => void;
+  onCancel: () => void;
+  onSave: () => void;
+  isSaving: boolean;
+  canSave: boolean;
+  editContent: React.ReactNode;
+}
+
+function ProfileField({
+  icon,
+  label,
+  value,
+  description,
+  badge,
+  isEditing,
+  onEdit,
+  onCancel,
+  onSave,
+  isSaving,
+  canSave,
+  editContent,
+}: ProfileFieldProps) {
+  return (
+    <Card
+      className={`transition-all duration-200 ${isEditing ? "ring-primary/20 ring-2" : ""}`}
+    >
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div className="flex items-center gap-2">
+          <div className="text-muted-foreground">{icon}</div>
+          <CardTitle className="text-sm font-medium">{label}</CardTitle>
+        </div>
+        {!isEditing && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onEdit}
+            className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
+          >
+            <Pencil className="h-4 w-4" />
+            <span className="sr-only">Edit {label}</span>
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent>
+        {isEditing ? (
+          <div className="space-y-4">
+            {editContent}
+            <div className="flex justify-end gap-2 pt-2">
               <Button
                 variant="outline"
-                className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/20 dark:hover:text-red-300"
+                size="sm"
+                onClick={onCancel}
+                disabled={isSaving}
               >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
+                <X className="mr-1.5 h-3.5 w-3.5" />
+                Cancel
               </Button>
-            </SignOutButton>
+              <Button
+                size="sm"
+                onClick={onSave}
+                disabled={!canSave || isSaving}
+                className="bg-teal-500 hover:bg-teal-600"
+              >
+                <Check className="mr-1.5 h-3.5 w-3.5" />
+                {isSaving ? "Saving..." : "Save"}
+              </Button>
+            </div>
           </div>
-        </Card>
-      </div>
-    </div>
+        ) : (
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="font-medium">{value}</p>
+              {badge && (
+                <span className="bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-medium">
+                  {badge}
+                </span>
+              )}
+            </div>
+            <p className="text-muted-foreground mt-1 text-sm">{description}</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
