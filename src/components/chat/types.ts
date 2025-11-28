@@ -15,6 +15,8 @@ export interface ChatWidgetProps {
   onChatOpen?: () => void;
   forceClose?: boolean;
   onCustomNodeCreated?: (nodeId?: string) => void;
+  /** Whether the node info panel is currently open */
+  isNodePanelOpen?: boolean;
 }
 
 export type StreamStatusEvent = {

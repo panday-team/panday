@@ -1799,6 +1799,7 @@ function RoadmapFlowInner({
         onChatOpen={() => handleTutorialInteraction("chat-open")}
         forceClose={showTutorial}
         onCustomNodeCreated={onRefreshCustomNodes}
+        isNodePanelOpen={!!selectedNodeId && !!selectedContent}
       />
 
       <RoadmapTutorial
