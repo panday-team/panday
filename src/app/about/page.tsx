@@ -47,17 +47,19 @@ const AboutPage: React.FC = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl p-6">
+    <div className="mx-auto max-w-7xl p-8 text-center">
       {/* Back to Home Button */}
-      <div className="mb-6">
-        <Link href="/">
-          <Button
-            size="lg"
-            className="bg-orange-500 text-white hover:bg-orange-400"
-          >
-            Back to Home
-          </Button>
-        </Link>
+      <div className="flex justify-end">
+        <div>
+          <Link href="/">
+            <Button
+              size="lg"
+              className="bg-orange-500 text-white hover:bg-orange-400"
+            >
+              Back to Home
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Page Title */}
