@@ -19,6 +19,7 @@ export type CategoryNodeData = {
   isSelected?: boolean;
   isExpanded?: boolean;
   isDimmed?: boolean;
+  progress?: number;
 };
 
 export type CategoryNodeType = Node<CategoryNodeData, "category">;
@@ -33,6 +34,24 @@ const iconMap: Record<string, LucideIcon> = {
  * Medium-sized category node (96x96px) that sits between hub nodes and checklist nodes
  * Used to organize checklist nodes into Resources, Actions, and Roadblocks
  */
+/**
+ * Darkens a hex color by a given percentage
+ */
+function darkenColor(hex: string, percent: number): string {
+  // Remove # if present
+  const cleanHex = hex.replace("#", "");
+  // Convert to RGB
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+  // Darken each component
+  const newR = Math.max(0, Math.floor(r * (1 - percent / 100)));
+  const newG = Math.max(0, Math.floor(g * (1 - percent / 100)));
+  const newB = Math.max(0, Math.floor(b * (1 - percent / 100)));
+  // Convert back to hex
+  return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
+}
+
 function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
   const {
     label,
@@ -42,6 +61,9 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
     isExpanded = false,
     isDimmed = false,
   } = data;
+
+  const percentage = data.progress ?? 0;
+  const borderColor = darkenColor(color, 30); // Darken by 30%
 
   const hiddenHandleClass =
     "pointer-events-none opacity-0 h-3 w-3 bg-transparent border-transparent";
@@ -100,22 +122,35 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
           }}
         />
 
-        {/* Main circle with dynamic color */}
+        {/* Base circle */}
         <span
           aria-hidden
-          className="pointer-events-none absolute h-24 w-24 rounded-full"
-          style={{ backgroundColor: color }}
+          className="pointer-events-none absolute z-0 h-24 w-24 rounded-full"
+          style={{ backgroundColor: "#FFFFFF" }}
+        />
+        {/* Progress fill overlay */}
+        <motion.span
+          aria-hidden
+          className="pointer-events-none absolute z-10 h-24 w-24 rounded-full"
+          style={{
+            backgroundColor: color,
+            clipPath: `inset(${100 - percentage}% 0 0 0)`,
+            WebkitClipPath: `inset(${100 - percentage}% 0 0 0)`,
+          }}
+          initial={false}
+          animate={{ opacity: percentage > 0 ? 1 : 0 }}
         />
 
-        {/* White border ring */}
+        {/* Colored border ring */}
         <span
           aria-hidden
-          className="pointer-events-none absolute h-24 w-24 rounded-full border-2 border-white"
+          className="pointer-events-none absolute z-20 h-24 w-24 rounded-full border-4"
+          style={{ borderColor: borderColor }}
         />
 
         {/* Icon in center */}
         <IconComponent
-          className="pointer-events-none relative z-10 h-10 w-10 text-white"
+          className="pointer-events-none relative z-30 h-10 w-10 text-black"
           strokeWidth={2}
         />
 

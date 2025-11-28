@@ -12,6 +12,7 @@ export type MainPathNodeData = {
   glow?: boolean;
   status?: "base" | "in-progress" | "completed";
   isSelected?: boolean;
+  progress?: number;
 };
 
 export type MainPathNodeProps = NodeProps<Node<MainPathNodeData>> & {
@@ -24,6 +25,24 @@ export type MainPathNodeProps = NodeProps<Node<MainPathNodeData>> & {
  * Shared component for main path nodes (hub and terminal)
  * Handles animations, mascot display, and theming
  */
+/**
+ * Darkens a hex color by a given percentage
+ */
+function darkenColor(hex: string, percent: number): string {
+  // Remove # if present
+  const cleanHex = hex.replace("#", "");
+  // Convert to RGB
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+  // Darken each component
+  const newR = Math.max(0, Math.floor(r * (1 - percent / 100)));
+  const newG = Math.max(0, Math.floor(g * (1 - percent / 100)));
+  const newB = Math.max(0, Math.floor(b * (1 - percent / 100)));
+  // Convert back to hex
+  return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
+}
+
 function MainPathNodeComponent({
   id,
   data,
@@ -32,6 +51,13 @@ function MainPathNodeComponent({
   icon: Icon,
 }: MainPathNodeProps) {
   const { label, glow, isSelected } = data;
+  // Force 100% progress for hub (yellow) and terminal (red) nodes
+  const isMainNode =
+    color === "#FDE047" || color === "#EC4444" || id.includes("red-seal");
+  const percentage = isMainNode ? 100 : (data.progress ?? 0);
+  const baseFillColor = "#FFFFFF";
+  const borderColor = darkenColor(color, 30); // Darken by 30%
+
   const hiddenHandleClass =
     "pointer-events-none opacity-0 h-3 w-3 bg-transparent border-transparent";
 
@@ -97,17 +123,29 @@ function MainPathNodeComponent({
         }}
       />
 
-      {/* Main colored circle */}
+      {/* Base circle */}
       <span
         aria-hidden
-        className="pointer-events-none absolute z-10 h-32 w-32 rounded-full"
-        style={{ backgroundColor: color }}
+        className="pointer-events-none absolute z-0 h-32 w-32 rounded-full"
+        style={{ backgroundColor: baseFillColor }}
       />
-
-      {/* White border ring with subtle pulse */}
+      {/* Progress fill overlay */}
       <motion.span
         aria-hidden
-        className="pointer-events-none absolute z-10 h-32 w-32 rounded-full border-2 border-white"
+        className="pointer-events-none absolute z-10 h-32 w-32 rounded-full"
+        style={{
+          backgroundColor: color,
+          clipPath: `inset(${100 - percentage}% 0 0 0)`,
+          WebkitClipPath: `inset(${100 - percentage}% 0 0 0)`,
+        }}
+        initial={false}
+        animate={{ opacity: percentage > 0 ? 1 : 0 }}
+      />
+
+      {/* Colored border ring with subtle pulse */}
+      <motion.span
+        aria-hidden
+        className="pointer-events-none absolute z-20 h-32 w-32 rounded-full border-4"
         animate={{
           opacity: [1, 0.85, 1],
         }}
@@ -117,18 +155,19 @@ function MainPathNodeComponent({
           ease: "easeInOut",
           delay: animationParams.phaseOffset * 1.5,
         }}
+        style={{ borderColor: borderColor }}
       />
 
       {/* Center icon or dot */}
       {Icon ? (
         <Icon
-          className="pointer-events-none relative z-10 h-12 w-12 text-white"
+          className="pointer-events-none relative z-30 h-12 w-12 text-black"
           strokeWidth={2}
         />
       ) : (
         <motion.span
           aria-hidden
-          className="pointer-events-none absolute z-10 h-4 w-4 rounded-full bg-white"
+          className="pointer-events-none absolute z-30 h-4 w-4 rounded-full bg-black"
           animate={{
             scale: [1, 1.2, 1],
             opacity: [1, 0.8, 1],

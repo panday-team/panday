@@ -483,6 +483,14 @@ function RoadmapFlowInner({
           isExpanded = isCategorySelected || hasChildSelected;
         }
 
+        const progress = calculateNodeProgress(
+          graphNode.id,
+          nodeType,
+          nodeStatuses,
+          roadmap.graph.nodes,
+          roadmap.content,
+        );
+
         return {
           id: graphNode.id,
           type: nodeType,
@@ -501,6 +509,7 @@ function RoadmapFlowInner({
             isExpanded,
             isSelected: selectedNodeId === graphNode.id,
             animationIndex,
+            progress: progress?.percentage ?? undefined,
           },
           sourcePosition: stringToPosition(graphNode.sourcePosition),
           targetPosition: stringToPosition(graphNode.targetPosition),
