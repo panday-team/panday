@@ -78,8 +78,11 @@ type FlowNode =
 type FlowEdge = Edge;
 
 // Type definition for custom node content JSON field
+// checklistItems can be either old format (string[]) or new format (object[])
 interface CustomNodeContent {
-  checklistItems?: Array<{ id: string; title: string; completed: boolean }>;
+  checklistItems?: Array<
+    string | { id: string; title: string; completed: boolean }
+  >;
   resources?: Array<{ label: string; href: string }>;
   notes?: string;
   dueDate?: string;
@@ -1365,6 +1368,21 @@ function RoadmapFlowInner({
       // Parse content JSON field for rich data with explicit type cast for better IDE support
       const contentData = customNode.content as CustomNodeContent | null;
 
+      // Normalize checklistItems to handle both old format (string[]) and new format (object[])
+      const rawItems = contentData?.checklistItems ?? [];
+      const normalizedChecklistItems = rawItems.map((item, index) => {
+        // If item is a string (old format), convert to object
+        if (typeof item === "string") {
+          return {
+            id: `legacy-${customNode.id}-${index}`,
+            title: item,
+            completed: false,
+          };
+        }
+        // Already an object (new format)
+        return item;
+      });
+
       return {
         frontmatter: {
           id: customNode.id,
@@ -1379,7 +1397,7 @@ function RoadmapFlowInner({
         benefits: [],
         outcomes: [],
         resources: contentData?.resources ?? [],
-        checklistItems: contentData?.checklistItems ?? [],
+        checklistItems: normalizedChecklistItems,
       };
     }
 

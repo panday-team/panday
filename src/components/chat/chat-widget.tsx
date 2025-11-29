@@ -42,6 +42,13 @@ import {
 import { HistoryList } from "./history-list";
 import { MessageList } from "./message-list";
 import { FaqQuickQuestions } from "./faq-quick-questions";
+import type { NodeProposal, ProposalStatus } from "./node-proposal-card";
+
+/** Tracks the status of each proposal by toolCallId */
+export interface ProposalStatusEntry {
+  status: ProposalStatus;
+  errorMessage?: string;
+}
 
 export function ChatWidget({
   selectedNodeId,
@@ -85,6 +92,11 @@ export function ChatWidget({
   const [faqError, setFaqError] = useState<string | null>(null);
   const [faqLoading, setFaqLoading] = useState(false);
   const [hasLoadedFaqs, setHasLoadedFaqs] = useState(false);
+  const [isCreatingProposedNode, setIsCreatingProposedNode] = useState(false);
+  // Track proposal statuses locally to avoid AI continuation from addToolResult
+  const [proposalStatuses, setProposalStatuses] = useState<
+    Record<string, ProposalStatusEntry>
+  >({});
 
   const {
     isRecording,
@@ -164,11 +176,18 @@ export function ChatWidget({
       setIsLoading(true);
       setStatusMessage(null);
     },
-    onFinish: () => {
+    onFinish: (message) => {
       setIsLoading(false);
       setStatusMessage(null);
       setStreamingMessageId(null);
-      if (isSignedIn && activeThreadId) {
+
+      // Check if the finished message has pending tool calls that need user confirmation
+      // If so, DON'T hydrate from DB as it would lose the tool invocation state
+      const hasPendingToolCalls = message.toolInvocations?.some(
+        (inv) => inv.state === "call" && inv.toolName === "proposeNode",
+      );
+
+      if (isSignedIn && activeThreadId && !hasPendingToolCalls) {
         void fetchThreadMessages(activeThreadId, {
           hydrate: true,
           silent: true,
@@ -831,6 +850,104 @@ export function ChatWidget({
     ],
   );
 
+  /**
+   * Handle accepting a node proposal from the proposeNode tool.
+   * Creates the node directly via REST API, then updates local state.
+   * We use local state instead of addToolResult to avoid triggering AI continuation.
+   */
+  const handleProposalAccept = useCallback(
+    async (toolCallId: string, proposal: NodeProposal) => {
+      if (!isSignedIn) return;
+
+      setIsCreatingProposedNode(true);
+      setStatusMessage("Creating node...");
+
+      try {
+        // Transform checklistItems from strings to objects with id, title, completed
+        const formattedChecklistItems = proposal.checklistItems?.map(
+          (item, index) => ({
+            id: `item-${Date.now()}-${index}`,
+            title: item,
+            completed: false,
+          }),
+        );
+
+        // Create the node directly via REST API
+        const response = await fetch("/api/custom-nodes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roadmapId: roadmapId ?? "electrician-bc",
+            parentId: proposal.parentId,
+            title: proposal.title,
+            description: proposal.description,
+            type: proposal.type,
+            content: {
+              checklistItems: formattedChecklistItems ?? null,
+              resources: proposal.resources,
+              notes: proposal.notes,
+              dueDate: proposal.dueDate,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          throw new Error(errorData.error ?? "Failed to create node");
+        }
+
+        // Update local state to show accepted status (no AI continuation)
+        setProposalStatuses((prev) => ({
+          ...prev,
+          [toolCallId]: { status: "accepted" },
+        }));
+
+        // Notify the roadmap to refresh custom nodes
+        onCustomNodeCreated?.();
+
+        setStatusMessage("Node created successfully!");
+        setTimeout(() => setStatusMessage(null), 2000);
+      } catch (err) {
+        logger.error("Failed to create node from proposal", err);
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to create node";
+
+        // Update local state to show error status
+        setProposalStatuses((prev) => ({
+          ...prev,
+          [toolCallId]: { status: "error", errorMessage },
+        }));
+
+        setStatusMessage(errorMessage);
+        setTimeout(() => setStatusMessage(null), 3000);
+      } finally {
+        setIsCreatingProposedNode(false);
+      }
+    },
+    [isSignedIn, roadmapId, onCustomNodeCreated],
+  );
+
+  /**
+   * Handle declining a node proposal.
+   * Updates local state to show declined status without triggering AI continuation.
+   */
+  const handleProposalDecline = useCallback(
+    (toolCallId: string) => {
+      if (!isSignedIn) return;
+
+      // Update local state to show declined status (no AI continuation)
+      setProposalStatuses((prev) => ({
+        ...prev,
+        [toolCallId]: { status: "declined" },
+      }));
+
+      logger.info("Node proposal declined", { toolCallId });
+    },
+    [isSignedIn],
+  );
+
   const handleHistoryToggle = () => {
     if (!isSignedIn) return;
     if (!hasFetchedThreads) {
@@ -1043,7 +1160,10 @@ export function ChatWidget({
         statusMessage={statusMessage}
         error={error}
         streamingMessageId={streamingMessageId}
-        containerRef={containerRef}
+        onProposalAccept={handleProposalAccept}
+        onProposalDecline={handleProposalDecline}
+        proposalDisabled={isCreatingProposedNode}
+        proposalStatuses={proposalStatuses}
       />
     );
   };

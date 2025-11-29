@@ -1,4 +1,4 @@
-import { StreamData, streamText } from "ai";
+import { StreamData, streamText, type Message } from "ai";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 import type { ChatThread } from "@prisma/client";
@@ -24,9 +24,21 @@ import { loadRoadmapGraph } from "@/lib/roadmap-loader";
 import { auth } from "@clerk/nextjs/server";
 import stringSimilarity from "string-similarity";
 
+// Tool invocation schema for human-in-the-loop tools
+const ToolInvocationSchema = z.object({
+  toolCallId: z.string(),
+  toolName: z.string(),
+  args: z.record(z.unknown()).optional(),
+  state: z.enum(["partial-call", "call", "result"]),
+  result: z.unknown().optional(),
+});
+
 const ChatMessageSchema = z.object({
-  role: z.enum(["user", "assistant", "system"]),
-  content: z.string().min(1).max(10000),
+  id: z.string().optional(),
+  role: z.enum(["user", "assistant", "system", "data"]),
+  content: z.string().max(10000),
+  // Include tool invocations for human-in-the-loop pattern
+  toolInvocations: z.array(ToolInvocationSchema).optional(),
 });
 
 const ChatRequestSchema = z.object({
@@ -430,62 +442,78 @@ ${userContext}${levelContext}${nodeContext}You have access to the following rele
 
 ${embeddingsResponse.context}
 
+RESPONSE FORMAT - CRITICAL:
+- Keep CHAT responses SHORT (2-3 sentences max)
+- For complex topics: give a 1-sentence summary, then offer to create a detailed node
+- NEVER list more than 3 items in chat - put detailed lists INTO custom nodes instead
+- When user says "yes" to creating a node, put ALL the detailed steps/info into the node's checklistItems and description fields
+- IMPORTANT: Always write your text response BEFORE calling any tools!
+
+WHEN CREATING NODES - PUT DETAILS IN THE NODE, NOT IN CHAT:
+- First: Write a brief explanation in chat (1-2 sentences)
+- Then: Call proposeNode tool with comprehensive details
+- Node content: Contains the full detailed breakdown with all steps, requirements, timelines, etc.
+- The node's checklistItems should be COMPREHENSIVE (5-10 items if needed)
+- The node's description should explain the overall goal
+
+EXAMPLE FLOW:
+User: "What steps do I need for Level 2?"
+You: [FIRST write text] "You need to complete Level 1 training and log ~1,800 work hours."
+     [THEN call tool] proposeNode with title="Level 2 Progress Tracker" and 5-6 checklistItems
+→ User sees your text explanation, THEN the interactive card below it
+DO NOT ask "want me to create...?" - the proposeNode card handles that!
+
 INSTRUCTIONS:
-1. Prioritize information from the provided context above, but you can provide helpful guidance even when context is limited.
-2. When the user asks to create a custom node (checklist, reminder, tracker), use the createNode tool to help them.
-3. If you need clarification before answering or creating something, ask questions conversationally. Use phrases like:
-   - "Before I help with that, could you tell me..."
-   - "To make this more useful for you, what..."
-   - "Just to clarify..."
-4. CITATION RULES - IMPORTANT:
-   - When citing sources, use the EXACT title shown in square brackets at the start of each context block above.
-   - Format: [Source: Exact Title] - copy the title exactly as it appears in the brackets.
-   - For example, if the context shows "[Red Seal Certification]", cite as "[Source: Red Seal Certification]".
-   - If the context shows "[Electrician Common Core Level 1]", cite as "[Source: Electrician Common Core Level 1]".
-   - Do NOT paraphrase or shorten the titles - use them exactly as provided.
-5. Be conversational and helpful. Don't say "I don't have enough information" - instead, ask clarifying questions or offer to create something custom.
-6. DO NOT apologize for internal tool retries or explain technical details of tool execution. The UI already shows "Creating node..." status indicators to users. Simply confirm the successful result (e.g., "I've created a study checklist for you with 4 topics!").
-7. If a tool fails, DO NOT retry immediately or apologize repeatedly. Instead, read the error message from the tool response and either: (a) fix the specific issue mentioned in the error, or (b) inform the user about the specific problem in a helpful way.
-
-Provide personalized guidance based on the user's current situation. When they want to track something or add a custom step, use the createNode tool to help them organize their learning journey.
-
-8. PROACTIVELY OFFER TO CREATE NODES: After answering a question, frequently offer to save the information as a custom node on their roadmap. Examples:
-   - "Would you like me to add this to your roadmap as a reminder?"
-   - "I can create a checklist for these steps if you'd like to track your progress."
-   - "Want me to save this information as a custom node so you can reference it later?"
-   - "Should I add a tracker for this on your roadmap?"
-   
-   Be especially proactive when the user asks about:
-   - Requirements or steps they need to complete
-   - Deadlines or timelines
-   - Study topics or exam preparation
-   - Documents or resources they need to gather
-   - Tasks or action items`;
+1. Prioritize information from the provided context above.
+2. ALWAYS write your text response FIRST, then call tools.
+3. When suggesting nodes, use proposeNode - it shows an interactive card the user can accept/decline.
+4. CITATION RULES: Use exact titles from context blocks. Format: [Source: Exact Title]
+5. Be conversational. Don't say "I don't have enough information" - offer to create something custom.
+6. DO NOT apologize for tool execution. Simply confirm successful results briefly.
+7. PROACTIVELY USE proposeNode instead of explaining things in chat or asking "want me to create?"`;
 
     const result = streamText({
       model: getChatModel(),
       system: `${systemPrompt}
 
-You have tools to help users manage their personalized roadmap nodes: 'listCustomNodes', 'createNode', 'updateNode', and 'deleteNode'.
+You have tools to help users manage their personalized roadmap nodes: 'listCustomNodes', 'proposeNode', 'createNode', 'updateNode', and 'deleteNode'.
 
 CRITICAL: ALWAYS call 'listCustomNodes' FIRST before creating any new nodes to avoid duplicates!
+
+TOOL SELECTION - CRITICAL RULES:
+- **proposeNode**: ALWAYS use this when you want to suggest creating a node. It shows an interactive card where users can review, edit, and accept/decline. The frontend creates the node when they accept.
+- **createNode**: ONLY use for direct, explicit commands like "create a checklist for X right now" where user doesn't need to preview.
+- **NEVER ask "would you like me to create a checklist?" or similar questions**. Instead, just call proposeNode! The card itself gives users the choice to accept or decline.
+
+CRITICAL - RESPONSE ORDER:
+When using proposeNode, you MUST output your text explanation FIRST, then call the tool AFTER.
+The user should see your explanation before they see the proposal card.
+
+CORRECT ORDER:
+1. First: Write your text response explaining the steps/requirements
+2. Then: Call proposeNode with the checklist details
+
+WRONG ORDER (don't do this):
+1. Call proposeNode first
+2. Then write explanation after
+
+WHEN TO USE proposeNode (DEFAULT for all suggestions):
+- User asks about steps/requirements → Write your answer FIRST, then call proposeNode
+- User says "yes", "sure", "ok", "please", "do it" → Call proposeNode with the details you discussed
+- You think something would be useful to track → Explain briefly, then call proposeNode
+- DO NOT ask "want me to create...?" - just use proposeNode and let the card do the asking!
+
+WHEN TO USE createNode (rare - direct commands only):
+- User gives an explicit command like "create a checklist for X" or "add a node for Y"
+- NOT needed after proposeNode acceptance (node is already created by frontend)
 
 WHEN TO USE listCustomNodes:
 - BEFORE creating any new node (to check for duplicates)
 - When user mentions existing nodes or asks "what did I create?"
 - When you need to reference a node ID for updates/deletes
-- When user complains about duplicate nodes
-
-WHEN TO USE createNode:
-- ONLY AFTER checking listCustomNodes shows no duplicate exists
-- User wants to track something (e.g., "track my exam prep", "remind me to...", "I need to study...")
-- User mentions specific tasks, topics, or goals they want to organize
-- User provides resource links or mentions deadlines
 
 WHEN TO USE updateNode:
-- User wants to modify an existing custom node (e.g., "change the title", "add more tasks", "update the deadline")
-- User says a node is wrong or needs correction
-- User wants to move a node to a different parent milestone
+- User wants to modify an existing custom node
 - Get the node ID from listCustomNodes first if you don't have it
 
 WHEN TO USE deleteNode:
@@ -493,14 +521,11 @@ WHEN TO USE deleteNode:
 - Get the node ID from listCustomNodes first if you don't have it
 
 WHEN TO USE deleteDuplicateNodes:
-- User mentions duplicates (e.g., "I have 3 copies", "delete the duplicates", "remove the extra ones")
-- You detect multiple nodes with the same title after calling listCustomNodes
-- User says "there are too many" or similar
-- This tool automatically keeps the most recent and deletes the rest - NO need to ask user which to keep!
+- User mentions duplicates or you detect multiple nodes with the same title
+- This automatically keeps the most recent and deletes the rest
 
-HOW TO USE createNode - PARENT SELECTION LOGIC:
-- **DEFAULT TO USER'S CURRENT LEVEL** for general tasks/reminders that aren't milestone-specific
-  * Examples: "buy work boots", "renew safety tickets", "update resume", "study for exam"
+PARENT SELECTION LOGIC:
+- **DEFAULT TO USER'S CURRENT LEVEL** for general tasks/reminders
   * User's current level is: ${validatedBody.user_profile?.currentLevel ?? "Level 2"}
   * Use the exact level node ID format: "level-1", "level-2", "level-3", "level-4", etc.
   
@@ -508,46 +533,52 @@ HOW TO USE createNode - PARENT SELECTION LOGIC:
   * "Red Seal exam prep" → use "red-seal-construction" or "red-seal-industrial"
   * "Foundation Program" → use "foundation-program"
   * "Level 3 training" → use "level-3"
-  * "ACE IT program" → use "ace-it-program"
 
-- **NEVER ask where to place** general tasks like buying equipment, preparing for exams (current level), or routine reminders
-- **ONLY ask for clarification** if the task is ambiguous between two very different milestones (e.g., "exam prep" without context could be current level OR Red Seal)
+- RESOURCES FIELD: Only include if you have REAL, VALID URLs. Pass null otherwise.
 
-- If the user provides rich details (tasks, resources, deadlines), extract them into the tool parameters
-- If details are minimal, create a basic node with what you have
-- RESOURCES FIELD: Only include resources if you have REAL, VALID URLs (starting with https:// or http://). DO NOT use placeholder URLs like "#" or generic descriptions. If you don't have real URLs, omit the resources field entirely - the user can add them later.
+EXAMPLE FLOW (TEXT FIRST, then tool call):
+User: "What are the steps to become a Level 2 apprentice?"
+You: "To reach Level 2 in BC, you need to: 1) complete Level 1 technical training, 2) log roughly 1,800 on-the-job hours with employer sign-off, and 3) register for Level 2 intake with SkilledTradesBC."
+     → AFTER writing this, call proposeNode with title="Level 2 Progress Tracker", checklistItems=[...]
+     → User sees your explanation, THEN sees the interactive card below it
 
-HOW TO USE updateNode:
-- nodeId: Use the ID of the most recently created/discussed custom node, or ask user to clarify which node
-- Only include fields that need to be updated (title, description, parentId, type, content)
-- For content updates, provide the complete updated content object
+User: *clicks Accept*
+→ You receive: { accepted: true, created: true, nodeId: "...", title: "Level 2 Progress Tracker" }
+→ Say: "Done! Your Level 2 Progress Tracker is now on your roadmap."
 
-HOW TO USE deleteNode:
-- nodeId: Use the ID of the most recently created/discussed custom node, or ask user to clarify which node
-- Confirm deletion was successful
+User: *clicks Decline*
+→ You receive: { accepted: false, reason: "User declined" }
+→ Say: "No problem! Let me know if you'd like something different."
 
-Example 1 (general task - defaults to current level):
-User: "I need to buy new work boots"
-You: *Call createNode with parentId="${validatedBody.user_profile?.currentLevel ? `level-${validatedBody.user_profile.currentLevel}` : "level-2"}"* → "I've added 'Buy new work boots' to your ${validatedBody.user_profile?.currentLevel ?? "Level 2"} checklist!"
+BAD EXAMPLES (don't do these):
+1. Calling tool BEFORE writing text ← WRONG ORDER! Text must come first.
+2. "Would you like me to create a checklist?" ← WRONG! Just call proposeNode.
 
-Example 2 (specific milestone mentioned):
-User: "I want to prepare for my Red Seal exam. I need to study transformers, motor controls, and PLC programming."
-You: *Call createNode with parentId="red-seal-construction" and all the details* → "I've created a Red Seal Exam Prep tracker with 3 study topics!"
+IMPORTANT: NEVER expose internal node IDs in your responses. Use proposeNode to give users an interactive confirmation experience.`,
+      // Cast to the expected type - the AI SDK accepts messages with toolInvocations
+      messages: validatedBody.messages.map((msg) => {
+        // Filter out "data" role messages which are deprecated
+        if (msg.role === "data") {
+          return { role: "system" as const, content: msg.content };
+        }
 
-Example 3 (user corrects):
-User: "Actually, that should be for Level 3, not Level 4"
-You: *Call updateNode to change parentId* → "I've moved it to Level 3 for you."
+        // Build the message matching AI SDK Message type (without id)
+        const baseMessage = {
+          role: msg.role,
+          content: msg.content,
+        };
 
-Example 4 (user deletes):
-User: "Delete that reminder"
-You: *Call deleteNode* → "I've removed that reminder from your roadmap."
+        // Include tool invocations if present (for human-in-the-loop tools)
+        if (msg.toolInvocations && msg.toolInvocations.length > 0) {
+          return {
+            ...baseMessage,
+            toolInvocations: msg.toolInvocations,
+          } as Omit<Message, "id">;
+        }
 
-IMPORTANT: NEVER expose internal node IDs in your responses to users. Node IDs are for your internal tracking only. Users see descriptive titles and types, not technical identifiers. Tool responses include [Internal: ...] sections with IDs - these are for your reference only and should NOT be mentioned to users.`,
-      messages: validatedBody.messages.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      })),
-      maxTokens: 1024,
+        return baseMessage;
+      }),
+      maxTokens: 800,
       maxSteps: 5,
       tools: {
         createNode: {
@@ -1037,6 +1068,69 @@ IMPORTANT: NEVER expose internal node IDs in your responses to users. Node IDs a
               return "I had trouble retrieving your custom nodes.";
             }
           },
+        },
+        proposeNode: {
+          description:
+            "Propose a new node to the user for confirmation before creating it. Shows an interactive card where the user can review, edit, and accept or decline. Use this instead of createNode when you want to give the user a chance to customize the node before it's created. IMPORTANT: This tool requires human confirmation - execution pauses until user accepts or declines.",
+          parameters: z.object({
+            title: z
+              .string()
+              .describe(
+                "The title of the proposed node (max 100 characters). Keep it concise.",
+              ),
+            description: z
+              .string()
+              .describe(
+                "A brief description of what this node represents (max 1000 characters).",
+              ),
+            parentId: z
+              .string()
+              .describe(
+                "The ID of the existing node to attach this new node to (e.g., 'level-2', 'red-seal-construction').",
+              ),
+            parentLabel: z
+              .string()
+              .describe(
+                "Human-readable label for the parent node (e.g., 'Level 2', 'Red Seal (Construction)').",
+              ),
+            type: z
+              .enum(["checklist", "resource", "action", "roadblock"])
+              .describe("The type of node to create"),
+            checklistItems: z
+              .array(z.string())
+              .nullable()
+              .describe(
+                "List of specific tasks or sub-items to track. Make this COMPREHENSIVE with 5-10 items for complex topics. Pass null if not applicable.",
+              ),
+            resources: z
+              .array(
+                z.object({
+                  label: z.string(),
+                  href: z
+                    .string()
+                    .describe("A valid URL starting with https:// or http://"),
+                }),
+              )
+              .nullable()
+              .describe(
+                "List of helpful resources with labels and VALID URLs. Pass null if no real URLs are available.",
+              ),
+            notes: z
+              .string()
+              .nullable()
+              .describe(
+                "Additional free-form notes or context. Pass null if not applicable.",
+              ),
+            dueDate: z
+              .string()
+              .nullable()
+              .describe(
+                "Target completion date if applicable (ISO format or natural language). Pass null if not applicable.",
+              ),
+          }),
+          // NO execute function - this makes it a human-in-the-loop tool
+          // The frontend will show a confirmation card, and when user accepts/declines,
+          // it sends the result back via addToolOutput + sendMessage
         },
         deleteDuplicateNodes: {
           description:
