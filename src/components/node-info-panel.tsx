@@ -1,9 +1,11 @@
 "use client";
 
 import type { ComponentPropsWithoutRef } from "react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Collapsible,
   CollapsibleContent,
@@ -17,6 +19,8 @@ import {
   Check,
   Loader2,
   ArrowLeft,
+  Pencil,
+  Plus,
 } from "lucide-react";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import type { ProgressData } from "@/lib/progress-utils";
@@ -41,6 +45,14 @@ export type Category = {
   description?: string;
   items: ChecklistItem[];
 };
+
+/** Data structure for editing custom nodes */
+export interface CustomNodeEditData {
+  title: string;
+  description: string;
+  checklistItems: Array<{ id: string; title: string; completed: boolean }>;
+  resources: ResourceLink[];
+}
 
 export interface NodeInfoPanelProps extends ComponentPropsWithoutRef<"aside"> {
   badge?: string;
@@ -69,6 +81,11 @@ export interface NodeInfoPanelProps extends ComponentPropsWithoutRef<"aside"> {
     status: "base" | "in-progress" | "completed",
   ) => void;
   onDeleteCustomNode?: (nodeId: string) => Promise<void>;
+  /** Called when a custom node is edited and saved */
+  onEditCustomNode?: (
+    nodeId: string,
+    data: CustomNodeEditData,
+  ) => Promise<void>;
   onCheckboxClick?: () => void;
   onDropdownOpen?: () => void;
   /** Called when close button is clicked */
@@ -97,6 +114,7 @@ export function NodeInfoPanel({
   onNavigateToNode,
   onChecklistStatusChange,
   onDeleteCustomNode,
+  onEditCustomNode,
   onCheckboxClick,
   onDropdownOpen,
   onClose,
@@ -107,7 +125,120 @@ export function NodeInfoPanel({
   const displayBadge = badge ?? title;
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const deleteConfirmRef = useRef<HTMLDivElement>(null);
+
+  // Edit state - initialize with current values
+  const [editTitle, setEditTitle] = useState(title);
+  const [editDescription, setEditDescription] = useState(description ?? "");
+  const [editChecklistItems, setEditChecklistItems] = useState<
+    Array<{ id: string; title: string; completed: boolean }>
+  >(checklistItems ?? []);
+  const [editResources, setEditResources] = useState<ResourceLink[]>(
+    resources ?? [],
+  );
+
+  // Reset edit state when node changes or when exiting edit mode
+  useEffect(() => {
+    if (!isEditing) {
+      setEditTitle(title);
+      setEditDescription(description ?? "");
+      setEditChecklistItems(checklistItems ?? []);
+      setEditResources(resources ?? []);
+    }
+  }, [title, description, checklistItems, resources, isEditing]);
+
+  const handleStartEdit = useCallback(() => {
+    setIsEditing(true);
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    setIsEditing(false);
+    // Reset to original values
+    setEditTitle(title);
+    setEditDescription(description ?? "");
+    setEditChecklistItems(checklistItems ?? []);
+    setEditResources(resources ?? []);
+  }, [title, description, checklistItems, resources]);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!nodeId || !onEditCustomNode) return;
+
+    setIsSaving(true);
+    try {
+      await onEditCustomNode(nodeId, {
+        title: editTitle,
+        description: editDescription,
+        checklistItems: editChecklistItems,
+        resources: editResources,
+      });
+      setIsEditing(false);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [
+    nodeId,
+    onEditCustomNode,
+    editTitle,
+    editDescription,
+    editChecklistItems,
+    editResources,
+  ]);
+
+  const handleAddChecklistItem = useCallback(() => {
+    setEditChecklistItems((prev) => [
+      ...prev,
+      { id: `new-${Date.now()}`, title: "", completed: false },
+    ]);
+  }, []);
+
+  const handleRemoveChecklistItem = useCallback((index: number) => {
+    setEditChecklistItems((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleChecklistItemChange = useCallback(
+    (index: number, value: string) => {
+      setEditChecklistItems((prev) => {
+        const updated = [...prev];
+        const item = updated[index];
+        if (item) {
+          updated[index] = {
+            id: item.id,
+            title: value,
+            completed: item.completed,
+          };
+        }
+        return updated;
+      });
+    },
+    [],
+  );
+
+  const handleAddResource = useCallback(() => {
+    setEditResources((prev) => [...prev, { label: "", href: "" }]);
+  }, []);
+
+  const handleRemoveResource = useCallback((index: number) => {
+    setEditResources((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleResourceChange = useCallback(
+    (index: number, field: "label" | "href", value: string) => {
+      setEditResources((prev) => {
+        const updated = [...prev];
+        const item = updated[index];
+        if (item) {
+          updated[index] = {
+            label: field === "label" ? value : item.label,
+            href: field === "href" ? value : item.href,
+          };
+        }
+        return updated;
+      });
+    },
+    [],
+  );
 
   const handleDeleteClick = () => {
     setShowDeleteConfirm(true);
@@ -150,7 +281,7 @@ export function NodeInfoPanel({
     <aside
       data-tutorial="node-info-panel"
       className={cn(
-        "max-h-[calc(100vh-2rem)] w-full overflow-y-auto rounded-3xl border border-white/10 bg-[#98B3F9]/95 px-8 pt-6 pb-10 text-black shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur md:max-h-[calc(100vh-5rem)] md:max-w-lg",
+        "scrollbar-panel max-h-[calc(100vh-2rem)] w-full min-w-[320px] overflow-y-auto rounded-3xl border border-white/10 bg-[#98B3F9]/95 px-8 pt-6 pb-10 text-black shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur md:max-h-[calc(100vh-5rem)] md:max-w-lg md:min-w-[480px]",
         className,
       )}
       {...props}
@@ -215,23 +346,59 @@ export function NodeInfoPanel({
       </div>
 
       <div className="mt-6 space-y-5">
+        {/* Edit Mode Header */}
+        {isEditing && isCustomNode ? (
+          <div className="flex items-center gap-2 rounded-xl bg-amber-400/20 px-4 py-2.5 ring-1 ring-amber-500/30">
+            <Pencil className="h-4 w-4 text-amber-700" />
+            <span className="text-sm font-medium text-amber-800">
+              Editing Custom Node
+            </span>
+          </div>
+        ) : null}
+
         <header>
           <div className="flex items-start justify-between gap-4">
-            <h1 className="font-sans text-3xl leading-tight text-black [&_strong]:font-bold">
-              <ReactMarkdown
-                components={{
-                  p: ({ node: _node, ...props }) => <span {...props} />,
-                  a: ({ node: _node, ...props }) => (
-                    <a {...props} target="_blank" rel="noreferrer" />
-                  ),
-                }}
-                remarkPlugins={[remarkGfm]}
-              >
-                {title}
-              </ReactMarkdown>
-            </h1>
+            {isEditing ? (
+              <div className="flex-1 space-y-1">
+                <label className="text-xs font-medium text-black/60">
+                  Title
+                </label>
+                <Input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="h-11 border-black/20 bg-white/70 text-xl font-semibold text-black shadow-sm placeholder:text-black/40 focus:bg-white focus:ring-2 focus:ring-amber-400/50"
+                  placeholder="Node title"
+                  maxLength={100}
+                />
+              </div>
+            ) : (
+              <h1 className="font-sans text-3xl leading-tight text-black [&_strong]:font-bold">
+                <ReactMarkdown
+                  components={{
+                    p: ({ node: _node, ...props }) => <span {...props} />,
+                    a: ({ node: _node, ...props }) => (
+                      <a {...props} target="_blank" rel="noreferrer" />
+                    ),
+                  }}
+                  remarkPlugins={[remarkGfm]}
+                >
+                  {title}
+                </ReactMarkdown>
+              </h1>
+            )}
             <div className="flex items-start gap-2">
-              {nodeType === "checklist" && onStatusChange ? (
+              {/* Edit button for custom nodes */}
+              {isCustomNode && nodeId && onEditCustomNode && !isEditing ? (
+                <button
+                  onClick={handleStartEdit}
+                  className="group mt-1 shrink-0 rounded-md p-1 text-black/40 transition-all duration-200 hover:bg-black/10 hover:text-black/70"
+                  title="Edit this custom node"
+                  aria-label="Edit custom node"
+                >
+                  <Pencil className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" />
+                </button>
+              ) : null}
+              {nodeType === "checklist" && onStatusChange && !isEditing ? (
                 <div className="mt-1 shrink-0 p-1">
                   <Checkbox
                     data-tutorial="checklist-checkbox"
@@ -246,7 +413,7 @@ export function NodeInfoPanel({
                   />
                 </div>
               ) : null}
-              {isCustomNode && nodeId && onDeleteCustomNode ? (
+              {isCustomNode && nodeId && onDeleteCustomNode && !isEditing ? (
                 <div className="relative" ref={deleteConfirmRef}>
                   <button
                     onClick={handleDeleteClick}
@@ -295,7 +462,21 @@ export function NodeInfoPanel({
               ) : null}
             </div>
           </div>
-          {description ? (
+          {/* Description - editable for custom nodes in edit mode */}
+          {isEditing && isCustomNode ? (
+            <div className="mt-4 space-y-1">
+              <label className="text-xs font-medium text-black/60">
+                Description
+              </label>
+              <Textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                className="min-h-[100px] resize-none border-black/20 bg-white/70 text-sm leading-relaxed text-black shadow-sm placeholder:text-black/40 focus:bg-white focus:ring-2 focus:ring-amber-400/50"
+                placeholder="Add a description for this step..."
+                maxLength={1000}
+              />
+            </div>
+          ) : description ? (
             <div className="mt-2 space-y-3 text-sm leading-relaxed text-black [&_a]:text-blue-600 [&_a]:underline [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-black [&_h3]:mt-3 [&_h3]:mb-1.5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-black [&_ol]:mb-2 [&_ol]:ml-4 [&_ol]:list-decimal [&_ol]:space-y-1 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-bold [&_ul]:mb-2 [&_ul]:ml-4 [&_ul]:list-disc [&_ul]:space-y-1">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
@@ -339,7 +520,67 @@ export function NodeInfoPanel({
           />
         ) : null}
 
-        {resources?.length ? (
+        {/* Resources Section - editable for custom nodes */}
+        {isEditing && isCustomNode ? (
+          <section className="space-y-3 rounded-xl bg-white/30 p-4 ring-1 ring-black/5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ExternalLink className="h-4 w-4 text-black/60" />
+                <h2 className="font-semibold text-black">Resources</h2>
+              </div>
+              <button
+                onClick={handleAddResource}
+                className="flex items-center gap-1.5 rounded-lg bg-black/5 px-2.5 py-1.5 text-xs font-medium text-black/70 transition-all hover:bg-black/10 hover:text-black"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Link
+              </button>
+            </div>
+            {editResources.length > 0 ? (
+              <ul className="space-y-3">
+                {editResources.map((resource, index) => (
+                  <li
+                    key={index}
+                    className="group relative rounded-lg bg-white/50 p-3 ring-1 ring-black/10 transition-all hover:ring-black/20"
+                  >
+                    <button
+                      onClick={() => handleRemoveResource(index)}
+                      className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white opacity-0 shadow-sm transition-all group-hover:opacity-100 hover:bg-red-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    <div className="space-y-2">
+                      <Input
+                        value={resource.label}
+                        onChange={(e) =>
+                          handleResourceChange(index, "label", e.target.value)
+                        }
+                        className="h-8 border-black/10 bg-white/80 text-sm font-medium text-black placeholder:text-black/40 focus:ring-2 focus:ring-amber-400/50"
+                        placeholder="Link name (e.g., SkilledTradesBC)"
+                      />
+                      <Input
+                        value={resource.href}
+                        onChange={(e) =>
+                          handleResourceChange(index, "href", e.target.value)
+                        }
+                        className="h-8 border-black/10 bg-white/80 font-mono text-xs text-black/70 placeholder:text-black/40 focus:ring-2 focus:ring-amber-400/50"
+                        placeholder="https://example.com"
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-black/10 py-6 text-center">
+                <ExternalLink className="mb-2 h-6 w-6 text-black/30" />
+                <p className="text-xs text-black/50">No resources yet</p>
+                <p className="text-xs text-black/40">
+                  Add helpful links for this step
+                </p>
+              </div>
+            )}
+          </section>
+        ) : resources?.length ? (
           <section className="space-y-2 text-sm text-black/80">
             <h2 className="font-semibold text-black">Resources</h2>
             <ul className="space-y-1">
@@ -366,7 +607,62 @@ export function NodeInfoPanel({
           </section>
         ) : null}
 
-        {checklistItems?.length ? (
+        {/* Checklist Section - editable for custom nodes */}
+        {isEditing && isCustomNode ? (
+          <section className="space-y-3 rounded-xl bg-white/30 p-4 ring-1 ring-black/5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-black/60" />
+                <h2 className="font-semibold text-black">Checklist</h2>
+              </div>
+              <button
+                onClick={handleAddChecklistItem}
+                className="flex items-center gap-1.5 rounded-lg bg-black/5 px-2.5 py-1.5 text-xs font-medium text-black/70 transition-all hover:bg-black/10 hover:text-black"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Item
+              </button>
+            </div>
+            {editChecklistItems.length > 0 ? (
+              <ul className="space-y-2">
+                {editChecklistItems.map((item, index) => (
+                  <li
+                    key={item.id}
+                    className="group flex items-center gap-3 rounded-lg bg-white/50 px-3 py-2.5 ring-1 ring-black/10 transition-all hover:ring-black/20"
+                  >
+                    <Checkbox
+                      checked={item.completed}
+                      disabled
+                      className="h-5 w-5 shrink-0 border-2 border-black/20 bg-white data-[state=checked]:border-[#61FF05] data-[state=checked]:bg-[#61FF05] data-[state=checked]:text-white"
+                    />
+                    <Input
+                      value={item.title}
+                      onChange={(e) =>
+                        handleChecklistItemChange(index, e.target.value)
+                      }
+                      className="h-8 flex-1 border-black/10 bg-white/80 text-sm text-black placeholder:text-black/40 focus:ring-2 focus:ring-amber-400/50"
+                      placeholder="What needs to be done?"
+                    />
+                    <button
+                      onClick={() => handleRemoveChecklistItem(index)}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-red-500/50 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500 hover:text-white"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-black/10 py-6 text-center">
+                <Check className="mb-2 h-6 w-6 text-black/30" />
+                <p className="text-xs text-black/50">No checklist items yet</p>
+                <p className="text-xs text-black/40">
+                  Break down this step into tasks
+                </p>
+              </div>
+            )}
+          </section>
+        ) : checklistItems?.length ? (
           <section className="space-y-2 text-sm text-black/80">
             <h2 className="font-semibold text-black">Checklist</h2>
             <ul className="space-y-2">
@@ -384,6 +680,32 @@ export function NodeInfoPanel({
               ))}
             </ul>
           </section>
+        ) : null}
+
+        {/* Edit mode action buttons */}
+        {isEditing && isCustomNode ? (
+          <div className="mt-2 flex items-center justify-end gap-3 border-t border-black/10 pt-5">
+            <button
+              onClick={handleCancelEdit}
+              disabled={isSaving}
+              className="flex items-center gap-2 rounded-xl bg-black/5 px-5 py-2.5 text-sm font-medium text-black/70 shadow-sm transition-all hover:bg-black/10 hover:shadow active:scale-[0.98] disabled:opacity-50"
+            >
+              <X className="h-4 w-4" />
+              Cancel
+            </button>
+            <button
+              onClick={() => void handleSaveEdit()}
+              disabled={isSaving || !editTitle.trim()}
+              className="flex items-center gap-2 rounded-xl bg-[#61FF05] px-5 py-2.5 text-sm font-semibold text-black shadow-sm transition-all hover:bg-[#6FFF1A] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Check className="h-4 w-4" />
+              )}
+              {isSaving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
         ) : null}
       </div>
     </aside>

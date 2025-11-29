@@ -535,6 +535,16 @@ PARENT SELECTION LOGIC:
   * "Level 3 training" → use "level-3"
 
 - RESOURCES FIELD: Only include if you have REAL, VALID URLs. Pass null otherwise.
+  VERIFIED BC TRADES URLS (use these exact patterns):
+  - SkilledTradesBC Electrician: https://skilledtradesbc.ca/electrician-construction
+  - Find Your Trade: https://skilledtradesbc.ca/find-your-trade
+  - Foundation Programs: https://skilledtradesbc.ca/become-an-apprentice/foundation-programs
+  - Exam Info: https://skilledtradesbc.ca/get-certified/about-exams
+  - Training Providers: https://skilledtradesbc.ca/all-approved-training-providers-list
+  - Portal: https://portal.skilledtradesbc.ca
+  - Red Seal Electrician: https://www.red-seal.ca/trades/elec-eng.html
+  - WorkBC Electrician: https://www.workbc.ca/jobs-careers/explore-careers/browse-career-profile/7241
+  DO NOT use patterns like /trade/construction-electrician or /find-training-program - they don't exist!
 
 EXAMPLE FLOW (TEXT FIRST, then tool call):
 User: "What are the steps to become a Level 2 apprentice?"

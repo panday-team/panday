@@ -30,7 +30,11 @@ import {
   type TerminalNodeType,
   type CategoryNodeType,
 } from "@/components/nodes";
-import { NodeInfoPanel, type Category } from "@/components/node-info-panel";
+import {
+  NodeInfoPanel,
+  type Category,
+  type CustomNodeEditData,
+} from "@/components/node-info-panel";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import {
   RoadmapTutorial,
@@ -1635,6 +1639,40 @@ function RoadmapFlowInner({
     [onRefreshCustomNodes, setNodes],
   );
 
+  const handleEditCustomNode = useCallback(
+    async (nodeId: string, data: CustomNodeEditData) => {
+      try {
+        const response = await fetch(`/api/custom-nodes/${nodeId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: data.title,
+            description: data.description,
+            content: {
+              checklistItems: data.checklistItems,
+              resources: data.resources,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to update custom node");
+        }
+
+        // Refresh custom nodes from parent to sync with server state
+        if (onRefreshCustomNodes) {
+          onRefreshCustomNodes(nodeId);
+        }
+      } catch (error) {
+        logger.error("Failed to update custom node", error, { nodeId });
+        throw error; // Re-throw so the UI can handle it
+      }
+    },
+    [onRefreshCustomNodes],
+  );
+
   // Handle initial node selection from URL deep link (e.g., /roadmap?node=foundation-program)
   // Track if we've already handled this initial node to avoid re-running on nodes array changes
   const initialNodeHandledRef = useRef(false);
@@ -1831,6 +1869,7 @@ function RoadmapFlowInner({
               onNavigateToNode={handleNavigateToNode}
               onChecklistStatusChange={handleStatusChange}
               onDeleteCustomNode={handleDeleteCustomNode}
+              onEditCustomNode={handleEditCustomNode}
               onCheckboxClick={() =>
                 handleTutorialInteraction("checkbox-click")
               }

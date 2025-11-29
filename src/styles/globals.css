@@ -356,3 +356,31 @@
     opacity: 0;
   }
 }
+
+/* Custom scrollbar for node info panel */
+.scrollbar-panel {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.scrollbar-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-panel::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 16px 0;
+}
+
+.scrollbar-panel::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 100px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.scrollbar-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
