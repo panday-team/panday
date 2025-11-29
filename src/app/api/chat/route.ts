@@ -574,30 +574,34 @@ IMPORTANT: NEVER expose internal node IDs in your responses to users. Node IDs a
               .describe("The type of node to create"),
             checklistItems: z
               .array(z.string())
-              .optional()
+              .nullable()
               .describe(
-                "List of specific tasks or sub-items to track (e.g., ['Study transformers', 'Review motor controls', 'Practice PLC programming'])",
+                "List of specific tasks or sub-items to track (e.g., ['Study transformers', 'Review motor controls', 'Practice PLC programming']). Pass null if not applicable.",
               ),
             resources: z
               .array(
                 z.object({
                   label: z.string(),
-                  href: z.string().url(),
+                  href: z
+                    .string()
+                    .describe("A valid URL starting with https:// or http://"),
                 }),
               )
-              .optional()
+              .nullable()
               .describe(
-                "List of helpful resources with labels and VALID URLs (e.g., [{ label: 'ITA Study Guide', href: 'https://www.itabc.ca/...' }]). IMPORTANT: Only include resources if you have real, valid URLs. DO NOT use placeholders like '#' or 'https://example.com'. If no real URLs are available, omit this field entirely.",
+                "List of helpful resources with labels and VALID URLs (e.g., [{ label: 'ITA Study Guide', href: 'https://www.itabc.ca/...' }]). IMPORTANT: Only include resources if you have real, valid URLs. DO NOT use placeholders like '#' or 'https://example.com'. Pass null if no real URLs are available.",
               ),
             notes: z
               .string()
-              .optional()
-              .describe("Additional free-form notes or context"),
+              .nullable()
+              .describe(
+                "Additional free-form notes or context. Pass null if not applicable.",
+              ),
             dueDate: z
               .string()
-              .optional()
+              .nullable()
               .describe(
-                "Target completion date if applicable (ISO format or natural language)",
+                "Target completion date if applicable (ISO format or natural language). Pass null if not applicable.",
               ),
           }),
           execute: async ({
@@ -614,10 +618,10 @@ IMPORTANT: NEVER expose internal node IDs in your responses to users. Node IDs a
             description: string;
             parentId: string;
             type: "checklist" | "resource" | "action" | "roadblock";
-            checklistItems?: string[];
-            resources?: Array<{ label: string; href: string }>;
-            notes?: string;
-            dueDate?: string;
+            checklistItems: string[] | null;
+            resources: Array<{ label: string; href: string }> | null;
+            notes: string | null;
+            dueDate: string | null;
           }) => {
             if (!currentUserId) {
               return "Error: User must be authenticated to create nodes.";
@@ -857,35 +861,51 @@ IMPORTANT: NEVER expose internal node IDs in your responses to users. Node IDs a
               .describe(
                 "The ID of the custom node to update. This should be from a recently created or discussed node.",
               ),
-            title: z.string().optional().describe("Updated title"),
-            description: z.string().optional().describe("Updated description"),
+            title: z
+              .string()
+              .nullable()
+              .describe("Updated title. Pass null to keep unchanged."),
+            description: z
+              .string()
+              .nullable()
+              .describe("Updated description. Pass null to keep unchanged."),
             parentId: z
               .string()
-              .optional()
+              .nullable()
               .describe(
-                "Updated parent ID to move the node to a different milestone",
+                "Updated parent ID to move the node to a different milestone. Pass null to keep unchanged.",
               ),
             type: z
               .enum(["checklist", "resource", "action", "roadblock"])
-              .optional()
-              .describe("Updated node type"),
+              .nullable()
+              .describe("Updated node type. Pass null to keep unchanged."),
             checklistItems: z
               .array(z.string())
-              .optional()
-              .describe("Updated list of checklist items"),
+              .nullable()
+              .describe(
+                "Updated list of checklist items. Pass null to keep unchanged.",
+              ),
             resources: z
               .array(
                 z.object({
                   label: z.string(),
-                  href: z.string().url(),
+                  href: z
+                    .string()
+                    .describe("A valid URL starting with https:// or http://"),
                 }),
               )
-              .optional()
+              .nullable()
               .describe(
-                "Updated list of resources with VALID URLs. Only include if you have real URLs - do not use placeholders.",
+                "Updated list of resources with VALID URLs. Only include if you have real URLs - do not use placeholders. Pass null to keep unchanged.",
               ),
-            notes: z.string().optional().describe("Updated notes"),
-            dueDate: z.string().optional().describe("Updated due date"),
+            notes: z
+              .string()
+              .nullable()
+              .describe("Updated notes. Pass null to keep unchanged."),
+            dueDate: z
+              .string()
+              .nullable()
+              .describe("Updated due date. Pass null to keep unchanged."),
           }),
           execute: async ({
             nodeId,
@@ -899,14 +919,14 @@ IMPORTANT: NEVER expose internal node IDs in your responses to users. Node IDs a
             dueDate,
           }: {
             nodeId: string;
-            title?: string;
-            description?: string;
-            parentId?: string;
-            type?: "checklist" | "resource" | "action" | "roadblock";
-            checklistItems?: string[];
-            resources?: Array<{ label: string; href: string }>;
-            notes?: string;
-            dueDate?: string;
+            title: string | null;
+            description: string | null;
+            parentId: string | null;
+            type: "checklist" | "resource" | "action" | "roadblock" | null;
+            checklistItems: string[] | null;
+            resources: Array<{ label: string; href: string }> | null;
+            notes: string | null;
+            dueDate: string | null;
           }) => {
             if (!currentUserId) {
               return "You must be signed in to update nodes. Please sign in and try again.";
@@ -945,8 +965,7 @@ IMPORTANT: NEVER expose internal node IDs in your responses to users. Node IDs a
                 content?: Record<string, unknown>;
               } = {};
               if (title) updateData.title = title;
-              if (description !== undefined)
-                updateData.description = description;
+              if (description) updateData.description = description;
               if (parentId) updateData.parentId = parentId;
               if (type) updateData.type = type;
               if (content) updateData.content = content;

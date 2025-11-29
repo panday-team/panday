@@ -1508,6 +1508,44 @@ function RoadmapFlowInner({
     );
   }, [selectedNodeId, roadmap, nodeStatuses]);
 
+  // Get parent node info for back navigation
+  const selectedNodeParent = useMemo(() => {
+    if (!selectedNodeId) return null;
+
+    // Check if it's a custom node first
+    const customNode = customNodes?.find((n) => n.id === selectedNodeId);
+    if (customNode) {
+      // Custom nodes have parentId as a comma-separated string, use first parent
+      const firstParentId = customNode.parentId.split(",")[0]?.trim();
+      if (firstParentId) {
+        const parentContent = roadmap.content.get(firstParentId);
+        return {
+          id: firstParentId,
+          title: parentContent?.frontmatter.title ?? firstParentId,
+        };
+      }
+      return null;
+    }
+
+    // Find the selected graph node
+    const graphNode = roadmap.graph.nodes.find((n) => n.id === selectedNodeId);
+    if (!graphNode) return null;
+
+    // Get parent ID (use first parent if multiple)
+    const parentId = graphNode.parentIds?.[0] ?? graphNode.parentId ?? null;
+    if (!parentId) return null;
+
+    // Get parent content for title
+    const parentContent = roadmap.content.get(parentId);
+
+    // For category nodes (resources, actions, roadblocks), return the parent hub
+    // For checklist nodes, return their parent category
+    return {
+      id: parentId,
+      title: parentContent?.frontmatter.title ?? parentId,
+    };
+  }, [selectedNodeId, roadmap, customNodes]);
+
   // Handle navigation from Quick Navigation dropdown
   const handleNavigateToNode = useCallback(
     (nodeId: string) => {
@@ -1767,6 +1805,8 @@ function RoadmapFlowInner({
               nodeStatus={nodeStatuses[selectedNodeId] ?? "base"}
               progress={selectedNodeProgress}
               isCustomNode={customNodes.some((n) => n.id === selectedNodeId)}
+              parentNodeId={selectedNodeParent?.id}
+              parentNodeTitle={selectedNodeParent?.title}
               onStatusChange={(status) =>
                 handleStatusChange(selectedNodeId, status)
               }
@@ -1777,6 +1817,7 @@ function RoadmapFlowInner({
                 handleTutorialInteraction("checkbox-click")
               }
               onDropdownOpen={() => handleTutorialInteraction("dropdown-open")}
+              onClose={onPaneClick}
             />
           </div>
         </div>

@@ -16,6 +16,7 @@ import {
   X,
   Check,
   Loader2,
+  ArrowLeft,
 } from "lucide-react";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import type { ProgressData } from "@/lib/progress-utils";
@@ -57,6 +58,10 @@ export interface NodeInfoPanelProps extends ComponentPropsWithoutRef<"aside"> {
   nodeStatus?: "base" | "in-progress" | "completed";
   progress?: ProgressData | null;
   isCustomNode?: boolean;
+  /** Parent node ID for back navigation (null if no parent) */
+  parentNodeId?: string | null;
+  /** Parent node title for back button label */
+  parentNodeTitle?: string | null;
   onStatusChange?: (status: "base" | "in-progress" | "completed") => void;
   onNavigateToNode?: (nodeId: string) => void;
   onChecklistStatusChange?: (
@@ -66,6 +71,8 @@ export interface NodeInfoPanelProps extends ComponentPropsWithoutRef<"aside"> {
   onDeleteCustomNode?: (nodeId: string) => Promise<void>;
   onCheckboxClick?: () => void;
   onDropdownOpen?: () => void;
+  /** Called when close button is clicked */
+  onClose?: () => void;
 }
 
 export function NodeInfoPanel({
@@ -84,12 +91,15 @@ export function NodeInfoPanel({
   nodeStatus = "base",
   progress,
   isCustomNode = false,
+  parentNodeId,
+  parentNodeTitle,
   onStatusChange,
   onNavigateToNode,
   onChecklistStatusChange,
   onDeleteCustomNode,
   onCheckboxClick,
   onDropdownOpen,
+  onClose,
   className,
   ...props
 }: NodeInfoPanelProps) {
@@ -140,11 +150,37 @@ export function NodeInfoPanel({
     <aside
       data-tutorial="node-info-panel"
       className={cn(
-        "max-h-[calc(100vh-2rem)] w-full overflow-y-auto rounded-3xl border border-white/10 bg-[#98B3F9]/95 px-8 pt-8 pb-10 text-black shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur md:max-h-[calc(100vh-5rem)] md:max-w-lg",
+        "max-h-[calc(100vh-2rem)] w-full overflow-y-auto rounded-3xl border border-white/10 bg-[#98B3F9]/95 px-8 pt-6 pb-10 text-black shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur md:max-h-[calc(100vh-5rem)] md:max-w-lg",
         className,
       )}
       {...props}
     >
+      {/* Navigation bar: Back and Close buttons */}
+      <div className="mb-4 flex items-center justify-between">
+        {parentNodeId && onNavigateToNode ? (
+          <button
+            onClick={() => onNavigateToNode(parentNodeId)}
+            className="group flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-black/70 transition-all hover:bg-white/20 hover:text-black"
+          >
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+            <span className="max-w-[120px] truncate">
+              {parentNodeTitle ?? "Back"}
+            </span>
+          </button>
+        ) : (
+          <div /> /* Spacer to keep close button on the right */
+        )}
+        {onClose ? (
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-black/60 transition-all hover:bg-white/20 hover:text-black"
+            aria-label="Close panel"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        ) : null}
+      </div>
+
       <div className="flex items-center justify-between gap-4">
         <span className="inline-flex items-center gap-2 rounded-full bg-[#76E54A] px-3 py-1 text-xs font-semibold tracking-wide text-[#1D2740] uppercase [&_strong]:font-bold">
           <ReactMarkdown
