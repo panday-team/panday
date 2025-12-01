@@ -58,12 +58,6 @@ export function LandingHeader() {
           >
             About Us
           </Link>
-          <Link
-            href="/tools"
-            className="font-inria-sans text-base text-white transition hover:text-orange-500"
-          >
-            Tools
-          </Link>
 
           <SignedOut>
             <SignInButton mode="modal">
@@ -156,13 +150,6 @@ export function LandingHeader() {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               About Us
-            </Link>
-            <Link
-              href="/tools"
-              className="font-inria-sans py-2 text-lg text-white transition hover:text-orange-500"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Tools
             </Link>
 
             <SignedOut>
