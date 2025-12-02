@@ -152,8 +152,9 @@ export function ChatWidget({
     data: streamData,
   } = useChat({
     api: "/api/chat",
-    streamProtocol: "data",
+    streamProtocol: "text",
     maxSteps: 5,
+    id: activeThreadId ?? undefined,
     onToolCall: ({ toolCall }) => {
       // Display user-friendly status messages for tool calls
       const toolNames: Record<string, string> = {
@@ -171,6 +172,7 @@ export function ChatWidget({
       logger.error("Chat error", chatError);
       setIsLoading(false);
       setStatusMessage(null);
+      setStreamingMessageId(null);
     },
     onResponse: () => {
       setIsLoading(true);
@@ -583,18 +585,28 @@ export function ChatWidget({
 
   useEffect(() => {
     if (!streamData || streamData.length === 0) return;
+    
     const latestEvent = streamData[streamData.length - 1];
+    
     if (isStatusEvent(latestEvent)) {
       setStatusMessage(latestEvent.message);
       return;
     }
+    
     if (isMetadataEvent(latestEvent) && Array.isArray(latestEvent.sources)) {
       const parsedSources = latestEvent.sources.filter(isSourceDocument);
       if (parsedSources.length > 0) {
         setSources(parsedSources);
       }
+      return;
     }
-  }, [streamData]);
+    
+    // Clear status message when we start receiving actual AI response content
+    // The useChat hook will automatically handle adding the message to the messages array
+    if (streamData.length > 0 && statusMessage) {
+      setStatusMessage(null);
+    }
+  }, [streamData, statusMessage]);
 
   useEffect(() => {
     if (!isExpanded) {
@@ -608,6 +620,17 @@ export function ChatWidget({
       setIsExpanded(false);
     }
   }, [forceClose]);
+
+
+  // Clear loading state when assistant messages appear
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && lastMessage.role === "assistant") {
+      setIsLoading(false);
+      setStatusMessage(null);
+    }
+  }, [messages]);
+
 
   // Track scroll position to show/hide scroll-to-bottom button
   useEffect(() => {
@@ -765,12 +788,9 @@ export function ChatWidget({
 
     if (!input.trim()) return;
 
-    // Optimistically show UI feedback immediately
+    // Clear sources for new response
     setSources([]);
-    setIsLoading(true);
-    setStatusMessage("Processing request...");
-    setStreamingMessageId("streaming");
-
+    
     // Create thread in background if needed (don't block UI)
     if (!activeThreadId) {
       // Start thread creation but don't await - handleSubmit will handle it
@@ -779,9 +799,6 @@ export function ChatWidget({
           activeThreadRef.current = thread.id;
         } else {
           // Thread creation failed - reset UI
-          setIsLoading(false);
-          setStatusMessage(null);
-          setStreamingMessageId(null);
           logger.error("Failed to create thread before sending", undefined, {
             selectedNodeId,
           });
@@ -791,7 +808,7 @@ export function ChatWidget({
       activeThreadRef.current = activeThreadId;
     }
 
-    // Submit immediately (useChat handles optimistic updates)
+    // Submit immediately (useChat handles optimistic updates and loading states)
     handleSubmit(event);
   };
 
@@ -807,12 +824,9 @@ export function ChatWidget({
       const trimmed = question.trim();
       if (!trimmed) return;
 
-      // Set input and show UI feedback immediately
+      // Set input and clear sources
       setInput(trimmed);
       setSources([]);
-      setIsLoading(true);
-      setStatusMessage("Processing request...");
-      setStreamingMessageId("streaming");
 
       // Create thread in background if needed
       if (!activeThreadId) {
@@ -821,10 +835,6 @@ export function ChatWidget({
             setActiveThreadId(thread.id);
             activeThreadRef.current = thread.id;
           } else {
-            // Thread creation failed - reset UI
-            setIsLoading(false);
-            setStatusMessage(null);
-            setStreamingMessageId(null);
             logger.error(
               "Failed to create thread before sending FAQ question",
               undefined,
@@ -836,7 +846,7 @@ export function ChatWidget({
         activeThreadRef.current = activeThreadId;
       }
 
-      // Submit immediately
+      // Submit immediately (useChat handles the rest)
       handleSubmit();
     },
     [
