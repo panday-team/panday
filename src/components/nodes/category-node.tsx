@@ -69,7 +69,10 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
   // Sync WebkitClipPath with percentage changes (vendor prefix needs manual update)
   useEffect(() => {
     if (fillRef.current) {
-      fillRef.current.style.webkitClipPath = `inset(${100 - percentage}% 0 0 0)`;
+      fillRef.current.style.setProperty(
+        "-webkit-clip-path",
+        `inset(${100 - percentage}% 0 0 0)`,
+      );
     }
   }, [percentage]);
 
@@ -281,6 +284,7 @@ export const CategoryNode = memo(CategoryNodeComponent, (prev, next) => {
     prev.data.isSelected === next.data.isSelected &&
     prev.data.isExpanded === next.data.isExpanded &&
     prev.data.isDimmed === next.data.isDimmed &&
+    prev.data.progress === next.data.progress &&
     prev.selected === next.selected &&
     prev.dragging === next.dragging
   );

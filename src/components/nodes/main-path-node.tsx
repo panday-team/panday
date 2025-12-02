@@ -306,6 +306,7 @@ export const MainPathNode = memo(MainPathNodeComponent, (prev, next) => {
     prev.data.status === next.data.status &&
     prev.data.glow === next.data.glow &&
     prev.data.isSelected === next.data.isSelected &&
+    prev.data.progress === next.data.progress &&
     prev.color === next.color &&
     prev.colorName === next.colorName &&
     prev.icon === next.icon &&
