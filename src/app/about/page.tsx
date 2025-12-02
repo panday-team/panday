@@ -21,7 +21,7 @@ const BlogCard: React.FC<BlogCardProps> = ({ title, link }) => {
 const AboutPage: React.FC = () => {
   const blogPosts = [
     {
-      title: "Week 1",
+      title: "Week 1 Meet the team",
       link: "#",
     },
     {
