@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useEffect, useRef } from "react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { motion, AnimatePresence } from "motion/react";
 import Image from "next/image";
@@ -57,6 +57,17 @@ function MainPathNodeComponent({
   const percentage = isMainNode ? 100 : (data.progress ?? 0);
   const baseFillColor = "#FFFFFF";
   const borderColor = darkenColor(color, 30); // Darken by 30%
+  const fillRef = useRef<HTMLSpanElement>(null);
+
+  // Sync WebkitClipPath with percentage changes (vendor prefix needs manual update)
+  useEffect(() => {
+    if (fillRef.current) {
+      fillRef.current.style.setProperty(
+        "-webkit-clip-path",
+        `inset(${100 - percentage}% 0 0 0)`,
+      );
+    }
+  }, [percentage]);
 
   const hiddenHandleClass =
     "pointer-events-none opacity-0 h-3 w-3 bg-transparent border-transparent";
@@ -131,15 +142,21 @@ function MainPathNodeComponent({
       />
       {/* Progress fill overlay */}
       <motion.span
+        ref={fillRef}
         aria-hidden
         className="pointer-events-none absolute z-10 h-32 w-32 rounded-full"
         style={{
           backgroundColor: color,
-          clipPath: `inset(${100 - percentage}% 0 0 0)`,
-          WebkitClipPath: `inset(${100 - percentage}% 0 0 0)`,
         }}
         initial={false}
-        animate={{ opacity: percentage > 0 ? 1 : 0 }}
+        animate={{
+          clipPath: `inset(${100 - percentage}% 0 0 0)`,
+          opacity: percentage > 0 ? 1 : 0,
+        }}
+        transition={{
+          duration: 0.6,
+          ease: [0.4, 0, 0.2, 1], // ease-in-out cubic bezier
+        }}
       />
 
       {/* Colored border ring with subtle pulse */}
