@@ -776,31 +776,11 @@ function RoadmapFlowInner({
     setEdges(initialEdges);
   }, [initialEdges, setEdges]);
 
-  // Update nodes when selection changes (for animations to work)
+  // Update nodes when initialNodes changes (includes status and progress updates)
+  // initialNodes already recalculates when nodeStatuses changes, so this handles both
   useEffect(() => {
     setNodes(initialNodes);
   }, [initialNodes, setNodes]);
-
-  // Update nodes when statuses change (optimized to only update changed nodes)
-  useEffect(() => {
-    setNodes((currentNodes) =>
-      currentNodes.map((node) => {
-        const newStatus = nodeStatuses[node.id] ?? "base";
-        // Only update nodes that have a status property (skip CategoryNodeData)
-        if ("status" in node.data && node.data.status !== newStatus) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              status: newStatus,
-            },
-          };
-        }
-        // Return same reference = no re-render for this node
-        return node;
-      }),
-    );
-  }, [nodeStatuses, setNodes]);
 
   // Physics-based collision avoidance for custom nodes
   useEffect(() => {
