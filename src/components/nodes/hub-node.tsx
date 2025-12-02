@@ -7,6 +7,7 @@ export type HubNodeData = {
   glow?: boolean;
   status?: "base" | "in-progress" | "completed";
   isSelected?: boolean;
+  progress?: number;
 };
 
 export type HubNodeType = Node<HubNodeData, "hub">;
