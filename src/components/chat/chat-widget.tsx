@@ -40,7 +40,7 @@ import {
 
 // Import extracted components
 import { HistoryList } from "./history-list";
-import { MessageList } from "./message-list";
+import { MessageList, hasPendingProposals } from "./message-list";
 import { FaqQuickQuestions } from "./faq-quick-questions";
 import type { NodeProposal, ProposalStatus } from "./node-proposal-card";
 
@@ -235,6 +235,12 @@ export function ChatWidget({
       };
     },
   });
+
+  // Check if there are any pending proposals that require user action
+  const isProposalPending = useMemo(
+    () => hasPendingProposals(messages, proposalStatuses),
+    [messages, proposalStatuses],
+  );
 
   const hydrateMessagesFromThread = useCallback(
     (threadId: string, conversation: ThreadMessageResponse[]) => {
@@ -1382,18 +1388,27 @@ export function ChatWidget({
                       placeholder={
                         !isSignedIn
                           ? "Sign in to chat"
-                          : isTranscribing
-                            ? "Transcribing..."
-                            : "Write your message"
+                          : isProposalPending
+                            ? "Please accept or decline the proposal above"
+                            : isTranscribing
+                              ? "Transcribing..."
+                              : "Write your message"
                       }
-                      disabled={!isSignedIn || isTranscribing}
+                      disabled={
+                        !isSignedIn || isTranscribing || isProposalPending
+                      }
                       value={input}
                       onChange={handleInputChange}
                       className="border-none bg-transparent text-sm text-black placeholder:text-black/40 focus-visible:ring-0 dark:text-white dark:placeholder:text-white/40"
                     />
                     <button
                       type="button"
-                      disabled={!isSignedIn || isLoading || isTranscribing}
+                      disabled={
+                        !isSignedIn ||
+                        isLoading ||
+                        isTranscribing ||
+                        isProposalPending
+                      }
                       onClick={async () => {
                         if (isRecording) {
                           const transcript = await stopRecording();
@@ -1419,7 +1434,12 @@ export function ChatWidget({
                     </button>
                     <button
                       type="submit"
-                      disabled={isLoading || !input.trim() || !isSignedIn}
+                      disabled={
+                        isLoading ||
+                        !input.trim() ||
+                        !isSignedIn ||
+                        isProposalPending
+                      }
                       className="rounded-full p-2 text-[#3369FF] transition hover:bg-[#3369FF]/10 disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label="Send message"
                     >

@@ -210,7 +210,7 @@ export interface ProposalWithStatus {
  * Check if any message has pending proposeNode tool calls that need user confirmation.
  * Used to determine if sources should be shown (sources should wait until all proposals are resolved).
  */
-function hasPendingProposals(
+export function hasPendingProposals(
   messages: Message[],
   externalStatuses?: Record<string, ProposalStatusEntry>,
 ): boolean {
