@@ -109,6 +109,9 @@ export function ChatWidget({
   const activeThreadRef = useRef<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const didMountRef = useRef(false);
+  // Track when we just accepted/declined a proposal to skip hydration
+  // (local state is correct, hydrating from DB would lose tool invocation state)
+  const skipNextHydrationRef = useRef(false);
 
   useEffect(() => {
     activeThreadRef.current = activeThreadId;
@@ -162,6 +165,7 @@ export function ChatWidget({
         deleteNode: "Deleting node...",
         listCustomNodes: "Loading your custom nodes...",
         deleteDuplicateNodes: "Removing duplicate nodes...",
+        proposeNode: "Generating your checklist...",
       };
       const message =
         toolNames[toolCall.toolName] ?? `Processing ${toolCall.toolName}...`;
@@ -509,6 +513,13 @@ export function ChatWidget({
     if (!isSignedIn) return;
     if (!activeThreadId) return;
 
+    // Skip hydration if we just accepted/declined a proposal
+    // (local state is correct, hydrating would lose tool invocation state)
+    if (skipNextHydrationRef.current) {
+      skipNextHydrationRef.current = false;
+      return;
+    }
+
     const cached = threadMessagesCache[activeThreadId];
     if (cached) {
       setMessages(mapThreadMessagesToChatMessages(cached));
@@ -580,6 +591,56 @@ export function ChatWidget({
       });
     }
   }, [isHydrated, isSignedIn, messages]);
+
+  // Check if there's a pending proposeNode tool call (either being generated or awaiting user action)
+  const hasPendingProposeNode = useMemo(() => {
+    for (const message of messages) {
+      if (message.role !== "assistant") continue;
+      const toolInvocations = message.toolInvocations;
+      if (!toolInvocations || !Array.isArray(toolInvocations)) continue;
+
+      for (const invocation of toolInvocations) {
+        if (invocation.toolName !== "proposeNode") continue;
+
+        // Check if we've already handled this proposal locally
+        const externalStatus = proposalStatuses[invocation.toolCallId];
+        if (externalStatus && externalStatus.status !== "pending") {
+          continue; // Already accepted/declined/errored
+        }
+
+        // partial-call = still generating, call = awaiting user action
+        if (
+          invocation.state === "partial-call" ||
+          invocation.state === "call"
+        ) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }, [messages, proposalStatuses]);
+
+  // Show "Generating your checklist..." when proposeNode is being streamed
+  useEffect(() => {
+    if (!isLoading) return;
+
+    // Check for proposeNode in partial-call state (being generated)
+    for (const message of messages) {
+      if (message.role !== "assistant") continue;
+      const toolInvocations = message.toolInvocations;
+      if (!toolInvocations || !Array.isArray(toolInvocations)) continue;
+
+      for (const invocation of toolInvocations) {
+        if (
+          invocation.toolName === "proposeNode" &&
+          invocation.state === "partial-call"
+        ) {
+          setStatusMessage("Generating your checklist...");
+          return;
+        }
+      }
+    }
+  }, [isLoading, messages]);
 
   useEffect(() => {
     if (!streamData || streamData.length === 0) return;
@@ -904,6 +965,9 @@ export function ChatWidget({
           [toolCallId]: { status: "accepted" },
         }));
 
+        // Skip next hydration to preserve local state (DB doesn't store tool invocations)
+        skipNextHydrationRef.current = true;
+
         // Notify the roadmap to refresh custom nodes
         onCustomNodeCreated?.();
 
@@ -942,6 +1006,9 @@ export function ChatWidget({
         ...prev,
         [toolCallId]: { status: "declined" },
       }));
+
+      // Skip next hydration to preserve local state (DB doesn't store tool invocations)
+      skipNextHydrationRef.current = true;
 
       logger.info("Node proposal declined", { toolCallId });
     },
@@ -1384,16 +1451,25 @@ export function ChatWidget({
                           ? "Sign in to chat"
                           : isTranscribing
                             ? "Transcribing..."
-                            : "Write your message"
+                            : hasPendingProposeNode
+                              ? "Accept or decline the proposal first"
+                              : "Write your message"
                       }
-                      disabled={!isSignedIn || isTranscribing}
+                      disabled={
+                        !isSignedIn || isTranscribing || hasPendingProposeNode
+                      }
                       value={input}
                       onChange={handleInputChange}
                       className="border-none bg-transparent text-sm text-black placeholder:text-black/40 focus-visible:ring-0 dark:text-white dark:placeholder:text-white/40"
                     />
                     <button
                       type="button"
-                      disabled={!isSignedIn || isLoading || isTranscribing}
+                      disabled={
+                        !isSignedIn ||
+                        isLoading ||
+                        isTranscribing ||
+                        hasPendingProposeNode
+                      }
                       onClick={async () => {
                         if (isRecording) {
                           const transcript = await stopRecording();
@@ -1419,7 +1495,12 @@ export function ChatWidget({
                     </button>
                     <button
                       type="submit"
-                      disabled={isLoading || !input.trim() || !isSignedIn}
+                      disabled={
+                        isLoading ||
+                        !input.trim() ||
+                        !isSignedIn ||
+                        hasPendingProposeNode
+                      }
                       className="rounded-full p-2 text-[#3369FF] transition hover:bg-[#3369FF]/10 disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label="Send message"
                     >

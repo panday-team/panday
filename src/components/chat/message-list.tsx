@@ -479,6 +479,17 @@ const MessageItem = memo(
     const hasContent = displayContent.trim().length > 0;
     const hasProposals = proposalsWithStatus.length > 0;
 
+    // If it's an assistant message with no content, no proposals, and currently streaming,
+    // don't render anything (the loading indicator in MessageList will show instead)
+    if (
+      message.role === "assistant" &&
+      !hasContent &&
+      !hasProposals &&
+      isStreaming
+    ) {
+      return null;
+    }
+
     // If it's an assistant message with no content but has proposals,
     // render only the proposal cards without the message bubble
     if (message.role === "assistant" && !hasContent && hasProposals) {
