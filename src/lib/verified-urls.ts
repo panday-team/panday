@@ -83,10 +83,19 @@ const URL_CORRECTIONS: Record<string, string> = {
   "red-seal.ca/trades/construction-electrician":
     "red-seal.ca/trades/elec-eng.html",
 
-  // WorkBC corrections
-  "workbc.ca/jobs": "workbc.ca/jobs-careers",
-  "workbc.ca/career-explorer": "workbc.ca/jobs-careers/explore-careers",
-  "workbc.ca/trades": "workbc.ca/jobs-careers/explore-careers",
+  // WorkBC corrections - old site structure used /Job-Seekers/, new site uses /search-and-prepare-job/
+  "workbc.ca/jobs": "workbc.ca/search-and-prepare-job/find-jobs",
+  "workbc.ca/job-seekers/job-match.aspx":
+    "workbc.ca/search-and-prepare-job/find-jobs",
+  "workbc.ca/job-seekers": "workbc.ca/search-and-prepare-job",
+  "workbc.ca/career-explorer": "workbc.ca/plan-career/explore-careers",
+  "workbc.ca/jobs-careers/explore-careers":
+    "workbc.ca/plan-career/explore-careers",
+  "workbc.ca/jobs-careers/explore-careers/browse-career-profile/7241":
+    "workbc.ca/career-profiles/electricians-except-industrial-and-power-system",
+  "workbc.ca/jobs-careers/build-your-resume.aspx":
+    "workbc.ca/search-and-prepare-job/job-application-tips/resume-and-cover-letter",
+  "workbc.ca/trades": "workbc.ca/plan-career/explore-careers",
 };
 
 /**
@@ -265,13 +274,19 @@ export const VERIFIED_URLS = {
     selfAssessment:
       "https://www.red-seal.ca/resources/self-assessment-eng.html",
   },
-  // WorkBC
+  // WorkBC - site restructured in 2024
   workbc: {
     home: "https://www.workbc.ca",
-    exploreCareers: "https://www.workbc.ca/jobs-careers/explore-careers",
+    findJobs: "https://www.workbc.ca/search-and-prepare-job/find-jobs",
+    exploreCareers: "https://www.workbc.ca/plan-career/explore-careers",
+    careerProfiles:
+      "https://www.workbc.ca/plan-career/explore-careers/career-profiles",
     electrician:
-      "https://www.workbc.ca/jobs-careers/explore-careers/browse-career-profile/7241",
-    resumeBuilder: "https://www.workbc.ca/Jobs-Careers/Build-Your-Resume.aspx",
+      "https://www.workbc.ca/career-profiles/electricians-except-industrial-and-power-system",
+    resumeBuilder:
+      "https://www.workbc.ca/search-and-prepare-job/job-application-tips/resume-and-cover-letter",
+    workbcCentres:
+      "https://www.workbc.ca/discover-employment-services/workbc-centre-locations",
   },
   // Training Institutions
   training: {

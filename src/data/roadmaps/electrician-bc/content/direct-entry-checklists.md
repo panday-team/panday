@@ -772,7 +772,7 @@ Professional resume and cover letter templates tailored for electrical apprentic
 
 ## Resources
 
-- [WorkBC Resume Builder](https://www.workbc.ca/Jobs-Careers/Build-Your-Resume.aspx) - Free online resume tool
+- [WorkBC Resume Builder](https://www.workbc.ca/search-and-prepare-job/job-application-tips/resume-and-cover-letter) - Free online resume tool
 - [Job Bank Resume Builder](https://www.jobbank.gc.ca/findajob/resume-builder) - Federal resume template tool
 - [Indeed Resume Builder](https://ca.indeed.com/create-resume) - Free resume creation
 - [SkilledTradesBC Career Resources](https://www.skilledtradesbc.ca/resources) - Apprentice career tools
@@ -1477,7 +1477,7 @@ Direct entry into the electrician apprenticeship requires an employer sponsor wi
 
 - [SkilledTradesBC Registered Sponsors](https://www.skilledtradesbc.ca/sponsor-employers) - Search for approved training agents
 - [EJTC Union Pathway](https://www.ejtc.org/) - Structured apprentice placement system
-- [WorkBC Job Matching](https://www.workbc.ca/Job-Seekers/Job-Match.aspx) - Employment services and job search support
+- [WorkBC Job Search](https://www.workbc.ca/search-and-prepare-job/find-jobs) - Employment services and job search support
 
 ---
 
@@ -1501,7 +1501,7 @@ With direct entry, you start earning wages immediately while training on the job
 
 - [SkilledTradesBC Wage Rates](https://www.skilledtradesbc.ca/wage-rates) - Official BC apprentice wage information
 - [IBEW Local 213 Wage Scales](https://www.ibew213.org/) - Union collective agreement wage schedules
-- [WorkBC Occupation Profile](https://www.workbc.ca/jobs-careers/explore-careers/browse-career-profile/7241) - Electrician salary data for BC
+- [WorkBC Occupation Profile](https://www.workbc.ca/career-profiles/electricians-except-industrial-and-power-system) - Electrician salary data for BC
 - [Canada Apprentice Loan](https://www.canada.ca/en/employment-social-development/services/student-financial-aid/apprentice-loan.html) - Up to $4,000 interest-free for technical training periods
 
 ---

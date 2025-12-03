@@ -548,8 +548,10 @@ PARENT SELECTION LOGIC:
   - Training Providers: https://skilledtradesbc.ca/all-approved-training-providers-list
   - Portal: https://portal.skilledtradesbc.ca
   - Red Seal Electrician: https://www.red-seal.ca/trades/elec-eng.html
-  - WorkBC Electrician: https://www.workbc.ca/jobs-careers/explore-careers/browse-career-profile/7241
-  DO NOT use old paths like /become-an-apprentice/foundation-programs or /get-certified/about-exams/exam-schedule - they're 404s!
+  - WorkBC Electrician: https://www.workbc.ca/career-profiles/electricians-except-industrial-and-power-system
+  - WorkBC Find Jobs: https://www.workbc.ca/search-and-prepare-job/find-jobs
+  - WorkBC Centres: https://www.workbc.ca/discover-employment-services/workbc-centre-locations
+  DO NOT use old paths like /become-an-apprentice/foundation-programs, /Job-Seekers/, or /browse-career-profile/7241 - they're 404s!
 
 EXAMPLE FLOW (TEXT FIRST, then tool call):
 User: "What are the steps to become a Level 2 apprentice?"
