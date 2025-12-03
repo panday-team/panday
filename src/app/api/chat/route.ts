@@ -535,16 +535,21 @@ PARENT SELECTION LOGIC:
   * "Level 3 training" → use "level-3"
 
 - RESOURCES FIELD: Only include if you have REAL, VALID URLs. Pass null otherwise.
-  VERIFIED BC TRADES URLS (use these exact patterns):
+  VERIFIED BC TRADES URLS (use these exact patterns - last verified Dec 2024):
   - SkilledTradesBC Electrician: https://skilledtradesbc.ca/electrician-construction
   - Find Your Trade: https://skilledtradesbc.ca/find-your-trade
-  - Foundation Programs: https://skilledtradesbc.ca/become-an-apprentice/foundation-programs
+  - Foundation Programs: https://skilledtradesbc.ca/foundation-programs
+  - Start Apprenticeship: https://skilledtradesbc.ca/start-an-apprenticeship
+  - Financial Support: https://skilledtradesbc.ca/financial-support
+  - Youth Programs: https://skilledtradesbc.ca/youth
   - Exam Info: https://skilledtradesbc.ca/get-certified/about-exams
+  - Exam Schedule: https://skilledtradesbc.ca/exam-schedule
+  - Challenge Trade: https://skilledtradesbc.ca/challenge-skilled-trade
   - Training Providers: https://skilledtradesbc.ca/all-approved-training-providers-list
   - Portal: https://portal.skilledtradesbc.ca
   - Red Seal Electrician: https://www.red-seal.ca/trades/elec-eng.html
   - WorkBC Electrician: https://www.workbc.ca/jobs-careers/explore-careers/browse-career-profile/7241
-  DO NOT use patterns like /trade/construction-electrician or /find-training-program - they don't exist!
+  DO NOT use old paths like /become-an-apprentice/foundation-programs or /get-certified/about-exams/exam-schedule - they're 404s!
 
 EXAMPLE FLOW (TEXT FIRST, then tool call):
 User: "What are the steps to become a Level 2 apprentice?"

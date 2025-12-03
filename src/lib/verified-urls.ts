@@ -24,9 +24,11 @@ export const VERIFIED_DOMAINS = {
 /**
  * Common URL patterns and their corrections
  * Maps incorrectly generated URLs to valid URLs
+ *
+ * Last verified: December 2024
  */
 const URL_CORRECTIONS: Record<string, string> = {
-  // SkilledTradesBC corrections
+  // SkilledTradesBC corrections - trade pages
   "skilledtradesbc.ca/trade/construction-electrician":
     "skilledtradesbc.ca/electrician-construction",
   "skilledtradesbc.ca/trades/electrician":
@@ -39,26 +41,40 @@ const URL_CORRECTIONS: Record<string, string> = {
     "skilledtradesbc.ca/all-approved-training-providers-list",
   "skilledtradesbc.ca/training-providers":
     "skilledtradesbc.ca/all-approved-training-providers-list",
+
+  // SkilledTradesBC corrections - old /become-an-apprentice/* paths now at root
+  "skilledtradesbc.ca/become-an-apprentice/foundation-programs":
+    "skilledtradesbc.ca/foundation-programs",
+  "skilledtradesbc.ca/become-an-apprentice/start-an-apprenticeship":
+    "skilledtradesbc.ca/start-an-apprenticeship",
+  "skilledtradesbc.ca/become-an-apprentice/youth-programs":
+    "skilledtradesbc.ca/youth",
+  "skilledtradesbc.ca/become-an-apprentice/financial-support":
+    "skilledtradesbc.ca/financial-support",
   "skilledtradesbc.ca/apprentice": "skilledtradesbc.ca/become-an-apprentice",
   "skilledtradesbc.ca/apprenticeship":
     "skilledtradesbc.ca/become-an-apprentice",
+
+  // SkilledTradesBC corrections - old /get-certified/* paths
+  "skilledtradesbc.ca/get-certified/about-exams/exam-schedule":
+    "skilledtradesbc.ca/exam-schedule",
+  "skilledtradesbc.ca/get-certified/about-exams/exam-study-support":
+    "skilledtradesbc.ca/get-certified-about-exams/exam-study-support",
+  "skilledtradesbc.ca/get-certified/challenge-a-skilled-trade":
+    "skilledtradesbc.ca/challenge-skilled-trade",
   "skilledtradesbc.ca/exam-info":
     "skilledtradesbc.ca/get-certified/about-exams",
   "skilledtradesbc.ca/exams": "skilledtradesbc.ca/get-certified/about-exams",
-  "skilledtradesbc.ca/exam-schedule":
-    "skilledtradesbc.ca/get-certified/about-exams/exam-schedule",
-  "skilledtradesbc.ca/foundation":
-    "skilledtradesbc.ca/become-an-apprentice/foundation-programs",
-  "skilledtradesbc.ca/youth-programs":
-    "skilledtradesbc.ca/become-an-apprentice/youth-programs",
-  "skilledtradesbc.ca/financial-aid":
-    "skilledtradesbc.ca/become-an-apprentice/financial-support",
-  "skilledtradesbc.ca/grants":
-    "skilledtradesbc.ca/become-an-apprentice/financial-support",
+
+  // SkilledTradesBC corrections - common AI mistakes
+  "skilledtradesbc.ca/foundation": "skilledtradesbc.ca/foundation-programs",
+  "skilledtradesbc.ca/youth-programs": "skilledtradesbc.ca/youth",
+  "skilledtradesbc.ca/financial-aid": "skilledtradesbc.ca/financial-support",
+  "skilledtradesbc.ca/grants": "skilledtradesbc.ca/financial-support",
   "skilledtradesbc.ca/red-seal": "skilledtradesbc.ca/get-certified",
   "skilledtradesbc.ca/certification": "skilledtradesbc.ca/get-certified",
   "skilledtradesbc.ca/challenge-exam":
-    "skilledtradesbc.ca/get-certified/challenge-a-skilled-trade",
+    "skilledtradesbc.ca/challenge-skilled-trade",
 
   // Red Seal corrections - common patterns
   "red-seal.ca/eng/trades/electric": "red-seal.ca/trades/elec-eng.html",
@@ -216,6 +232,9 @@ export function isTrustedDomain(url: string): boolean {
 /**
  * Known valid URLs for common BC trades resources
  * These are confirmed working URLs that the AI can reference
+ *
+ * Last verified: December 2024
+ * Note: SkilledTradesBC restructured their site - pages moved from /become-an-apprentice/* to root level
  */
 export const VERIFIED_URLS = {
   // SkilledTradesBC
@@ -224,22 +243,16 @@ export const VERIFIED_URLS = {
     electrician: "https://skilledtradesbc.ca/electrician-construction",
     findYourTrade: "https://skilledtradesbc.ca/find-your-trade",
     becomeApprentice: "https://skilledtradesbc.ca/become-an-apprentice",
-    startApprenticeship:
-      "https://skilledtradesbc.ca/become-an-apprentice/start-an-apprenticeship",
-    foundationPrograms:
-      "https://skilledtradesbc.ca/become-an-apprentice/foundation-programs",
-    youthPrograms:
-      "https://skilledtradesbc.ca/become-an-apprentice/youth-programs",
-    financialSupport:
-      "https://skilledtradesbc.ca/become-an-apprentice/financial-support",
+    startApprenticeship: "https://skilledtradesbc.ca/start-an-apprenticeship",
+    foundationPrograms: "https://skilledtradesbc.ca/foundation-programs",
+    youthPrograms: "https://skilledtradesbc.ca/youth",
+    financialSupport: "https://skilledtradesbc.ca/financial-support",
     getCertified: "https://skilledtradesbc.ca/get-certified",
     aboutExams: "https://skilledtradesbc.ca/get-certified/about-exams",
-    examSchedule:
-      "https://skilledtradesbc.ca/get-certified/about-exams/exam-schedule",
+    examSchedule: "https://skilledtradesbc.ca/exam-schedule",
     examStudySupport:
-      "https://skilledtradesbc.ca/get-certified/about-exams/exam-study-support",
-    challengeTrade:
-      "https://skilledtradesbc.ca/get-certified/challenge-a-skilled-trade",
+      "https://skilledtradesbc.ca/get-certified-about-exams/exam-study-support",
+    challengeTrade: "https://skilledtradesbc.ca/challenge-skilled-trade",
     sponsorEmployers: "https://skilledtradesbc.ca/sponsor-employers",
     trainingProviders:
       "https://skilledtradesbc.ca/all-approved-training-providers-list",
