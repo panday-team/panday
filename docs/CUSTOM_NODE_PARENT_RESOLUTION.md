@@ -5,6 +5,7 @@
 1. ✅ Red Seal now respects user specialization (was hardcoded to construction)
 2. ✅ Unspecialized users get multi-parent attachment (both industrial + construction)
 3. ✅ Level 4 also supports multi-parent for unspecialized users
+4. ✅ ACE-IT program variations now resolve correctly (was falling back to direct-entry)
 
 ## Resolution Logic Flow
 
@@ -180,6 +181,28 @@ NO MATCH → Check specialization-dependent nodes
 
 ---
 
+### Test Case 8: ACE-IT Program Variations
+
+**Input:**
+
+- AI parent ID variants: `"ACE-IT"`, `"ACE IT"`, `"ace-it"`, `"Ace-It"`, `"ACEIT"`, `"ACE-IT Program"`
+
+**Expected Output:**
+
+- All variants resolve to `ace-it-program`
+- Log: `Mapped parentId "ACE-IT" to "ace-it-program" via overrides`
+
+**Test Prompts:**
+
+> "Remind me to focus on my other classes while in ACE-IT"
+> "Add a checklist for ACE IT requirements"
+
+**Background:**
+
+ACE-IT (Accelerated Credit Enrolment in Industry Training) is a high school entry path. Previously, variations like "ACE-IT" would fail fuzzy matching and fall back to "direct-entry" incorrectly.
+
+---
+
 ## Verification Steps
 
 ### 1. Visual Inspection (Frontend)
@@ -338,6 +361,7 @@ Examples:
 Red Seal → red-seal-industrial (user specialization: industrial)
 Level 4 → Multi-parent (no specialization): level-4-industrial, level-4-construction
 Foundation Program → foundation-program via overrides
+ACE-IT → ace-it-program via overrides
 ```
 
 This enables easy debugging and monitoring of resolution accuracy.

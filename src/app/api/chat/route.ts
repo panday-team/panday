@@ -709,6 +709,15 @@ IMPORTANT: NEVER expose internal node IDs in your responses. Use proposeNode to 
                     Foundation: "foundation-program",
                     "Foundation Program": "foundation-program",
                     "Direct Entry": "direct-entry",
+                    "ACE-IT": "ace-it-program",
+                    "ACE IT": "ace-it-program",
+                    ACEIT: "ace-it-program",
+                    "Ace-It": "ace-it-program",
+                    "Ace It": "ace-it-program",
+                    "ace-it": "ace-it-program",
+                    "ace it": "ace-it-program",
+                    "ACE-IT Program": "ace-it-program",
+                    "ACE IT Program": "ace-it-program",
                   };
 
                   const override = overrides[requestedId];
