@@ -96,7 +96,7 @@ export function LandingHeader() {
         <div className="flex items-center gap-3 lg:hidden">
           <SignedOut>
             <SignUpButton mode="modal">
-              <Button className="font-inria-sans rounded-lg bg-[#FF8F27] px-4 py-2 text-base text-white hover:bg-[#FF8F27]/90">
+              <Button className="font-inria-sans rounded-full bg-[#FF8F27] px-4 py-2 text-base text-white hover:bg-[#FF8F27]/90">
                 Sign Up
               </Button>
             </SignUpButton>
@@ -138,7 +138,7 @@ export function LandingHeader() {
 
             <SignedIn>
               <Link href="/roadmap" onClick={() => setIsMobileMenuOpen(false)}>
-                <Button className="font-inria-sans w-full rounded-lg bg-[#FF8F27] px-5 py-2 text-base text-white hover:bg-[#FF8F27]/90">
+                <Button className="font-inria-sans w-full rounded-full bg-[#FF8F27] px-5 py-2 text-base text-white hover:bg-[#FF8F27]/90">
                   My Roadmap
                 </Button>
               </Link>
