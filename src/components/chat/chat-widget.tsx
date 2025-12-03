@@ -42,6 +42,13 @@ import {
 import { HistoryList } from "./history-list";
 import { MessageList } from "./message-list";
 import { FaqQuickQuestions } from "./faq-quick-questions";
+import type { NodeProposal, ProposalStatus } from "./node-proposal-card";
+
+/** Tracks the status of each proposal by toolCallId */
+export interface ProposalStatusEntry {
+  status: ProposalStatus;
+  errorMessage?: string;
+}
 
 export function ChatWidget({
   selectedNodeId,
@@ -51,11 +58,13 @@ export function ChatWidget({
   onChatOpen,
   forceClose,
   onCustomNodeCreated,
+  isNodePanelOpen = false,
 }: ChatWidgetProps) {
   const { isSignedIn } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -83,6 +92,11 @@ export function ChatWidget({
   const [faqError, setFaqError] = useState<string | null>(null);
   const [faqLoading, setFaqLoading] = useState(false);
   const [hasLoadedFaqs, setHasLoadedFaqs] = useState(false);
+  const [isCreatingProposedNode, setIsCreatingProposedNode] = useState(false);
+  // Track proposal statuses locally to avoid AI continuation from addToolResult
+  const [proposalStatuses, setProposalStatuses] = useState<
+    Record<string, ProposalStatusEntry>
+  >({});
 
   const {
     isRecording,
@@ -114,6 +128,13 @@ export function ChatWidget({
     if (typeof window === "undefined") return;
     localStorage.setItem("chat-sidebar-collapsed", String(isSidebarCollapsed));
   }, [isSidebarCollapsed]);
+
+  // Auto-collapse sidebar when both chat and node info panel are open (to save screen space)
+  useEffect(() => {
+    if (isExpanded && isNodePanelOpen && isDesktop && !isSidebarCollapsed) {
+      setIsSidebarCollapsed(true);
+    }
+  }, [isExpanded, isNodePanelOpen, isDesktop, isSidebarCollapsed]);
 
   const activeThread = useMemo(() => {
     if (!activeThreadId) return null;
@@ -155,11 +176,18 @@ export function ChatWidget({
       setIsLoading(true);
       setStatusMessage(null);
     },
-    onFinish: () => {
+    onFinish: (message) => {
       setIsLoading(false);
       setStatusMessage(null);
       setStreamingMessageId(null);
-      if (isSignedIn && activeThreadId) {
+
+      // Check if the finished message has pending tool calls that need user confirmation
+      // If so, DON'T hydrate from DB as it would lose the tool invocation state
+      const hasPendingToolCalls = message.toolInvocations?.some(
+        (inv) => inv.state === "call" && inv.toolName === "proposeNode",
+      );
+
+      if (isSignedIn && activeThreadId && !hasPendingToolCalls) {
         void fetchThreadMessages(activeThreadId, {
           hydrate: true,
           silent: true,
@@ -614,7 +642,9 @@ export function ChatWidget({
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handleResize = () => {
-      setIsDesktop(window.innerWidth >= 1024);
+      const width = window.innerWidth;
+      setIsDesktop(width >= 1024);
+      setIsTablet(width >= 768 && width < 1024);
     };
     handleResize();
     window.addEventListener("resize", handleResize);
@@ -818,6 +848,104 @@ export function ChatWidget({
       setActiveThreadId,
       setInput,
     ],
+  );
+
+  /**
+   * Handle accepting a node proposal from the proposeNode tool.
+   * Creates the node directly via REST API, then updates local state.
+   * We use local state instead of addToolResult to avoid triggering AI continuation.
+   */
+  const handleProposalAccept = useCallback(
+    async (toolCallId: string, proposal: NodeProposal) => {
+      if (!isSignedIn) return;
+
+      setIsCreatingProposedNode(true);
+      setStatusMessage("Creating node...");
+
+      try {
+        // Transform checklistItems from strings to objects with id, title, completed
+        const formattedChecklistItems = proposal.checklistItems?.map(
+          (item, index) => ({
+            id: `item-${Date.now()}-${index}`,
+            title: item,
+            completed: false,
+          }),
+        );
+
+        // Create the node directly via REST API
+        const response = await fetch("/api/custom-nodes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roadmapId: roadmapId ?? "electrician-bc",
+            parentId: proposal.parentId,
+            title: proposal.title,
+            description: proposal.description,
+            type: proposal.type,
+            content: {
+              checklistItems: formattedChecklistItems ?? null,
+              resources: proposal.resources,
+              notes: proposal.notes,
+              dueDate: proposal.dueDate,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          throw new Error(errorData.error ?? "Failed to create node");
+        }
+
+        // Update local state to show accepted status (no AI continuation)
+        setProposalStatuses((prev) => ({
+          ...prev,
+          [toolCallId]: { status: "accepted" },
+        }));
+
+        // Notify the roadmap to refresh custom nodes
+        onCustomNodeCreated?.();
+
+        setStatusMessage("Node created successfully!");
+        setTimeout(() => setStatusMessage(null), 2000);
+      } catch (err) {
+        logger.error("Failed to create node from proposal", err);
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to create node";
+
+        // Update local state to show error status
+        setProposalStatuses((prev) => ({
+          ...prev,
+          [toolCallId]: { status: "error", errorMessage },
+        }));
+
+        setStatusMessage(errorMessage);
+        setTimeout(() => setStatusMessage(null), 3000);
+      } finally {
+        setIsCreatingProposedNode(false);
+      }
+    },
+    [isSignedIn, roadmapId, onCustomNodeCreated],
+  );
+
+  /**
+   * Handle declining a node proposal.
+   * Updates local state to show declined status without triggering AI continuation.
+   */
+  const handleProposalDecline = useCallback(
+    (toolCallId: string) => {
+      if (!isSignedIn) return;
+
+      // Update local state to show declined status (no AI continuation)
+      setProposalStatuses((prev) => ({
+        ...prev,
+        [toolCallId]: { status: "declined" },
+      }));
+
+      logger.info("Node proposal declined", { toolCallId });
+    },
+    [isSignedIn],
   );
 
   const handleHistoryToggle = () => {
@@ -1032,27 +1160,68 @@ export function ChatWidget({
         statusMessage={statusMessage}
         error={error}
         streamingMessageId={streamingMessageId}
-        containerRef={containerRef}
+        onProposalAccept={handleProposalAccept}
+        onProposalDecline={handleProposalDecline}
+        proposalDisabled={isCreatingProposedNode}
+        proposalStatuses={proposalStatuses}
       />
     );
   };
 
+  // Calculate responsive chat width based on screen size and node panel state
+  const chatWidth = useMemo(() => {
+    if (!isDesktop && !isTablet) {
+      // Mobile: full width with small margins
+      return "calc(100vw - 2rem)";
+    }
+
+    if (isTablet) {
+      // Tablet: constrained width, smaller when node panel is open
+      return isNodePanelOpen
+        ? "min(420px, calc(100vw - 2rem))"
+        : "min(500px, calc(100vw - 2rem))";
+    }
+
+    // Desktop: larger width, adjust for sidebar and node panel
+    if (isNodePanelOpen) {
+      // When node panel is open, always use collapsed sidebar width
+      return "min(500px, calc(100vw - 3rem))";
+    }
+
+    return isSidebarCollapsed
+      ? "min(700px, calc(100vw - 3rem))"
+      : "min(960px, calc(100vw - 3rem))";
+  }, [isDesktop, isTablet, isNodePanelOpen, isSidebarCollapsed]);
+
+  // Calculate responsive chat height
+  const chatHeight = useMemo(() => {
+    if (!isDesktop && !isTablet) {
+      // Mobile: taller to maximize screen usage
+      return "85vh";
+    }
+    return "75vh";
+  }, [isDesktop, isTablet]);
+
   return (
-    <div className="fixed right-6 bottom-6 z-40 flex flex-col items-end gap-3">
+    <div
+      className={cn(
+        "fixed z-40 flex flex-col items-end gap-3",
+        // Responsive positioning
+        isDesktop || isTablet ? "right-6 bottom-6" : "right-3 bottom-3",
+      )}
+    >
       {isExpanded && (
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{
             scale: 1,
             opacity: 1,
-            width:
-              isSidebarCollapsed && isDesktop
-                ? "min(700px, calc(100vw - 3rem))"
-                : "min(960px, calc(100vw - 3rem))",
+            width: chatWidth,
           }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="flex h-[75vh] max-h-[75vh] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur dark:border-white/10 dark:bg-[#1f2a37]/95"
+          style={{ height: chatHeight, maxHeight: chatHeight }}
+          className="flex overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_40px_160px_rgba(0,0,0,0.45)] backdrop-blur dark:border-white/10 dark:bg-[#1f2a37]/95"
         >
           <div className="flex h-full min-w-0 flex-1 flex-col">
             <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-white/10">

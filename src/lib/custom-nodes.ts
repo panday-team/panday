@@ -6,6 +6,7 @@ import {
   sanitizeBasicFormat,
   sanitizeJsonContent,
 } from "@/lib/sanitize";
+import { validateAndCorrectResources } from "@/lib/verified-urls";
 
 import type { CustomNode } from "@prisma/client";
 
@@ -39,17 +40,46 @@ export const UpdateCustomNodeSchema = z.object({
 
 export type UpdateCustomNodeInput = z.infer<typeof UpdateCustomNodeSchema>;
 
+/**
+ * Process content to validate and correct URLs in resources
+ * This catches common AI-generated URL mistakes and corrects them
+ */
+function processContentUrls(
+  content: Record<string, unknown> | undefined | null,
+): Record<string, unknown> | null {
+  if (!content) return null;
+
+  // Check if content has resources array
+  const resources = content.resources as
+    | Array<{ label: string; href: string }>
+    | undefined;
+
+  if (resources && Array.isArray(resources)) {
+    // Validate and correct URLs in resources
+    const correctedResources = validateAndCorrectResources(resources);
+    return {
+      ...content,
+      resources: correctedResources,
+    };
+  }
+
+  return content;
+}
+
 export async function createCustomNode(
   userId: string,
   input: CreateCustomNodeInput,
 ) {
   const validated = CreateCustomNodeSchema.parse(input);
 
+  // First, validate and correct URLs in resources
+  const contentWithCorrectedUrls = processContentUrls(validated.content);
+
   // Sanitize user input to prevent XSS attacks
   const sanitizedTitle = sanitizePlainText(validated.title);
   const sanitizedDescription = sanitizeBasicFormat(validated.description);
-  const sanitizedContent = validated.content
-    ? sanitizeJsonContent(validated.content, "BASIC_FORMAT")
+  const sanitizedContent = contentWithCorrectedUrls
+    ? sanitizeJsonContent(contentWithCorrectedUrls, "BASIC_FORMAT")
     : null;
 
   return db.customNode.create({
@@ -92,9 +122,16 @@ export async function updateCustomNode(
     validated.description !== undefined
       ? sanitizeBasicFormat(validated.description)
       : undefined;
-  const sanitizedContent =
+
+  // First, validate and correct URLs in resources
+  const contentWithCorrectedUrls =
     validated.content !== undefined
-      ? sanitizeJsonContent(validated.content, "BASIC_FORMAT")
+      ? processContentUrls(validated.content)
+      : undefined;
+
+  const sanitizedContent =
+    contentWithCorrectedUrls !== undefined
+      ? sanitizeJsonContent(contentWithCorrectedUrls ?? {}, "BASIC_FORMAT")
       : undefined;
 
   return db.customNode.update({

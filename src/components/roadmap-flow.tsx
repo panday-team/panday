@@ -30,7 +30,11 @@ import {
   type TerminalNodeType,
   type CategoryNodeType,
 } from "@/components/nodes";
-import { NodeInfoPanel, type Category } from "@/components/node-info-panel";
+import {
+  NodeInfoPanel,
+  type Category,
+  type CustomNodeEditData,
+} from "@/components/node-info-panel";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import {
   RoadmapTutorial,
@@ -78,8 +82,11 @@ type FlowNode =
 type FlowEdge = Edge;
 
 // Type definition for custom node content JSON field
+// checklistItems can be either old format (string[]) or new format (object[])
 interface CustomNodeContent {
-  checklistItems?: Array<{ id: string; title: string; completed: boolean }>;
+  checklistItems?: Array<
+    string | { id: string; title: string; completed: boolean }
+  >;
   resources?: Array<{ label: string; href: string }>;
   notes?: string;
   dueDate?: string;
@@ -476,6 +483,14 @@ function RoadmapFlowInner({
           isExpanded = isCategorySelected || hasChildSelected;
         }
 
+        const progress = calculateNodeProgress(
+          graphNode.id,
+          nodeType,
+          nodeStatuses,
+          roadmap.graph.nodes,
+          roadmap.content,
+        );
+
         return {
           id: graphNode.id,
           type: nodeType,
@@ -494,6 +509,7 @@ function RoadmapFlowInner({
             isExpanded,
             isSelected: selectedNodeId === graphNode.id,
             animationIndex,
+            progress: progress?.percentage ?? undefined,
           },
           sourcePosition: stringToPosition(graphNode.sourcePosition),
           targetPosition: stringToPosition(graphNode.targetPosition),
@@ -760,31 +776,11 @@ function RoadmapFlowInner({
     setEdges(initialEdges);
   }, [initialEdges, setEdges]);
 
-  // Update nodes when selection changes (for animations to work)
+  // Update nodes when initialNodes changes (includes status and progress updates)
+  // initialNodes already recalculates when nodeStatuses changes, so this handles both
   useEffect(() => {
     setNodes(initialNodes);
   }, [initialNodes, setNodes]);
-
-  // Update nodes when statuses change (optimized to only update changed nodes)
-  useEffect(() => {
-    setNodes((currentNodes) =>
-      currentNodes.map((node) => {
-        const newStatus = nodeStatuses[node.id] ?? "base";
-        // Only update nodes that have a status property (skip CategoryNodeData)
-        if ("status" in node.data && node.data.status !== newStatus) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              status: newStatus,
-            },
-          };
-        }
-        // Return same reference = no re-render for this node
-        return node;
-      }),
-    );
-  }, [nodeStatuses, setNodes]);
 
   // Physics-based collision avoidance for custom nodes
   useEffect(() => {
@@ -1365,6 +1361,21 @@ function RoadmapFlowInner({
       // Parse content JSON field for rich data with explicit type cast for better IDE support
       const contentData = customNode.content as CustomNodeContent | null;
 
+      // Normalize checklistItems to handle both old format (string[]) and new format (object[])
+      const rawItems = contentData?.checklistItems ?? [];
+      const normalizedChecklistItems = rawItems.map((item, index) => {
+        // If item is a string (old format), convert to object
+        if (typeof item === "string") {
+          return {
+            id: `legacy-${customNode.id}-${index}`,
+            title: item,
+            completed: false,
+          };
+        }
+        // Already an object (new format)
+        return item;
+      });
+
       return {
         frontmatter: {
           id: customNode.id,
@@ -1379,7 +1390,7 @@ function RoadmapFlowInner({
         benefits: [],
         outcomes: [],
         resources: contentData?.resources ?? [],
-        checklistItems: contentData?.checklistItems ?? [],
+        checklistItems: normalizedChecklistItems,
       };
     }
 
@@ -1508,6 +1519,44 @@ function RoadmapFlowInner({
     );
   }, [selectedNodeId, roadmap, nodeStatuses]);
 
+  // Get parent node info for back navigation
+  const selectedNodeParent = useMemo(() => {
+    if (!selectedNodeId) return null;
+
+    // Check if it's a custom node first
+    const customNode = customNodes?.find((n) => n.id === selectedNodeId);
+    if (customNode) {
+      // Custom nodes have parentId as a comma-separated string, use first parent
+      const firstParentId = customNode.parentId.split(",")[0]?.trim();
+      if (firstParentId) {
+        const parentContent = roadmap.content.get(firstParentId);
+        return {
+          id: firstParentId,
+          title: parentContent?.frontmatter.title ?? firstParentId,
+        };
+      }
+      return null;
+    }
+
+    // Find the selected graph node
+    const graphNode = roadmap.graph.nodes.find((n) => n.id === selectedNodeId);
+    if (!graphNode) return null;
+
+    // Get parent ID (use first parent if multiple)
+    const parentId = graphNode.parentIds?.[0] ?? graphNode.parentId ?? null;
+    if (!parentId) return null;
+
+    // Get parent content for title
+    const parentContent = roadmap.content.get(parentId);
+
+    // For category nodes (resources, actions, roadblocks), return the parent hub
+    // For checklist nodes, return their parent category
+    return {
+      id: parentId,
+      title: parentContent?.frontmatter.title ?? parentId,
+    };
+  }, [selectedNodeId, roadmap, customNodes]);
+
   // Handle navigation from Quick Navigation dropdown
   const handleNavigateToNode = useCallback(
     (nodeId: string) => {
@@ -1577,6 +1626,40 @@ function RoadmapFlowInner({
       }
     },
     [onRefreshCustomNodes, setNodes],
+  );
+
+  const handleEditCustomNode = useCallback(
+    async (nodeId: string, data: CustomNodeEditData) => {
+      try {
+        const response = await fetch(`/api/custom-nodes/${nodeId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: data.title,
+            description: data.description,
+            content: {
+              checklistItems: data.checklistItems,
+              resources: data.resources,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to update custom node");
+        }
+
+        // Refresh custom nodes from parent to sync with server state
+        if (onRefreshCustomNodes) {
+          onRefreshCustomNodes(nodeId);
+        }
+      } catch (error) {
+        logger.error("Failed to update custom node", error, { nodeId });
+        throw error; // Re-throw so the UI can handle it
+      }
+    },
+    [onRefreshCustomNodes],
   );
 
   // Handle initial node selection from URL deep link (e.g., /roadmap?node=foundation-program)
@@ -1767,16 +1850,20 @@ function RoadmapFlowInner({
               nodeStatus={nodeStatuses[selectedNodeId] ?? "base"}
               progress={selectedNodeProgress}
               isCustomNode={customNodes.some((n) => n.id === selectedNodeId)}
+              parentNodeId={selectedNodeParent?.id}
+              parentNodeTitle={selectedNodeParent?.title}
               onStatusChange={(status) =>
                 handleStatusChange(selectedNodeId, status)
               }
               onNavigateToNode={handleNavigateToNode}
               onChecklistStatusChange={handleStatusChange}
               onDeleteCustomNode={handleDeleteCustomNode}
+              onEditCustomNode={handleEditCustomNode}
               onCheckboxClick={() =>
                 handleTutorialInteraction("checkbox-click")
               }
               onDropdownOpen={() => handleTutorialInteraction("dropdown-open")}
+              onClose={onPaneClick}
             />
           </div>
         </div>
@@ -1799,6 +1886,7 @@ function RoadmapFlowInner({
         onChatOpen={() => handleTutorialInteraction("chat-open")}
         forceClose={showTutorial}
         onCustomNodeCreated={onRefreshCustomNodes}
+        isNodePanelOpen={!!selectedNodeId && !!selectedContent}
       />
 
       <RoadmapTutorial
