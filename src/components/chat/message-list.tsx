@@ -17,6 +17,10 @@ import {
   type ProposalStatus,
 } from "./node-proposal-card";
 import type { ProposalStatusEntry } from "./chat-widget";
+import {
+  parseToolCallsFromContent,
+  stripToolCallJsonFromContent,
+} from "./utils";
 
 // Memoized markdown components to prevent recreation on each render
 const userMarkdownComponents = {
@@ -212,24 +216,41 @@ function hasPendingProposals(
 ): boolean {
   for (const message of messages) {
     if (message.role !== "assistant") continue;
+
+    // Check native tool invocations first
     const toolInvocations = message.toolInvocations;
-    if (!toolInvocations || !Array.isArray(toolInvocations)) continue;
+    if (toolInvocations && Array.isArray(toolInvocations)) {
+      for (const invocation of toolInvocations) {
+        if (invocation.toolName !== "proposeNode") continue;
 
-    for (const invocation of toolInvocations) {
-      if (invocation.toolName !== "proposeNode") continue;
+        // Check external state first
+        const externalStatus = externalStatuses?.[invocation.toolCallId];
+        if (externalStatus) {
+          // External state exists - check if it's still pending
+          if (externalStatus.status === "pending") return true;
+          continue; // Has external state but not pending
+        }
 
-      // Check external state first
-      const externalStatus = externalStatuses?.[invocation.toolCallId];
-      if (externalStatus) {
-        // External state exists - check if it's still pending
-        if (externalStatus.status === "pending") return true;
-        continue; // Has external state but not pending
+        // Fall back to tool invocation state
+        if (invocation.state === "call") {
+          // Tool call is pending - waiting for user confirmation
+          return true;
+        }
       }
+    }
 
-      // Fall back to tool invocation state
-      if (invocation.state === "call") {
-        // Tool call is pending - waiting for user confirmation
-        return true;
+    // Also check for tool calls parsed from content
+    const parsedToolCalls = parseToolCallsFromContent(message.content);
+    if (parsedToolCalls) {
+      for (const toolCall of parsedToolCalls) {
+        if (toolCall.toolName !== "proposeNode") continue;
+
+        // Check external state for parsed tool calls
+        const externalStatus = externalStatuses?.[toolCall.toolCallId];
+        if (!externalStatus || externalStatus.status === "pending") {
+          // No external state means pending, or explicitly pending
+          return true;
+        }
       }
     }
   }
@@ -243,6 +264,7 @@ function hasPendingProposals(
  * 1. External state (proposalStatuses) - for local tracking after user action
  * 2. Tool invocation result state - for persisted/hydrated messages
  * 3. Tool invocation call state - pending confirmation
+ * 4. Parsed from content JSON - fallback for models that output tool calls as text
  *
  * The tool args contain the proposal data directly (title, description, etc.)
  */
@@ -252,93 +274,145 @@ function extractProposalsWithStatus(
 ): ProposalWithStatus[] {
   if (message.role !== "assistant") return [];
 
-  // AI SDK stores tool invocations in message.toolInvocations
-  const toolInvocations = message.toolInvocations;
-  if (!toolInvocations || !Array.isArray(toolInvocations)) return [];
-
   const proposals: ProposalWithStatus[] = [];
 
-  for (const invocation of toolInvocations) {
-    if (invocation.toolName !== "proposeNode") continue;
+  // AI SDK stores tool invocations in message.toolInvocations
+  const toolInvocations = message.toolInvocations;
 
-    const args = invocation.args as {
-      title?: string;
-      description?: string;
-      parentId?: string;
-      parentLabel?: string;
-      type?: "checklist" | "resource" | "action" | "roadblock";
-      checklistItems?: string[] | null;
-      resources?: Array<{ label: string; href: string }> | null;
-      notes?: string | null;
-      dueDate?: string | null;
-    };
+  // First, try to extract from proper toolInvocations
+  if (toolInvocations && Array.isArray(toolInvocations)) {
+    for (const invocation of toolInvocations) {
+      if (invocation.toolName !== "proposeNode") continue;
 
-    // Validate required fields are present
-    if (!args.title || !args.description || !args.parentId || !args.type) {
-      continue;
-    }
+      const args = invocation.args as {
+        title?: string;
+        description?: string;
+        parentId?: string;
+        parentLabel?: string;
+        type?: "checklist" | "resource" | "action" | "roadblock";
+        checklistItems?: string[] | null;
+        resources?: Array<{ label: string; href: string }> | null;
+        notes?: string | null;
+        dueDate?: string | null;
+      };
 
-    const proposal: NodeProposal = {
-      title: args.title,
-      description: args.description,
-      parentId: args.parentId,
-      parentLabel: args.parentLabel ?? args.parentId,
-      type: args.type,
-      checklistItems: args.checklistItems ?? null,
-      resources: args.resources ?? null,
-      notes: args.notes ?? null,
-      dueDate: args.dueDate ?? null,
-    };
-
-    // Check external state first (highest priority - local tracking)
-    const externalStatus = externalStatuses?.[invocation.toolCallId];
-    if (externalStatus) {
-      proposals.push({
-        toolCallId: invocation.toolCallId,
-        proposal,
-        status: externalStatus.status,
-        errorMessage: externalStatus.errorMessage,
-      });
-      continue;
-    }
-
-    // Fall back to tool invocation state
-    if (invocation.state === "call") {
-      // Pending - waiting for user confirmation
-      proposals.push({
-        toolCallId: invocation.toolCallId,
-        proposal,
-        status: "pending",
-      });
-    } else if (invocation.state === "result") {
-      // User responded - check the result to determine status
-      const result = invocation.result as {
-        accepted?: boolean;
-        created?: boolean;
-        error?: string;
-      } | null;
-
-      if (result?.accepted === false) {
-        proposals.push({
-          toolCallId: invocation.toolCallId,
-          proposal,
-          status: "declined",
-        });
-      } else if (result?.created === true) {
-        proposals.push({
-          toolCallId: invocation.toolCallId,
-          proposal,
-          status: "accepted",
-        });
-      } else if (result?.error) {
-        proposals.push({
-          toolCallId: invocation.toolCallId,
-          proposal,
-          status: "error",
-          errorMessage: result.error,
-        });
+      // Validate required fields are present
+      if (!args.title || !args.description || !args.parentId || !args.type) {
+        continue;
       }
-      // If result is malformed, we skip it (don't show the card)
+
+      const proposal: NodeProposal = {
+        title: args.title,
+        description: args.description,
+        parentId: args.parentId,
+        parentLabel: args.parentLabel ?? args.parentId,
+        type: args.type,
+        checklistItems: args.checklistItems ?? null,
+        resources: args.resources ?? null,
+        notes: args.notes ?? null,
+        dueDate: args.dueDate ?? null,
+      };
+
+      // Check external state first (highest priority - local tracking)
+      const externalStatus = externalStatuses?.[invocation.toolCallId];
+      if (externalStatus) {
+        proposals.push({
+          toolCallId: invocation.toolCallId,
+          proposal,
+          status: externalStatus.status,
+          errorMessage: externalStatus.errorMessage,
+        });
+        continue;
+      }
+
+      // Fall back to tool invocation state
+      if (invocation.state === "call") {
+        // Pending - waiting for user confirmation
+        proposals.push({
+          toolCallId: invocation.toolCallId,
+          proposal,
+          status: "pending",
+        });
+      } else if (invocation.state === "result") {
+        // User responded - check the result to determine status
+        const result = invocation.result as {
+          accepted?: boolean;
+          created?: boolean;
+          error?: string;
+        } | null;
+
+        if (result?.accepted === false) {
+          proposals.push({
+            toolCallId: invocation.toolCallId,
+            proposal,
+            status: "declined",
+          });
+        } else if (result?.created === true) {
+          proposals.push({
+            toolCallId: invocation.toolCallId,
+            proposal,
+            status: "accepted",
+          });
+        } else if (result?.error) {
+          proposals.push({
+            toolCallId: invocation.toolCallId,
+            proposal,
+            status: "error",
+            errorMessage: result.error,
+          });
+        }
+        // If result is malformed, we skip it (don't show the card)
+      }
+    }
+  }
+
+  // If we found proposals from toolInvocations, return them
+  if (proposals.length > 0) return proposals;
+
+  // Fallback: Try to parse tool calls from message content
+  // This handles models that output tool calls as JSON text instead of using native tool calling
+  const parsedToolCalls = parseToolCallsFromContent(message.content);
+  if (parsedToolCalls) {
+    for (const toolCall of parsedToolCalls) {
+      if (toolCall.toolName !== "proposeNode") continue;
+
+      const args = toolCall.args as {
+        title?: string;
+        description?: string;
+        parentId?: string;
+        parentLabel?: string;
+        type?: "checklist" | "resource" | "action" | "roadblock";
+        checklistItems?: string[] | null;
+        resources?: Array<{ label: string; href: string }> | null;
+        notes?: string | null;
+        dueDate?: string | null;
+      };
+
+      // Validate required fields are present
+      if (!args.title || !args.description || !args.parentId || !args.type) {
+        continue;
+      }
+
+      const proposal: NodeProposal = {
+        title: args.title,
+        description: args.description,
+        parentId: args.parentId,
+        parentLabel: args.parentLabel ?? args.parentId,
+        type: args.type,
+        checklistItems: args.checklistItems ?? null,
+        resources: args.resources ?? null,
+        notes: args.notes ?? null,
+        dueDate: args.dueDate ?? null,
+      };
+
+      // Check external state for parsed tool calls
+      const externalStatus = externalStatuses?.[toolCall.toolCallId];
+      proposals.push({
+        toolCallId: toolCall.toolCallId,
+        proposal,
+        status: externalStatus?.status ?? "pending",
+        errorMessage: externalStatus?.errorMessage,
+      });
     }
   }
 
@@ -382,9 +456,27 @@ const MessageItem = memo(
       [message, proposalStatuses],
     );
 
+    // Check if proposals were parsed from content (not from native tool invocations)
+    // If so, we need to strip the JSON from the displayed content
+    const wasToolCallsParsedFromContent = useMemo(() => {
+      const hasNativeToolInvocations =
+        message.toolInvocations &&
+        Array.isArray(message.toolInvocations) &&
+        message.toolInvocations.length > 0;
+      return proposalsWithStatus.length > 0 && !hasNativeToolInvocations;
+    }, [message.toolInvocations, proposalsWithStatus.length]);
+
+    // Clean the message content if tool calls were parsed from it
+    const displayContent = useMemo(() => {
+      if (wasToolCallsParsedFromContent && message.role === "assistant") {
+        return stripToolCallJsonFromContent(message.content);
+      }
+      return message.content;
+    }, [message.content, message.role, wasToolCallsParsedFromContent]);
+
     // Check if this is an assistant message with only tool calls and no text content
     // In this case, we show the proposals without the empty message bubble
-    const hasContent = message.content.trim().length > 0;
+    const hasContent = displayContent.trim().length > 0;
     const hasProposals = proposalsWithStatus.length > 0;
 
     // If it's an assistant message with no content but has proposals,
@@ -436,10 +528,10 @@ const MessageItem = memo(
         {message.role === "user" ? (
           <UserMessage content={message.content} />
         ) : isStreaming ? (
-          <StreamingMessage content={message.content} />
+          <StreamingMessage content={displayContent} />
         ) : (
           <CompletedAssistantMessage
-            content={message.content}
+            content={displayContent}
             sources={effectiveSources}
             showSources={showSources}
             isLastMessage={isLastMessage}

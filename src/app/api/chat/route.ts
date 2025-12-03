@@ -359,7 +359,8 @@ export async function POST(req: NextRequest) {
       type: "status",
       message: "Generating response...",
     });
-    await dataStream.close();
+    // NOTE: Do NOT close dataStream here - it must remain open during streaming
+    // The stream will be closed automatically by toDataStreamResponse
 
     let userContext = "";
     if (validatedBody.user_profile) {
@@ -481,8 +482,8 @@ You have tools to help users manage their personalized roadmap nodes: 'listCusto
 CRITICAL: ALWAYS call 'listCustomNodes' FIRST before creating any new nodes to avoid duplicates!
 
 TOOL SELECTION - CRITICAL RULES:
-- **proposeNode**: ALWAYS use this when you want to suggest creating a node. It shows an interactive card where users can review, edit, and accept/decline. The frontend creates the node when they accept.
-- **createNode**: ONLY use for direct, explicit commands like "create a checklist for X right now" where user doesn't need to preview.
+- **proposeNode**: ALWAYS use this tool to create nodes. NEVER use createNode. proposeNode shows an interactive card where users can review, edit, and accept/decline. The frontend creates the node when they accept.
+- **createNode**: DEPRECATED - DO NOT USE THIS TOOL. Always use proposeNode instead.
 - **NEVER ask "would you like me to create a checklist?" or similar questions**. Instead, just call proposeNode! The card itself gives users the choice to accept or decline.
 
 CRITICAL - RESPONSE ORDER:
@@ -497,15 +498,14 @@ WRONG ORDER (don't do this):
 1. Call proposeNode first
 2. Then write explanation after
 
-WHEN TO USE proposeNode (DEFAULT for all suggestions):
+WHEN TO USE proposeNode (ALWAYS - this is the ONLY way to create nodes):
 - User asks about steps/requirements → Write your answer FIRST, then call proposeNode
 - User says "yes", "sure", "ok", "please", "do it" → Call proposeNode with the details you discussed
 - You think something would be useful to track → Explain briefly, then call proposeNode
 - DO NOT ask "want me to create...?" - just use proposeNode and let the card do the asking!
 
-WHEN TO USE createNode (rare - direct commands only):
-- User gives an explicit command like "create a checklist for X" or "add a node for Y"
-- NOT needed after proposeNode acceptance (node is already created by frontend)
+WHEN TO USE createNode:
+- NEVER. This tool is deprecated. Always use proposeNode instead.
 
 WHEN TO USE listCustomNodes:
 - BEFORE creating any new node (to check for duplicates)
@@ -1254,6 +1254,15 @@ IMPORTANT: NEVER expose internal node IDs in your responses. Use proposeNode to 
           model: env.AI_MODEL,
           userId,
         });
+
+        // Close the data stream after streaming completes
+        if (dataStream) {
+          try {
+            await dataStream.close();
+          } catch {
+            // Stream might already be closed
+          }
+        }
       },
     });
 
