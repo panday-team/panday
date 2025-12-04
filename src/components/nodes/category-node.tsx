@@ -1,8 +1,14 @@
-import { memo, useEffect, useRef } from "react";
+import { memo, useRef, useId } from "react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { BaseNode } from "@/components/base-node";
 import { NodeAppendix } from "@/components/node-appendix";
-import { motion, AnimatePresence } from "motion/react";
+import {
+  motion,
+  AnimatePresence,
+  useInView,
+  useTime,
+  useTransform,
+} from "motion/react";
 import Image from "next/image";
 import {
   Brain,
@@ -30,28 +36,66 @@ const iconMap: Record<string, LucideIcon> = {
   "traffic-cone": TrafficCone,
 };
 
-/**
- * Medium-sized category node (96x96px) that sits between hub nodes and checklist nodes
- * Used to organize checklist nodes into Resources, Actions, and Roadblocks
- */
+// Animation constants
+const NODE_SIZE = 96; // px
+const WAVE_AMPLITUDE = 3; // px - how high the wave peaks
+const WAVE_PERIOD = 2000; // ms - time for one full wave cycle
+const SHIMMER_PERIOD = 3000; // ms - time for shimmer to sweep across
+
 /**
  * Darkens a hex color by a given percentage
  */
 function darkenColor(hex: string, percent: number): string {
-  // Remove # if present
   const cleanHex = hex.replace("#", "");
-  // Convert to RGB
   const r = parseInt(cleanHex.substring(0, 2), 16);
   const g = parseInt(cleanHex.substring(2, 4), 16);
   const b = parseInt(cleanHex.substring(4, 6), 16);
-  // Darken each component
   const newR = Math.max(0, Math.floor(r * (1 - percent / 100)));
   const newG = Math.max(0, Math.floor(g * (1 - percent / 100)));
   const newB = Math.max(0, Math.floor(b * (1 - percent / 100)));
-  // Convert back to hex
   return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
 }
 
+/**
+ * Generates an SVG path for the wave-topped fill area
+ * Creates a smooth sine wave at the top edge of the progress fill
+ */
+function generateWavePath(
+  percentage: number,
+  waveOffset: number,
+  size: number,
+): string {
+  if (percentage <= 0) return "";
+  if (percentage >= 100) {
+    // Full circle - no wave needed, just a rectangle covering the circle
+    return `M 0 0 L ${size} 0 L ${size} ${size} L 0 ${size} Z`;
+  }
+
+  const fillHeight = (percentage / 100) * size;
+  const baseY = size - fillHeight;
+
+  // Create wave points across the width using smooth sine curve
+  const points: string[] = [];
+  const numPoints = 24; // Number of points for smooth curve
+
+  for (let i = 0; i <= numPoints; i++) {
+    const x = (i / numPoints) * size;
+    // Sine wave with phase offset based on time - creates 1.5 waves across width
+    const waveY =
+      Math.sin((i / numPoints) * Math.PI * 3 + waveOffset) * WAVE_AMPLITUDE;
+    const y = baseY + waveY;
+    points.push(`${x.toFixed(2)} ${y.toFixed(2)}`);
+  }
+
+  // Build the path: start bottom-left, go up left edge, draw wave across top, down right edge, close
+  return `M 0 ${size} L 0 ${points[0]?.split(" ")[1]} L ${points.join(" L ")} L ${size} ${size} Z`;
+}
+
+/**
+ * Medium-sized category node (96x96px) that sits between hub nodes and checklist nodes
+ * Used to organize checklist nodes into Resources, Actions, and Roadblocks
+ * Features liquid wave animation and shimmer effect on progress fill
+ */
 function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
   const {
     label,
@@ -63,18 +107,39 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
   } = data;
 
   const percentage = data.progress ?? 0;
-  const borderColor = darkenColor(color, 30); // Darken by 30%
-  const fillRef = useRef<HTMLSpanElement>(null);
+  const borderColor = darkenColor(color, 30);
 
-  // Sync WebkitClipPath with percentage changes (vendor prefix needs manual update)
-  useEffect(() => {
-    if (fillRef.current) {
-      fillRef.current.style.setProperty(
-        "-webkit-clip-path",
-        `inset(${100 - percentage}% 0 0 0)`,
-      );
-    }
-  }, [percentage]);
+  // Refs for visibility detection
+  const nodeRef = useRef<HTMLDivElement>(null);
+  const clipPathId = useId();
+
+  // Detect if node is in viewport (with margin for smooth transition)
+  const isInView = useInView(nodeRef, {
+    margin: "100px",
+    initial: true,
+  });
+
+  // Time-based animation driver
+  const time = useTime();
+
+  // Wave animation - oscillates the wave phase when in view
+  const wavePhase = useTransform(time, (t) => {
+    if (!isInView || percentage === 0 || percentage >= 100) return 0;
+    return (t / WAVE_PERIOD) * Math.PI * 2;
+  });
+
+  // Generate wave path reactively
+  const wavePath = useTransform(wavePhase, (phase) =>
+    generateWavePath(percentage, phase, NODE_SIZE),
+  );
+
+  // Shimmer animation - sweeps across every SHIMMER_PERIOD ms
+  const shimmerX = useTransform(time, (t) => {
+    if (!isInView || percentage === 0) return -150;
+    const cycle = ((t % SHIMMER_PERIOD) / SHIMMER_PERIOD) * 100;
+    // Move from -150% to 150% for full sweep across circular area
+    return -150 + cycle * 3;
+  });
 
   const hiddenHandleClass =
     "pointer-events-none opacity-0 h-3 w-3 bg-transparent border-transparent";
@@ -83,6 +148,7 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
 
   return (
     <motion.div
+      ref={nodeRef}
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{
         opacity: isDimmed ? 0.3 : 1,
@@ -117,15 +183,19 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
           <p>{label}</p>
         </NodeAppendix>
 
-        {/* Outer glow with subtle pulsing */}
+        {/* Outer glow with subtle pulsing - pauses when off-screen */}
         <motion.span
           aria-hidden
           className="pointer-events-none absolute h-[110px] w-[110px] rounded-full"
           style={{ backgroundColor: `${color}2E` }}
-          animate={{
-            scale: [1, 1.05, 1],
-            opacity: [0.2, 0.3, 0.2],
-          }}
+          animate={
+            isInView
+              ? {
+                  scale: [1, 1.05, 1],
+                  opacity: [0.2, 0.3, 0.2],
+                }
+              : { scale: 1, opacity: 0.2 }
+          }
           transition={{
             duration: 4,
             repeat: Infinity,
@@ -133,30 +203,70 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
           }}
         />
 
+        {/* SVG definitions for wave clip path */}
+        <svg
+          className="pointer-events-none absolute"
+          aria-hidden
+          style={{ position: "absolute", width: 0, height: 0 }}
+        >
+          <defs>
+            <clipPath id={clipPathId}>
+              <motion.path d={wavePath} />
+            </clipPath>
+          </defs>
+        </svg>
+
         {/* Base circle */}
         <span
           aria-hidden
           className="pointer-events-none absolute z-0 h-24 w-24 rounded-full"
           style={{ backgroundColor: "#FFFFFF" }}
         />
-        {/* Progress fill overlay */}
+
+        {/* Progress fill with wave effect */}
         <motion.span
-          ref={fillRef}
           aria-hidden
-          className="pointer-events-none absolute z-10 h-24 w-24 rounded-full"
+          className="pointer-events-none absolute z-10 h-24 w-24 overflow-hidden rounded-full"
           style={{
             backgroundColor: color,
+            clipPath: `url(#${clipPathId})`,
           }}
           initial={false}
           animate={{
-            clipPath: `inset(${100 - percentage}% 0 0 0)`,
             opacity: percentage > 0 ? 1 : 0,
           }}
           transition={{
             duration: 0.6,
-            ease: [0.4, 0, 0.2, 1], // ease-in-out cubic bezier
+            ease: [0.4, 0, 0.2, 1],
           }}
         />
+
+        {/* Shimmer overlay - sweeps across the fill */}
+        {percentage > 0 && (
+          <motion.span
+            aria-hidden
+            className="pointer-events-none absolute z-[11] h-24 w-24 overflow-hidden rounded-full"
+            style={{
+              clipPath: `url(#${clipPathId})`,
+            }}
+          >
+            <motion.span
+              className="absolute inset-0"
+              style={{
+                background: `linear-gradient(
+                  110deg,
+                  transparent 0%,
+                  transparent 40%,
+                  rgba(255, 255, 255, 0.25) 50%,
+                  transparent 60%,
+                  transparent 100%
+                )`,
+                backgroundSize: "200% 100%",
+                x: shimmerX,
+              }}
+            />
+          </motion.span>
+        )}
 
         {/* Colored border ring */}
         <span
