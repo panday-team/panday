@@ -31,6 +31,11 @@ export default async function RoadmapPage() {
       redirect("/onboarding");
     }
 
+    // Cast to extended type to handle pendingLevelUp field (added in migration)
+    const extendedProfile = dbProfile as typeof dbProfile & {
+      pendingLevelUp?: string | null;
+    };
+
     userProfile = {
       id: dbProfile.id,
       clerkUserId: dbProfile.clerkUserId,
@@ -41,6 +46,8 @@ export default async function RoadmapPage() {
       residencyStatus: dbProfile.residencyStatus as ResidencyStatus,
       onboardingCompletedAt: dbProfile.onboardingCompletedAt,
       tutorialCompletedAt: dbProfile.tutorialCompletedAt,
+      pendingLevelUp:
+        (extendedProfile.pendingLevelUp as ApprenticeshipLevel) ?? null,
       createdAt: dbProfile.createdAt,
       updatedAt: dbProfile.updatedAt,
     };

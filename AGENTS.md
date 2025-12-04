@@ -360,12 +360,19 @@
   - `useLevelUpDetection()` monitors `nodeStatuses` changes and calculates progress for current level
   - Only triggers celebration at the moment of 100% completion (not on page load if already complete)
   - Tracks celebrated levels to avoid duplicate triggers
+  - Accepts `pendingLevelUp` parameter to skip showing modal if user already dismissed it
   - Returns `{ isLevelComplete, completedNodeId, completedNodeTitle, progress, clearLevelUp }`
 - **Celebration Modal** (`src/components/level-up-celebration.tsx`):
   - Confetti animation with 50 particles in brand colors
   - Modal shows completed level title, progress stats, and next level badge
   - Two actions: "Continue to [Next Level]" or "Stay Here"
   - Red Seal completion shows "Congratulations!" with trophy icon (final achievement)
+- **Deferred Progression** (Nov 2025):
+  - **"Stay Here" Behavior**: When user clicks "Stay Here", `pendingLevelUp` is saved to database with current level
+  - **Profile Card Banner**: If `pendingLevelUp` is set, navigation card shows "Ready to progress!" button instead of auto-popup
+  - **Banner Click**: Opens the celebration modal again, allowing user to advance when ready
+  - **Auto-Clear**: `pendingLevelUp` is automatically cleared when user advances to next level via `PATCH /api/profile`
+  - **No Duplicate Popups**: If `pendingLevelUp === currentLevel`, the celebration modal won't auto-trigger on page refresh
 - **Level Advancement**:
   - "Continue" button calls `PATCH /api/profile` to update `currentLevel`
   - After API success, viewport pans smoothly to next level node

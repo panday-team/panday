@@ -45,7 +45,7 @@ import { ZoomSlider } from "@/components/zoom-slider";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, Home, BookOpenText } from "lucide-react";
+import { Settings, Home, BookOpenText, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { SignInButton } from "@clerk/nextjs";
 import type { Roadmap } from "@/data/types/roadmap";
@@ -215,7 +215,36 @@ function RoadmapFlowInner({
     graphNodes: roadmap.graph.nodes,
     contentMap: roadmap.content,
     enabled: !!userProfile,
+    pendingLevelUp: userProfile?.pendingLevelUp ?? null,
   });
+
+  // Compute progress data for pending level up (when banner is shown)
+  const pendingLevelProgress = useMemo(() => {
+    if (!userProfile?.pendingLevelUp) return null;
+
+    const nodeId = getCurrentLevelNodeId(
+      userProfile.pendingLevelUp,
+      userProfile.specialization,
+    );
+    if (!nodeId) return null;
+
+    const nodeContent = roadmap.content.get(nodeId);
+    if (!nodeContent) return null;
+
+    const progress = calculateNodeProgress(
+      nodeId,
+      nodeContent.frontmatter.type,
+      nodeStatuses,
+      roadmap.graph.nodes,
+      roadmap.content,
+    );
+
+    return {
+      nodeId,
+      nodeTitle: nodeContent.frontmatter.title,
+      progress,
+    };
+  }, [userProfile, nodeStatuses, roadmap]);
 
   // Show celebration modal when level is complete
   useEffect(() => {
@@ -1271,11 +1300,26 @@ function RoadmapFlowInner({
     }
   }, [userProfile, levelUpDetection, fitView]);
 
-  // Handle staying at current level (dismiss celebration)
-  const handleStayAtLevel = useCallback(() => {
+  // Handle staying at current level (dismiss celebration and save pending state)
+  const handleStayAtLevel = useCallback(async () => {
     setShowLevelUpCelebration(false);
     levelUpDetection.clearLevelUp();
-  }, [levelUpDetection]);
+
+    // Save pendingLevelUp to database so banner shows on refresh
+    if (userProfile) {
+      try {
+        await fetch("/api/profile", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pendingLevelUp: userProfile.currentLevel }),
+        });
+      } catch (error) {
+        logger.error("Failed to save pending level up", error as Error, {
+          currentLevel: userProfile.currentLevel,
+        });
+      }
+    }
+  }, [levelUpDetection, userProfile]);
 
   const handleTutorialStepChange = useCallback(
     (step: TutorialStep) => {
@@ -1840,48 +1884,68 @@ function RoadmapFlowInner({
         <div className="pointer-events-auto">
           {userProfile ? (
             <Card className="bg-background/95 supports-[backdrop-filter]:bg-background/80 p-4 backdrop-blur">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant="default"
-                      className="bg-teal-500/20 text-teal-700 ring-teal-500/30 dark:text-teal-300"
-                    >
-                      {LEVEL_METADATA[userProfile.currentLevel].shortLabel}
-                    </Badge>
-                    <span className="text-sm font-medium">Welcome back!</span>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="default"
+                        className="bg-teal-500/20 text-teal-700 ring-teal-500/30 dark:text-teal-300"
+                      >
+                        {LEVEL_METADATA[userProfile.currentLevel].shortLabel}
+                      </Badge>
+                      <span className="text-sm font-medium">Welcome back!</span>
+                    </div>
+                    <p className="text-muted-foreground text-xs">
+                      {LEVEL_METADATA[userProfile.currentLevel].label}
+                    </p>
                   </div>
-                  <p className="text-muted-foreground text-xs">
-                    {LEVEL_METADATA[userProfile.currentLevel].label}
-                  </p>
-                </div>
-                <div className="flex gap-1">
-                  <div className="relative">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={handleTutorialOpen}
-                    >
-                      <BookOpenText className="h-4 w-4" />
-                    </Button>
-                    {showTutorialSkipAlert && (
-                      <div className="animate-tutorial-slide-down absolute top-10 right-0 z-50 rounded-md bg-yellow-400 px-3 py-2 text-xs font-medium whitespace-nowrap text-black shadow-lg">
-                        Tutorial skipped! Click to restart.
-                      </div>
-                    )}
+                  <div className="flex gap-1">
+                    <div className="relative">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={handleTutorialOpen}
+                      >
+                        <BookOpenText className="h-4 w-4" />
+                      </Button>
+                      {showTutorialSkipAlert && (
+                        <div className="animate-tutorial-slide-down absolute top-10 right-0 z-50 rounded-md bg-yellow-400 px-3 py-2 text-xs font-medium whitespace-nowrap text-black shadow-lg">
+                          Tutorial skipped! Click to restart.
+                        </div>
+                      )}
+                    </div>
+                    <Link href="/">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Home className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Link href="/profile">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </Link>
                   </div>
-                  <Link href="/">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Home className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link href="/profile">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </Link>
                 </div>
+
+                {/* Ready to Progress Banner - shown when user clicked "Stay Here" on level up */}
+                {userProfile.pendingLevelUp &&
+                  userProfile.pendingLevelUp === userProfile.currentLevel && (
+                    <div className="border-t border-teal-500/20 pt-3">
+                      <Button
+                        size="sm"
+                        className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 text-white hover:from-teal-400 hover:to-emerald-400"
+                        onClick={() => {
+                          // Show the level up celebration modal
+                          setShowLevelUpCelebration(true);
+                        }}
+                      >
+                        <span className="mr-2">Ready to progress!</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
               </div>
             </Card>
           ) : (
@@ -2012,9 +2076,9 @@ function RoadmapFlowInner({
         onStepChange={handleTutorialStepChange}
       />
 
+      {/* Level-up celebration modal - shown either from detection or pending banner */}
       {userProfile &&
-        levelUpDetection.completedNodeId &&
-        levelUpDetection.progress && (
+        (levelUpDetection.completedNodeId && levelUpDetection.progress ? (
           <LevelUpCelebration
             open={showLevelUpCelebration}
             onOpenChange={setShowLevelUpCelebration}
@@ -2027,7 +2091,20 @@ function RoadmapFlowInner({
             onStayHere={handleStayAtLevel}
             isAdvancing={isAdvancingLevel}
           />
-        )}
+        ) : pendingLevelProgress?.progress ? (
+          <LevelUpCelebration
+            open={showLevelUpCelebration}
+            onOpenChange={setShowLevelUpCelebration}
+            currentLevel={userProfile.currentLevel}
+            specialization={userProfile.specialization}
+            completedNodeId={pendingLevelProgress.nodeId}
+            completedNodeTitle={pendingLevelProgress.nodeTitle}
+            progress={pendingLevelProgress.progress}
+            onAdvanceLevel={handleAdvanceLevel}
+            onStayHere={handleStayAtLevel}
+            isAdvancing={isAdvancingLevel}
+          />
+        ) : null)}
     </div>
   );
 }

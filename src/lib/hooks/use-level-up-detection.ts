@@ -23,6 +23,8 @@ interface UseLevelUpDetectionOptions {
   graphNodes: GraphNode[];
   contentMap: Map<string, NodeContent>;
   enabled?: boolean;
+  /** If set, skip showing celebration (user already dismissed it) */
+  pendingLevelUp?: ApprenticeshipLevel | null;
 }
 
 /**
@@ -36,6 +38,7 @@ export function useLevelUpDetection({
   graphNodes,
   contentMap,
   enabled = true,
+  pendingLevelUp,
 }: UseLevelUpDetectionOptions): LevelUpState & {
   clearLevelUp: () => void;
   checkLevelCompletion: () => void;
@@ -168,7 +171,8 @@ export function useLevelUpDetection({
       prevProgressRef.current = progress.percentage;
 
       // If already 100% on mount, mark as celebrated to avoid immediate trigger
-      if (progress.percentage === 100) {
+      // Also mark as celebrated if user has pending level up (they already dismissed the modal)
+      if (progress.percentage === 100 || pendingLevelUp === userCurrentLevel) {
         const celebrationKey = `${userCurrentLevel}-${currentLevelNodeId}`;
         celebratedLevelsRef.current.add(celebrationKey);
       }

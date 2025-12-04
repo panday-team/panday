@@ -142,10 +142,7 @@ export function LevelUpCelebration({
       <AnimatePresence>
         {open && (
           <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent
-              className="sm:max-w-md"
-              showCloseButton={!isAdvancing}
-            >
+            <DialogContent className="sm:max-w-md" showCloseButton={false}>
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}

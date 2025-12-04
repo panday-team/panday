@@ -34,6 +34,36 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 describe("Profile API Route", () => {
+  // Helper to create a base mock profile with all required fields
+  const createMockProfile = (
+    overrides: Partial<{
+      id: number;
+      clerkUserId: string;
+      trade: string;
+      currentLevel: string;
+      specialization: string;
+      residencyStatus: string;
+      onboardingCompletedAt: Date | null;
+      tutorialCompletedAt: Date | null;
+      pendingLevelUp: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+    }> = {},
+  ) => ({
+    id: 1,
+    clerkUserId: "user_123",
+    trade: TRADES.ELECTRICIAN,
+    currentLevel: APPRENTICESHIP_LEVELS.LEVEL_1,
+    specialization: ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
+    residencyStatus: RESIDENCY_STATUS.CITIZEN,
+    onboardingCompletedAt: new Date("2024-01-01"),
+    tutorialCompletedAt: null,
+    pendingLevelUp: null,
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-01"),
+    ...overrides,
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -41,11 +71,11 @@ describe("Profile API Route", () => {
   describe("GET /api/profile", () => {
     it("should return 401 if user is not authenticated", async () => {
       const { auth } = await import("@clerk/nextjs/server");
-       
+
       vi.mocked(auth).mockResolvedValueOnce({ userId: null } as any);
 
       const request = new NextRequest("http://localhost:3000/api/profile");
-       
+
       const response = await GET(request as any);
       const data = await response.json();
 
@@ -57,12 +87,11 @@ describe("Profile API Route", () => {
       const { auth } = await import("@clerk/nextjs/server");
       const { db } = await import("@/server/db");
 
-       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(null);
 
       const request = new NextRequest("http://localhost:3000/api/profile");
-       
+
       const response = await GET(request as any);
       const data = await response.json();
 
@@ -74,25 +103,13 @@ describe("Profile API Route", () => {
       const { auth } = await import("@clerk/nextjs/server");
       const { db } = await import("@/server/db");
 
-      const mockProfile = {
-        id: 1,
-        clerkUserId: "user_123",
-        trade: TRADES.ELECTRICIAN,
-        currentLevel: APPRENTICESHIP_LEVELS.LEVEL_1,
-        specialization: ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
-        residencyStatus: RESIDENCY_STATUS.CITIZEN,
-        onboardingCompletedAt: new Date("2024-01-01"),
-        tutorialCompletedAt: null,
-        createdAt: new Date("2024-01-01"),
-        updatedAt: new Date("2024-01-01"),
-      };
+      const mockProfile = createMockProfile();
 
-       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(mockProfile);
 
       const request = new NextRequest("http://localhost:3000/api/profile");
-       
+
       const response = await GET(request as any);
       const data = await response.json();
 
@@ -111,14 +128,13 @@ describe("Profile API Route", () => {
       const { auth } = await import("@clerk/nextjs/server");
       const { db } = await import("@/server/db");
 
-       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockRejectedValueOnce(
         new Error("Database error"),
       );
 
       const request = new NextRequest("http://localhost:3000/api/profile");
-       
+
       const response = await GET(request as any);
       const data = await response.json();
 
@@ -130,7 +146,7 @@ describe("Profile API Route", () => {
   describe("POST /api/profile", () => {
     it("should return 401 if user is not authenticated", async () => {
       const { auth } = await import("@clerk/nextjs/server");
-       
+
       vi.mocked(auth).mockResolvedValueOnce({ userId: null } as any);
 
       const request = new NextRequest("http://localhost:3000/api/profile", {
@@ -152,7 +168,7 @@ describe("Profile API Route", () => {
 
     it("should return 400 for invalid profile data", async () => {
       const { auth } = await import("@clerk/nextjs/server");
-       
+
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
 
       const request = new NextRequest("http://localhost:3000/api/profile", {
@@ -177,20 +193,12 @@ describe("Profile API Route", () => {
       const { auth } = await import("@clerk/nextjs/server");
       const { db } = await import("@/server/db");
 
-      const mockProfile = {
-        id: 1,
-        clerkUserId: "user_123",
-        trade: TRADES.ELECTRICIAN,
-        currentLevel: APPRENTICESHIP_LEVELS.LEVEL_1,
-        specialization: ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
-        residencyStatus: RESIDENCY_STATUS.CITIZEN,
+      const mockProfile = createMockProfile({
         onboardingCompletedAt: new Date(),
-        tutorialCompletedAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-      };
+      });
 
-       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.upsert).mockResolvedValueOnce(mockProfile);
 
@@ -240,11 +248,11 @@ describe("Profile API Route", () => {
         residencyStatus: RESIDENCY_STATUS.PERMANENT_RESIDENT,
         onboardingCompletedAt: new Date(),
         tutorialCompletedAt: null,
+        pendingLevelUp: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.upsert).mockResolvedValueOnce(mockProfile);
 
@@ -269,7 +277,7 @@ describe("Profile API Route", () => {
   describe("PATCH /api/profile", () => {
     it("should return 401 if user is not authenticated", async () => {
       const { auth } = await import("@clerk/nextjs/server");
-       
+
       vi.mocked(auth).mockResolvedValueOnce({ userId: null } as any);
 
       const request = new NextRequest("http://localhost:3000/api/profile", {
@@ -290,7 +298,6 @@ describe("Profile API Route", () => {
       const { auth } = await import("@clerk/nextjs/server");
       const { db } = await import("@/server/db");
 
-       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(null);
 
@@ -321,6 +328,7 @@ describe("Profile API Route", () => {
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
         tutorialCompletedAt: null,
+        pendingLevelUp: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };
@@ -331,7 +339,6 @@ describe("Profile API Route", () => {
         updatedAt: new Date(),
       };
 
-       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(
         existingProfile,
@@ -352,7 +359,10 @@ describe("Profile API Route", () => {
       expect(data.currentLevel).toBe(APPRENTICESHIP_LEVELS.LEVEL_2);
       expect(db.userProfile.update).toHaveBeenCalledWith({
         where: { clerkUserId: "user_123" },
-        data: { currentLevel: APPRENTICESHIP_LEVELS.LEVEL_2 },
+        data: {
+          currentLevel: APPRENTICESHIP_LEVELS.LEVEL_2,
+          pendingLevelUp: null,
+        },
       });
     });
 
@@ -369,6 +379,7 @@ describe("Profile API Route", () => {
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
         tutorialCompletedAt: null,
+        pendingLevelUp: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };
@@ -379,7 +390,6 @@ describe("Profile API Route", () => {
         updatedAt: new Date(),
       };
 
-       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(
         existingProfile,
@@ -413,6 +423,7 @@ describe("Profile API Route", () => {
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
         tutorialCompletedAt: null,
+        pendingLevelUp: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };
@@ -423,7 +434,6 @@ describe("Profile API Route", () => {
         updatedAt: new Date(),
       };
 
-       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(
         existingProfile,
@@ -457,6 +467,7 @@ describe("Profile API Route", () => {
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
         tutorialCompletedAt: null,
+        pendingLevelUp: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };
@@ -467,7 +478,6 @@ describe("Profile API Route", () => {
         updatedAt: new Date(),
       };
 
-       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(
         existingProfile,
@@ -501,6 +511,7 @@ describe("Profile API Route", () => {
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
         tutorialCompletedAt: null,
+        pendingLevelUp: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };
@@ -512,7 +523,6 @@ describe("Profile API Route", () => {
         updatedAt: new Date(),
       };
 
-       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(
         existingProfile,
@@ -538,6 +548,7 @@ describe("Profile API Route", () => {
         data: {
           currentLevel: APPRENTICESHIP_LEVELS.LEVEL_2,
           specialization: ELECTRICIAN_SPECIALIZATION.INDUSTRIAL,
+          pendingLevelUp: null,
         },
       });
     });
@@ -555,11 +566,11 @@ describe("Profile API Route", () => {
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
         tutorialCompletedAt: null,
+        pendingLevelUp: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };
 
-       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(
         existingProfile,
@@ -593,11 +604,11 @@ describe("Profile API Route", () => {
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
         tutorialCompletedAt: null,
+        pendingLevelUp: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };
 
-       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(
         existingProfile,
@@ -631,11 +642,11 @@ describe("Profile API Route", () => {
         residencyStatus: RESIDENCY_STATUS.CITIZEN,
         onboardingCompletedAt: new Date("2024-01-01"),
         tutorialCompletedAt: null,
+        pendingLevelUp: null,
         createdAt: new Date("2024-01-01"),
         updatedAt: new Date("2024-01-01"),
       };
 
-       
       vi.mocked(auth).mockResolvedValueOnce({ userId: "user_123" } as any);
       vi.mocked(db.userProfile.findUnique).mockResolvedValueOnce(
         existingProfile,

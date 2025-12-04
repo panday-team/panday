@@ -52,6 +52,7 @@ export interface UserProfile {
   residencyStatus: ResidencyStatus;
   onboardingCompletedAt: Date | null;
   tutorialCompletedAt: Date | null;
+  pendingLevelUp: ApprenticeshipLevel | null; // Set when user clicks "Stay Here" after completing a level
   createdAt: Date;
   updatedAt: Date;
 }
