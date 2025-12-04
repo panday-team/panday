@@ -67,12 +67,15 @@ import {
   getCompletedLevels,
   getIrrelevantNodes,
   getCurrentLevelNodeId,
+  getNextLevelProgression,
   LEVEL_METADATA,
 } from "@/lib/profile-types";
 import { calculateViewportForNode } from "@/lib/viewport-utils";
 import { calculateNodeProgress } from "@/lib/progress-utils";
 import { useResponsive } from "@/lib/use-responsive";
+import { useLevelUpDetection } from "@/lib/hooks/use-level-up-detection";
 import AnimatedDirectionEdge from "@/components/edges/animated-direction-edge";
+import { LevelUpCelebration } from "@/components/level-up-celebration";
 
 type FlowNode =
   | HubNodeType
@@ -199,6 +202,27 @@ function RoadmapFlowInner({
     useState<boolean>(false);
   const [currentTutorialStep, setCurrentTutorialStep] =
     useState<TutorialStep | null>(null);
+
+  // Level-up celebration state
+  const [showLevelUpCelebration, setShowLevelUpCelebration] = useState(false);
+  const [isAdvancingLevel, setIsAdvancingLevel] = useState(false);
+
+  // Level-up detection hook
+  const levelUpDetection = useLevelUpDetection({
+    userCurrentLevel: userProfile?.currentLevel ?? null,
+    specialization: userProfile?.specialization ?? null,
+    nodeStatuses,
+    graphNodes: roadmap.graph.nodes,
+    contentMap: roadmap.content,
+    enabled: !!userProfile,
+  });
+
+  // Show celebration modal when level is complete
+  useEffect(() => {
+    if (levelUpDetection.isLevelComplete && !showLevelUpCelebration) {
+      setShowLevelUpCelebration(true);
+    }
+  }, [levelUpDetection.isLevelComplete, showLevelUpCelebration]);
 
   // Load statuses from database on mount, with localStorage fallback
   useEffect(() => {
@@ -1146,7 +1170,7 @@ function RoadmapFlowInner({
     }
   }, [userProfile]);
 
-  const handleTutorialSkip = useCallback(() => {
+  const handleTutorialSkip = useCallback(async () => {
     setShowTutorial(false);
     setShowTutorialSkipAlert(true);
 
@@ -1154,7 +1178,24 @@ function RoadmapFlowInner({
     setTimeout(() => {
       setShowTutorialSkipAlert(false);
     }, 5000);
-  }, []);
+
+    // Mark tutorial as completed in database (same as completing it)
+    if (userProfile) {
+      try {
+        await fetch("/api/profile/tutorial", {
+          method: "POST",
+        });
+      } catch (error) {
+        logger.error(
+          "Failed to mark tutorial as completed on skip",
+          error as Error,
+          {
+            component: "roadmap-flow",
+          },
+        );
+      }
+    }
+  }, [userProfile]);
 
   const handleTutorialOpen = useCallback(() => {
     setShowTutorial(true);
@@ -1162,6 +1203,79 @@ function RoadmapFlowInner({
     // Close node info panel when tutorial is manually opened
     setSelectedNodeId(null);
   }, []);
+
+  // Handle advancing to the next level
+  const handleAdvanceLevel = useCallback(async () => {
+    if (!userProfile || !levelUpDetection.completedNodeId) {
+      return;
+    }
+
+    setIsAdvancingLevel(true);
+
+    try {
+      // Get the next level from progression
+      const progression = getNextLevelProgression(
+        userProfile.currentLevel,
+        userProfile.specialization,
+      );
+
+      if (!progression.nextLevel || !progression.nextNodeId) {
+        // No next level (Red Seal case) - just close the modal
+        setShowLevelUpCelebration(false);
+        levelUpDetection.clearLevelUp();
+        return;
+      }
+
+      // Update profile with new level via API
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentLevel: progression.nextLevel }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update profile");
+      }
+
+      // Close the modal
+      setShowLevelUpCelebration(false);
+      levelUpDetection.clearLevelUp();
+
+      // Pan viewport to the next level node with smooth animation
+      setTimeout(() => {
+        void fitView({
+          nodes: [{ id: progression.nextNodeId! }],
+          duration: 1000,
+          padding: 0.3,
+          maxZoom: 1.0,
+        }).then(() => {
+          // Select the next level node to show its info panel
+          setSelectedNodeId(progression.nextNodeId);
+        });
+      }, 300);
+
+      // Note: The page will need to be refreshed or userProfile updated
+      // to reflect the new level in the UI. Consider using router.refresh()
+      // or a callback to parent to update userProfile state.
+      logger.info("User advanced to next level", {
+        fromLevel: userProfile.currentLevel,
+        toLevel: progression.nextLevel,
+        nodeId: progression.nextNodeId,
+      });
+    } catch (error) {
+      logger.error("Failed to advance level", error as Error, {
+        currentLevel: userProfile.currentLevel,
+      });
+    } finally {
+      setIsAdvancingLevel(false);
+    }
+  }, [userProfile, levelUpDetection, fitView]);
+
+  // Handle staying at current level (dismiss celebration)
+  const handleStayAtLevel = useCallback(() => {
+    setShowLevelUpCelebration(false);
+    levelUpDetection.clearLevelUp();
+  }, [levelUpDetection]);
 
   const handleTutorialStepChange = useCallback(
     (step: TutorialStep) => {
@@ -1897,6 +2011,23 @@ function RoadmapFlowInner({
         onRequestViewportAdjustment={handleViewportAdjustment}
         onStepChange={handleTutorialStepChange}
       />
+
+      {userProfile &&
+        levelUpDetection.completedNodeId &&
+        levelUpDetection.progress && (
+          <LevelUpCelebration
+            open={showLevelUpCelebration}
+            onOpenChange={setShowLevelUpCelebration}
+            currentLevel={userProfile.currentLevel}
+            specialization={userProfile.specialization}
+            completedNodeId={levelUpDetection.completedNodeId}
+            completedNodeTitle={levelUpDetection.completedNodeTitle ?? "Level"}
+            progress={levelUpDetection.progress}
+            onAdvanceLevel={handleAdvanceLevel}
+            onStayHere={handleStayAtLevel}
+            isAdvancing={isAdvancingLevel}
+          />
+        )}
     </div>
   );
 }

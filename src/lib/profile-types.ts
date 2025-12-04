@@ -327,3 +327,139 @@ export function isEligibleForApprenticeship(
 ): boolean {
   return RESIDENCY_STATUS_METADATA[residencyStatus].eligible;
 }
+
+/**
+ * Level progression mapping - defines which level comes after a given level
+ * Takes into account specialization for Level 4 transitions
+ */
+export interface LevelProgression {
+  nextLevel: ApprenticeshipLevel | null;
+  nextNodeId: string | null;
+  isFinalLevel: boolean;
+  celebrationMessage: string;
+}
+
+/**
+ * Get the next level progression based on current level and specialization
+ */
+export function getNextLevelProgression(
+  currentLevel: ApprenticeshipLevel,
+  specialization?: ElectricianSpecialization,
+): LevelProgression {
+  // Entry paths all lead to Level 1
+  if (
+    currentLevel === APPRENTICESHIP_LEVELS.ACE_IT ||
+    currentLevel === APPRENTICESHIP_LEVELS.DIRECT_ENTRY ||
+    currentLevel === APPRENTICESHIP_LEVELS.FOUNDATION
+  ) {
+    return {
+      nextLevel: APPRENTICESHIP_LEVELS.LEVEL_1,
+      nextNodeId: "level-1",
+      isFinalLevel: false,
+      celebrationMessage: "You're ready to start Level 1!",
+    };
+  }
+
+  // Not started leads to exploring entry paths (no auto-advance)
+  if (currentLevel === APPRENTICESHIP_LEVELS.NOT_STARTED) {
+    return {
+      nextLevel: null,
+      nextNodeId: null,
+      isFinalLevel: false,
+      celebrationMessage: "Time to choose your entry path!",
+    };
+  }
+
+  // Level 1 → Level 2
+  if (currentLevel === APPRENTICESHIP_LEVELS.LEVEL_1) {
+    return {
+      nextLevel: APPRENTICESHIP_LEVELS.LEVEL_2,
+      nextNodeId: "level-2",
+      isFinalLevel: false,
+      celebrationMessage: "Level 1 complete! Onward to Level 2!",
+    };
+  }
+
+  // Level 2 → Level 3
+  if (currentLevel === APPRENTICESHIP_LEVELS.LEVEL_2) {
+    return {
+      nextLevel: APPRENTICESHIP_LEVELS.LEVEL_3,
+      nextNodeId: "level-3",
+      isFinalLevel: false,
+      celebrationMessage: "Level 2 complete! Level 3 awaits!",
+    };
+  }
+
+  // Level 3 → Level 4 (specialization-dependent)
+  if (currentLevel === APPRENTICESHIP_LEVELS.LEVEL_3) {
+    const isIndustrial =
+      specialization === ELECTRICIAN_SPECIALIZATION.INDUSTRIAL;
+    return {
+      nextLevel: APPRENTICESHIP_LEVELS.LEVEL_4,
+      nextNodeId: isIndustrial ? "level-4-industrial" : "level-4-construction",
+      isFinalLevel: false,
+      celebrationMessage: "Level 3 complete! Final year begins!",
+    };
+  }
+
+  // Level 4 → Red Seal (specialization-dependent)
+  if (currentLevel === APPRENTICESHIP_LEVELS.LEVEL_4) {
+    const isIndustrial =
+      specialization === ELECTRICIAN_SPECIALIZATION.INDUSTRIAL;
+    return {
+      nextLevel: APPRENTICESHIP_LEVELS.RED_SEAL,
+      nextNodeId: isIndustrial
+        ? "red-seal-industrial"
+        : "red-seal-construction",
+      isFinalLevel: true,
+      celebrationMessage:
+        "All training complete! You're ready for your Red Seal exam!",
+    };
+  }
+
+  // Red Seal is the final level
+  if (currentLevel === APPRENTICESHIP_LEVELS.RED_SEAL) {
+    return {
+      nextLevel: null,
+      nextNodeId: null,
+      isFinalLevel: true,
+      celebrationMessage:
+        "Congratulations! You've achieved Red Seal certification!",
+    };
+  }
+
+  // Fallback
+  return {
+    nextLevel: null,
+    nextNodeId: null,
+    isFinalLevel: false,
+    celebrationMessage: "Keep up the great work!",
+  };
+}
+
+/**
+ * Get the node ID that corresponds to a given level
+ * Used to check if a hub node completion should trigger level advancement
+ */
+export function getNodeIdForLevel(
+  level: ApprenticeshipLevel,
+  specialization?: ElectricianSpecialization,
+): string | null {
+  return getCurrentLevelNodeId(level, specialization);
+}
+
+/**
+ * Check if completing a specific node should trigger level-up celebration
+ * Returns the user's current level if the node matches their current level
+ */
+export function shouldTriggerLevelUp(
+  completedNodeId: string,
+  userCurrentLevel: ApprenticeshipLevel,
+  specialization?: ElectricianSpecialization,
+): boolean {
+  const currentLevelNodeId = getCurrentLevelNodeId(
+    userCurrentLevel,
+    specialization,
+  );
+  return completedNodeId === currentLevelNodeId;
+}

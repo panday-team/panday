@@ -349,6 +349,33 @@
   - Enums for trades, levels, entry paths, residency status with metadata
   - Helper functions: `getCompletedLevels()`, `getIrrelevantPaths()`, `getCurrentLevelNodeId()`
   - Maps user profile data to roadmap personalization (viewport, node states, dimmed paths)
+  - Level progression: `getNextLevelProgression()` returns next level, node ID, and celebration message
+  - Level-up detection: `shouldTriggerLevelUp()` checks if completing a node should trigger celebration
+
+## Level-Up Celebration System
+
+- **Purpose**: Gamified progression that celebrates user achievements when completing all checklists for a level
+- **Trigger Condition**: All checklist items under a hub node (e.g., Level 1, Level 2) are marked complete
+- **Detection Hook** (`src/lib/hooks/use-level-up-detection.ts`):
+  - `useLevelUpDetection()` monitors `nodeStatuses` changes and calculates progress for current level
+  - Only triggers celebration at the moment of 100% completion (not on page load if already complete)
+  - Tracks celebrated levels to avoid duplicate triggers
+  - Returns `{ isLevelComplete, completedNodeId, completedNodeTitle, progress, clearLevelUp }`
+- **Celebration Modal** (`src/components/level-up-celebration.tsx`):
+  - Confetti animation with 50 particles in brand colors
+  - Modal shows completed level title, progress stats, and next level badge
+  - Two actions: "Continue to [Next Level]" or "Stay Here"
+  - Red Seal completion shows "Congratulations!" with trophy icon (final achievement)
+- **Level Advancement**:
+  - "Continue" button calls `PATCH /api/profile` to update `currentLevel`
+  - After API success, viewport pans smoothly to next level node
+  - Next level node is auto-selected to show its info panel
+- **Progression Logic** (`getNextLevelProgression()` in `src/lib/profile-types.ts`):
+  - Entry paths (ACE IT, Foundation, Direct Entry) → Level 1
+  - Level 1 → Level 2 → Level 3 → Level 4 (specialization-dependent)
+  - Level 4 → Red Seal (specialization-dependent, marked as final level)
+  - Red Seal → null (no next level, shows final celebration)
+- **Testing**: 45+ test cases in `src/lib/__tests__/profile-types.test.ts` covering progression logic
 
 ## Need-to-Know Extras
 
