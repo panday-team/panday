@@ -261,6 +261,43 @@ function RoadmapFlowInner({
     void fetchNodeStatuses(roadmap.metadata.id).then(setNodeStatuses);
   }, [roadmap.metadata.id]);
 
+  // Check if current level is already complete but pendingLevelUp is not set
+  // This handles the case where user changes their level in settings to a level
+  // that's already 100% complete - we should show the "Ready to progress" banner
+  useEffect(() => {
+    if (!userProfile || !onProfileUpdate) return;
+
+    // Only run when nodeStatuses has loaded
+    const hasNodeStatuses = Object.keys(nodeStatuses).length > 0;
+    if (!hasNodeStatuses) return;
+
+    // If pendingLevelUp is already set, no need to check
+    if (userProfile.pendingLevelUp) return;
+
+    // Get current level's node and check progress
+    const currentLevelNodeId = getCurrentLevelNodeId(
+      userProfile.currentLevel,
+      userProfile.specialization,
+    );
+    if (!currentLevelNodeId) return;
+
+    const nodeContent = roadmap.content.get(currentLevelNodeId);
+    if (!nodeContent) return;
+
+    const progress = calculateNodeProgress(
+      currentLevelNodeId,
+      nodeContent.frontmatter.type,
+      nodeStatuses,
+      roadmap.graph.nodes,
+      roadmap.content,
+    );
+
+    // If level is 100% complete and no pendingLevelUp, set it to show the banner
+    if (progress?.percentage === 100) {
+      onProfileUpdate({ pendingLevelUp: userProfile.currentLevel });
+    }
+  }, [userProfile, nodeStatuses, roadmap, onProfileUpdate]);
+
   // Pre-compute node relationships once for reuse across multiple memos
   const nodeRelationships = useMemo(() => {
     const hubNodeIds = new Set(
