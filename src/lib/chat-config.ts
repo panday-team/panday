@@ -97,3 +97,33 @@ export const VOICE_CONFIG = {
    */
   MIME_TYPES: ["audio/webm", "audio/ogg", "audio/wav"] as const,
 } as const;
+
+/**
+ * Web Speech API configuration for real-time transcription preview
+ * Used alongside Whisper for immediate user feedback during recording
+ */
+export const SPEECH_RECOGNITION_CONFIG = {
+  /**
+   * Language for speech recognition
+   * Should match expected user input language
+   */
+  LANG: "en-US",
+
+  /**
+   * Enable continuous recognition
+   * Keeps listening until explicitly stopped (vs single utterance mode)
+   */
+  CONTINUOUS: true,
+
+  /**
+   * Enable interim results for real-time feedback
+   * Shows partial transcriptions as user speaks
+   */
+  INTERIM_RESULTS: true,
+
+  /**
+   * Number of alternative transcriptions to return per result
+   * Lower = faster, higher = more options for disambiguation
+   */
+  MAX_ALTERNATIVES: 1,
+} as const;

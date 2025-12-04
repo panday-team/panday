@@ -1,11 +1,66 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { logger } from "@/lib/logger";
-import { VOICE_CONFIG } from "@/lib/chat-config";
+import { VOICE_CONFIG, SPEECH_RECOGNITION_CONFIG } from "@/lib/chat-config";
 import { z } from "zod";
+
+/**
+ * Type declarations for Web Speech API
+ * Needed because TypeScript doesn't include these by default
+ */
+interface SpeechRecognitionEvent extends Event {
+  readonly resultIndex: number;
+  readonly results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  readonly length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  readonly length: number;
+  readonly isFinal: boolean;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  readonly transcript: string;
+  readonly confidence: number;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  readonly error: string;
+  readonly message: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognition;
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+}
 
 type VoiceRecordingState = {
   isRecording: boolean;
   isTranscribing: boolean;
+  interimTranscript: string;
   error: string | null;
 };
 
@@ -21,33 +76,65 @@ const TranscriptionResponseSchema = z.object({
 });
 
 /**
- * Hook for voice recording with OpenAI Whisper transcription
+ * Get the SpeechRecognition constructor if available
+ * Handles browser prefixes (webkit for Chrome/Safari)
+ */
+function getSpeechRecognition(): SpeechRecognitionConstructor | null {
+  if (typeof window === "undefined") return null;
+  return window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null;
+}
+
+/**
+ * Hook for voice recording with real-time transcription preview
  *
  * Features:
+ * - Real-time transcription preview via Web Speech API (interim results)
+ * - High-quality final transcription via OpenAI Whisper
  * - Automatic MIME type detection (webm > ogg > wav)
  * - Recording duration limit (2 minutes max)
  * - Audio bitrate optimization (128kbps)
  * - Proper cleanup on unmount
  * - Memory leak prevention (clears audio chunks after upload)
  * - Type-safe API responses with Zod validation
+ * - Graceful fallback when Web Speech API unavailable
  *
- * @returns Voice recording controls and state
+ * @returns Voice recording controls and state including interim transcript
  */
 export function useVoiceRecording() {
   const [state, setState] = useState<VoiceRecordingState>({
     isRecording: false,
     isTranscribing: false,
+    interimTranscript: "",
     error: null,
   });
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const speechRecognitionRef = useRef<SpeechRecognition | null>(null);
+
+  /**
+   * Stop speech recognition and clean up
+   */
+  const stopSpeechRecognition = useCallback(() => {
+    if (speechRecognitionRef.current) {
+      try {
+        speechRecognitionRef.current.abort();
+      } catch {
+        // Ignore errors during cleanup
+      }
+      speechRecognitionRef.current = null;
+    }
+  }, []);
 
   /**
    * Cleanup function to stop recording and release resources
    */
   const cleanup = useCallback(() => {
+    // Stop speech recognition
+    stopSpeechRecognition();
+
+    // Stop media recorder
     const mediaRecorder = mediaRecorderRef.current;
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
       mediaRecorder.stream.getTracks().forEach((track) => track.stop());
@@ -61,7 +148,7 @@ export function useVoiceRecording() {
     }
     audioChunksRef.current = [];
     mediaRecorderRef.current = null;
-  }, []);
+  }, [stopSpeechRecognition]);
 
   /**
    * Cleanup on unmount to prevent memory leaks
@@ -71,6 +158,82 @@ export function useVoiceRecording() {
       cleanup();
     };
   }, [cleanup]);
+
+  /**
+   * Start speech recognition for real-time transcription preview
+   * Returns true if started successfully, false otherwise
+   */
+  const startSpeechRecognition = useCallback(() => {
+    const SpeechRecognitionClass = getSpeechRecognition();
+    if (!SpeechRecognitionClass) {
+      logger.info("Web Speech API not available, skipping real-time preview");
+      return false;
+    }
+
+    try {
+      const recognition = new SpeechRecognitionClass();
+      recognition.continuous = SPEECH_RECOGNITION_CONFIG.CONTINUOUS;
+      recognition.interimResults = SPEECH_RECOGNITION_CONFIG.INTERIM_RESULTS;
+      recognition.lang = SPEECH_RECOGNITION_CONFIG.LANG;
+      recognition.maxAlternatives = SPEECH_RECOGNITION_CONFIG.MAX_ALTERNATIVES;
+
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        let finalTranscript = "";
+        let interimTranscript = "";
+
+        // Build transcript from all results
+        // Final results are confirmed, interim results are still being processed
+        const results = Array.from(
+          { length: event.results.length },
+          (_, i) => event.results[i],
+        );
+
+        for (const result of results) {
+          if (result?.[0]) {
+            if (result.isFinal) {
+              finalTranscript += result[0].transcript;
+            } else {
+              interimTranscript += result[0].transcript;
+            }
+          }
+        }
+
+        // Combine final + interim for display
+        const fullTranscript = finalTranscript + interimTranscript;
+
+        setState((prev) => ({
+          ...prev,
+          interimTranscript: fullTranscript,
+        }));
+      };
+
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+        // Silently handle errors - fall back to Whisper-only mode
+        // Common errors: "no-speech", "audio-capture", "network"
+        logger.debug("Speech recognition error (falling back to Whisper)", {
+          error: event.error,
+        });
+        stopSpeechRecognition();
+      };
+
+      recognition.onend = () => {
+        // Recognition ended (possibly due to silence or browser decision)
+        // Don't clear interim transcript - keep showing what we have
+        // The Whisper result will replace it when ready
+      };
+
+      recognition.start();
+      speechRecognitionRef.current = recognition;
+      logger.info("Speech recognition started for real-time preview");
+      return true;
+    } catch (error) {
+      // Silently fall back to Whisper-only mode
+      logger.debug("Failed to start speech recognition", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return false;
+    }
+  }, [stopSpeechRecognition]);
 
   const startRecording = useCallback(async () => {
     try {
@@ -101,7 +264,15 @@ export function useVoiceRecording() {
       };
 
       mediaRecorder.start();
-      setState({ isRecording: true, isTranscribing: false, error: null });
+      setState({
+        isRecording: true,
+        isTranscribing: false,
+        interimTranscript: "",
+        error: null,
+      });
+
+      // Start speech recognition for real-time preview (non-blocking)
+      startSpeechRecognition();
 
       // Auto-stop recording after max duration
       recordingTimeoutRef.current = setTimeout(() => {
@@ -125,15 +296,24 @@ export function useVoiceRecording() {
       setState({
         isRecording: false,
         isTranscribing: false,
+        interimTranscript: "",
         error: errorMessage,
       });
     }
-  }, []);
+  }, [startSpeechRecognition]);
 
   const stopRecording = useCallback(async (): Promise<string | null> => {
+    // Stop speech recognition immediately (keep interim transcript visible)
+    stopSpeechRecognition();
+
     return new Promise((resolve) => {
       const mediaRecorder = mediaRecorderRef.current;
       if (!mediaRecorder || mediaRecorder.state === "inactive") {
+        setState((prev) => ({
+          ...prev,
+          isRecording: false,
+          interimTranscript: "",
+        }));
         resolve(null);
         return;
       }
@@ -163,6 +343,7 @@ export function useVoiceRecording() {
           setState({
             isRecording: false,
             isTranscribing: false,
+            interimTranscript: "",
             error: "Recording too short. Please try again.",
           });
           audioChunksRef.current = []; // Clean up memory
@@ -175,6 +356,7 @@ export function useVoiceRecording() {
           setState({
             isRecording: false,
             isTranscribing: false,
+            interimTranscript: "",
             error: "Recording too large. Please try a shorter recording.",
           });
           audioChunksRef.current = []; // Clean up memory
@@ -182,8 +364,13 @@ export function useVoiceRecording() {
           return;
         }
 
-        // Upload and transcribe
-        setState({ isRecording: false, isTranscribing: true, error: null });
+        // Upload and transcribe (keep interim transcript visible during this phase)
+        setState((prev) => ({
+          ...prev,
+          isRecording: false,
+          isTranscribing: true,
+          error: null,
+        }));
 
         try {
           const formData = new FormData();
@@ -217,7 +404,12 @@ export function useVoiceRecording() {
             hasTranslation: !!data.translation,
           });
 
-          setState({ isRecording: false, isTranscribing: false, error: null });
+          setState({
+            isRecording: false,
+            isTranscribing: false,
+            interimTranscript: "",
+            error: null,
+          });
 
           // Clean up audio chunks after successful upload (prevent memory leak)
           audioChunksRef.current = [];
@@ -235,6 +427,7 @@ export function useVoiceRecording() {
           setState({
             isRecording: false,
             isTranscribing: false,
+            interimTranscript: "",
             error: errorMessage,
           });
 
@@ -247,16 +440,22 @@ export function useVoiceRecording() {
 
       mediaRecorder.stop();
     });
-  }, []);
+  }, [stopSpeechRecognition]);
 
   const cancelRecording = useCallback(() => {
     cleanup();
-    setState({ isRecording: false, isTranscribing: false, error: null });
+    setState({
+      isRecording: false,
+      isTranscribing: false,
+      interimTranscript: "",
+      error: null,
+    });
   }, [cleanup]);
 
   return {
     isRecording: state.isRecording,
     isTranscribing: state.isTranscribing,
+    interimTranscript: state.interimTranscript,
     error: state.error,
     startRecording,
     stopRecording,

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useChat } from "@ai-sdk/react";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
   X,
@@ -101,6 +101,7 @@ export function ChatWidget({
   const {
     isRecording,
     isTranscribing,
+    interimTranscript,
     error: voiceError,
     startRecording,
     stopRecording,
@@ -112,6 +113,8 @@ export function ChatWidget({
   // Track when we just accepted/declined a proposal to skip hydration
   // (local state is correct, hydrating from DB would lose tool invocation state)
   const skipNextHydrationRef = useRef(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     activeThreadRef.current = activeThreadId;
@@ -157,6 +160,9 @@ export function ChatWidget({
     api: "/api/chat",
     streamProtocol: "data",
     maxSteps: 5,
+    // Throttle UI updates during streaming to prevent "Maximum update depth exceeded" error
+    // This limits how often React re-renders during rapid streaming updates
+    experimental_throttle: 50,
     onToolCall: ({ toolCall }) => {
       // Display user-friendly status messages for tool calls
       const toolNames: Record<string, string> = {
@@ -621,8 +627,13 @@ export function ChatWidget({
   }, [messages, proposalStatuses]);
 
   // Show "Generating your checklist..." when proposeNode is being streamed
+  // Clear status message when loading stops
   useEffect(() => {
-    if (!isLoading) return;
+    if (!isLoading) {
+      // Clear any lingering status message when loading finishes
+      setStatusMessage(null);
+      return;
+    }
 
     // Check for proposeNode in partial-call state (being generated)
     for (const message of messages) {
@@ -855,6 +866,44 @@ export function ChatWidget({
     // Submit immediately (useChat handles optimistic updates)
     handleSubmit(event);
   };
+
+  // Determine what to display in the textarea:
+  // - During recording with interim transcript: show real-time preview (dimmed)
+  // - Otherwise: show the user's typed input
+  const displayValue =
+    isRecording && interimTranscript ? interimTranscript : input;
+  const isShowingInterim = isRecording && !!interimTranscript;
+
+  // Auto-resize textarea based on content (max 4 lines / 144px)
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    // Reset height to auto to get accurate scrollHeight
+    textarea.style.height = "auto";
+    // Set height to scrollHeight, capped at max-h-36 (144px)
+    const newHeight = Math.min(textarea.scrollHeight, 144);
+    textarea.style.height = `${newHeight}px`;
+  }, [displayValue]);
+
+  // Handle Enter (submit) vs Shift+Enter (newline) in textarea
+  const handleTextareaKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        if (
+          input.trim() &&
+          isSignedIn &&
+          !hasPendingProposeNode &&
+          !isLoading &&
+          !isTranscribing
+        ) {
+          formRef.current?.requestSubmit();
+        }
+      }
+    },
+    [input, isSignedIn, hasPendingProposeNode, isLoading, isTranscribing],
+  );
 
   const handleFaqClick = useCallback(
     async (question: string) => {
@@ -1401,6 +1450,7 @@ export function ChatWidget({
                 )}
 
                 <form
+                  ref={formRef}
                   onSubmit={onSubmit}
                   className="border-t border-gray-200 p-4 dark:border-white/10"
                 >
@@ -1443,24 +1493,75 @@ export function ChatWidget({
                     isSignedIn={isSignedIn}
                     onFaqClick={handleFaqClick}
                   />
-                  <div className="flex items-center gap-2 rounded-3xl bg-white px-3 py-1 shadow-sm dark:bg-white/10">
-                    <Input
-                      type="text"
+                  {/* Recording indicator - shows animated bar while recording */}
+                  {isRecording && (
+                    <div className="mb-2 flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 dark:bg-red-900/20">
+                      <div className="flex items-center gap-1">
+                        <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                        <span className="h-2 w-2 animate-pulse rounded-full bg-red-500 [animation-delay:150ms]" />
+                        <span className="h-2 w-2 animate-pulse rounded-full bg-red-500 [animation-delay:300ms]" />
+                      </div>
+                      <span className="text-sm font-medium text-red-600 dark:text-red-400">
+                        Listening...
+                      </span>
+                    </div>
+                  )}
+                  {/* Transcribing indicator - shows while Whisper processes */}
+                  {isTranscribing && (
+                    <div className="mb-2 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 dark:bg-blue-900/20">
+                      <svg
+                        className="h-4 w-4 animate-spin text-blue-500"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                        Processing your voice...
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-end gap-2 rounded-3xl bg-white px-3 py-2 shadow-sm dark:bg-white/10">
+                    <Textarea
+                      ref={textareaRef}
                       placeholder={
                         !isSignedIn
                           ? "Sign in to chat"
-                          : isTranscribing
-                            ? "Transcribing..."
-                            : hasPendingProposeNode
-                              ? "Accept or decline the proposal first"
-                              : "Write your message"
+                          : isRecording
+                            ? "Listening..."
+                            : isTranscribing
+                              ? "Transcribing..."
+                              : hasPendingProposeNode
+                                ? "Accept or decline the proposal first"
+                                : "Write your message"
                       }
                       disabled={
                         !isSignedIn || isTranscribing || hasPendingProposeNode
                       }
-                      value={input}
+                      readOnly={isRecording}
+                      value={displayValue}
                       onChange={handleInputChange}
-                      className="border-none bg-transparent text-sm text-black placeholder:text-black/40 focus-visible:ring-0 dark:text-white dark:placeholder:text-white/40"
+                      onKeyDown={handleTextareaKeyDown}
+                      rows={1}
+                      className={cn(
+                        "max-h-36 min-h-9 resize-none border-none bg-transparent py-2 text-sm placeholder:text-black/40 focus-visible:ring-0 dark:placeholder:text-white/40",
+                        isShowingInterim
+                          ? "text-black/70 italic dark:text-white/70"
+                          : "text-black dark:text-white",
+                      )}
                     />
                     <button
                       type="button"

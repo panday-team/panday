@@ -443,11 +443,14 @@ ${userContext}${levelContext}${nodeContext}You have access to the following rele
 
 ${embeddingsResponse.context}
 
-RESPONSE FORMAT - CRITICAL:
-- Keep CHAT responses SHORT (2-3 sentences max)
-- For complex topics: give a 1-sentence summary, then offer to create a detailed node
-- NEVER list more than 3 items in chat - put detailed lists INTO custom nodes instead
-- When user says "yes" to creating a node, put ALL the detailed steps/info into the node's checklistItems and description fields
+RESPONSE LENGTH - CRITICAL:
+- Keep responses CONCISE: aim for 150-250 words maximum
+- Use bullet points for lists (max 5 items)
+- For detailed breakdowns: give a summary, then use proposeNode to create a trackable checklist
+- If a topic needs more detail, create a node with checklistItems instead of writing paragraphs
+- ALWAYS complete your thought - never end mid-sentence
+
+RESPONSE FORMAT:
 - IMPORTANT: Always write your text response BEFORE calling any tools!
 
 WHEN CREATING NODES - PUT DETAILS IN THE NODE, NOT IN CHAT:
@@ -595,7 +598,9 @@ IMPORTANT: NEVER expose internal node IDs in your responses. Use proposeNode to 
 
         return baseMessage;
       }),
-      maxTokens: 800,
+      // 1500 tokens (~1100 words) provides enough room for complete responses
+      // while preventing excessively long outputs
+      maxTokens: 1500,
       maxSteps: 5,
       tools: {
         createNode: {
