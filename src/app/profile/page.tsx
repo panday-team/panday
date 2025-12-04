@@ -15,6 +15,7 @@ import {
 } from "@/lib/profile-types";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -90,6 +91,7 @@ export default function ProfilePage() {
   // Reset demo state
   const [isResetting, setIsResetting] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [includeOnboarding, setIncludeOnboarding] = useState(false);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -218,10 +220,12 @@ export default function ProfilePage() {
     setIsResetting(true);
 
     try {
-      profileLogger.info("Resetting demo progress");
+      profileLogger.info("Resetting demo progress", { includeOnboarding });
 
       const response = await fetch("/api/profile/reset-demo", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ includeOnboarding }),
       });
 
       if (!response.ok) {
@@ -241,16 +245,23 @@ export default function ProfilePage() {
           chatThreads: number;
           chatSessions: number;
         };
+        onboardingReset: boolean;
       };
 
       profileLogger.info("Demo progress reset completed", {
         deleted: result.deleted,
+        onboardingReset: result.onboardingReset,
       });
 
       setResetDialogOpen(false);
+      setIncludeOnboarding(false);
 
-      // Redirect to roadmap to show the tutorial
-      router.push("/roadmap");
+      // Redirect based on whether onboarding was reset
+      if (result.onboardingReset) {
+        router.push("/onboarding");
+      } else {
+        router.push("/roadmap");
+      }
     } catch (error) {
       profileLogger.error("Failed to reset demo progress", error as Error);
       const errorMessage =
@@ -458,7 +469,12 @@ export default function ProfilePage() {
             <div className="border-border mt-6 space-y-3 border-t pt-6">
               <AlertDialog
                 open={resetDialogOpen}
-                onOpenChange={setResetDialogOpen}
+                onOpenChange={(open) => {
+                  setResetDialogOpen(open);
+                  if (!open) {
+                    setIncludeOnboarding(false);
+                  }
+                }}
               >
                 <AlertDialogTrigger asChild>
                   <Button
@@ -483,10 +499,33 @@ export default function ProfilePage() {
                           <li>All chat history will be deleted</li>
                           <li>All custom nodes will be removed</li>
                         </ul>
-                        <p className="text-muted-foreground">
-                          Your onboarding preferences (trade, level,
-                          specialization) will be kept.
-                        </p>
+                        {!includeOnboarding && (
+                          <p className="text-muted-foreground">
+                            Your onboarding preferences (trade, level,
+                            specialization) will be kept.
+                          </p>
+                        )}
+                        <div className="flex items-center space-x-2 pt-2">
+                          <Checkbox
+                            id="include-onboarding"
+                            checked={includeOnboarding}
+                            onCheckedChange={(checked) =>
+                              setIncludeOnboarding(checked === true)
+                            }
+                          />
+                          <label
+                            htmlFor="include-onboarding"
+                            className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Also reset onboarding quiz
+                          </label>
+                        </div>
+                        {includeOnboarding && (
+                          <p className="text-sm text-amber-600 dark:text-amber-400">
+                            Your trade, level, specialization, and residency
+                            selections will also be cleared.
+                          </p>
+                        )}
                       </div>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
