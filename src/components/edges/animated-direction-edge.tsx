@@ -58,7 +58,7 @@ function AnimatedDirectionEdge(props: EdgeProps) {
         <g
           key={idx}
           className="animated-direction-edge-arrow"
-          style={{ animationDelay: `${delay}s` }}
+          style={{ opacity: 0, animationDelay: `${delay}s` }}
         >
           {/* Small chevron */}
           <path
