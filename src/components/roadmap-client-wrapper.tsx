@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { RoadmapFlow } from "@/components/roadmap-flow";
 import { logger } from "@/lib/logger";
 import type { Roadmap } from "@/data/types/roadmap";
-import type { UserProfile } from "@/lib/profile-types";
+import type { UserProfile, ApprenticeshipLevel } from "@/lib/profile-types";
 
 interface RoadmapClientWrapperProps {
   roadmap: Roadmap;
@@ -21,9 +21,24 @@ interface RoadmapClientWrapperProps {
   userId: string | null;
 }
 
+// API response type for profile endpoint
+interface ProfileApiResponse {
+  id: number;
+  clerkUserId: string;
+  trade: string;
+  currentLevel: string;
+  specialization: string | null;
+  residencyStatus: string;
+  pendingLevelUp: string | null;
+  onboardingCompletedAt: string | null;
+  tutorialCompletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export function RoadmapClientWrapper({
   roadmap,
-  userProfile,
+  userProfile: initialUserProfile,
   initialCustomNodes,
   userId,
 }: RoadmapClientWrapperProps) {
@@ -32,6 +47,9 @@ export function RoadmapClientWrapper({
   const [newlyCreatedNodeId, setNewlyCreatedNodeId] = useState<
     string | undefined
   >();
+
+  // Local state for userProfile to allow updates without full page refresh
+  const [userProfile, setUserProfile] = useState(initialUserProfile);
 
   // Read initial node ID from URL query params for deep linking
   // URL format: /roadmap?node=foundation-program
@@ -43,6 +61,44 @@ export function RoadmapClientWrapper({
       setInitialNodeId(nodeParam);
     }
   }, [searchParams]);
+
+  // Refetch profile when page becomes visible (user navigates back from settings)
+  useEffect(() => {
+    if (!userId) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // Refetch profile to get latest data
+        fetch("/api/profile")
+          .then((res) => {
+            if (res.ok) return res.json() as Promise<ProfileApiResponse>;
+            throw new Error("Failed to fetch profile");
+          })
+          .then((data) => {
+            setUserProfile((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                currentLevel: data.currentLevel as ApprenticeshipLevel,
+                pendingLevelUp:
+                  (data.pendingLevelUp as ApprenticeshipLevel) ?? null,
+              };
+            });
+          })
+          .catch((error) => {
+            logger.error(
+              "Failed to refresh profile on visibility change",
+              error as Error,
+            );
+          });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [userId]);
 
   const refreshCustomNodes = useCallback(
     async (nodeId?: string) => {
@@ -82,6 +138,11 @@ export function RoadmapClientWrapper({
     [userId, roadmap.metadata.id],
   );
 
+  // Callback to update user profile after level advancement
+  const handleProfileUpdate = useCallback((updates: Partial<UserProfile>) => {
+    setUserProfile((prev) => (prev ? { ...prev, ...updates } : prev));
+  }, []);
+
   return (
     <RoadmapFlow
       roadmap={roadmap}
@@ -92,6 +153,7 @@ export function RoadmapClientWrapper({
       onNodePanned={() => setNewlyCreatedNodeId(undefined)}
       initialSelectedNodeId={initialNodeId}
       onInitialNodeHandled={() => setInitialNodeId(undefined)}
+      onProfileUpdate={handleProfileUpdate}
     />
   );
 }

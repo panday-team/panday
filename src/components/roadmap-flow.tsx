@@ -130,6 +130,8 @@ interface RoadmapFlowProps {
   initialSelectedNodeId?: string;
   /** Callback when initial node navigation is complete */
   onInitialNodeHandled?: () => void;
+  /** Callback to update user profile state (e.g., after level advancement) */
+  onProfileUpdate?: (updates: Partial<UserProfile>) => void;
 }
 
 function stringToPosition(pos?: string): Position | undefined {
@@ -152,6 +154,7 @@ function RoadmapFlowInner({
   onNodePanned,
   initialSelectedNodeId,
   onInitialNodeHandled,
+  onProfileUpdate,
 }: RoadmapFlowProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const animationsRef = useRef<Map<string, () => void>>(new Map());
@@ -1235,7 +1238,7 @@ function RoadmapFlowInner({
 
   // Handle advancing to the next level
   const handleAdvanceLevel = useCallback(async () => {
-    if (!userProfile || !levelUpDetection.completedNodeId) {
+    if (!userProfile) {
       return;
     }
 
@@ -1266,6 +1269,12 @@ function RoadmapFlowInner({
         throw new Error("Failed to update profile");
       }
 
+      // Update local profile state to reflect new level and clear pendingLevelUp
+      onProfileUpdate?.({
+        currentLevel: progression.nextLevel,
+        pendingLevelUp: null,
+      });
+
       // Close the modal
       setShowLevelUpCelebration(false);
       levelUpDetection.clearLevelUp();
@@ -1283,9 +1292,6 @@ function RoadmapFlowInner({
         });
       }, 300);
 
-      // Note: The page will need to be refreshed or userProfile updated
-      // to reflect the new level in the UI. Consider using router.refresh()
-      // or a callback to parent to update userProfile state.
       logger.info("User advanced to next level", {
         fromLevel: userProfile.currentLevel,
         toLevel: progression.nextLevel,
@@ -1298,7 +1304,7 @@ function RoadmapFlowInner({
     } finally {
       setIsAdvancingLevel(false);
     }
-  }, [userProfile, levelUpDetection, fitView]);
+  }, [userProfile, levelUpDetection, fitView, onProfileUpdate]);
 
   // Handle staying at current level (dismiss celebration and save pending state)
   const handleStayAtLevel = useCallback(async () => {
@@ -1313,13 +1319,16 @@ function RoadmapFlowInner({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ pendingLevelUp: userProfile.currentLevel }),
         });
+
+        // Update local state to show the "Ready to progress" banner immediately
+        onProfileUpdate?.({ pendingLevelUp: userProfile.currentLevel });
       } catch (error) {
         logger.error("Failed to save pending level up", error as Error, {
           currentLevel: userProfile.currentLevel,
         });
       }
     }
-  }, [levelUpDetection, userProfile]);
+  }, [levelUpDetection, userProfile, onProfileUpdate]);
 
   const handleTutorialStepChange = useCallback(
     (step: TutorialStep) => {
