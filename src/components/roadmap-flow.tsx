@@ -353,7 +353,10 @@ function RoadmapFlowInner({
   // Calculate initial viewport based on user's current level
   const initialViewport = useMemo(() => {
     const currentNodeId = userProfile
-      ? getCurrentLevelNodeId(userProfile.currentLevel)
+      ? getCurrentLevelNodeId(
+          userProfile.currentLevel,
+          userProfile.specialization,
+        )
       : null;
 
     return calculateViewportForNode(currentNodeId, roadmap.graph.nodes);
@@ -718,6 +721,11 @@ function RoadmapFlowInner({
             );
             if (isSourceParentDimmed) return false;
           }
+        }
+
+        // Hide edges TO irrelevant target nodes (e.g., level-3 → level-4-industrial for construction users)
+        if (targetNode && irrelevantNodeIds.includes(targetNode.id)) {
+          return false;
         }
 
         // Hide edges to checklist nodes whose category is not selected
@@ -1398,7 +1406,10 @@ function RoadmapFlowInner({
           if (center === "user-level") {
             // Move to user's current level (same logic as initialViewport)
             const currentNodeId = userProfile
-              ? getCurrentLevelNodeId(userProfile.currentLevel)
+              ? getCurrentLevelNodeId(
+                  userProfile.currentLevel,
+                  userProfile.specialization,
+                )
               : null;
             const targetViewport = calculateViewportForNode(
               currentNodeId,
