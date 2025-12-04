@@ -40,7 +40,11 @@ const iconMap: Record<string, LucideIcon> = {
 const NODE_SIZE = 96; // px
 const WAVE_AMPLITUDE = 3; // px - how high the wave peaks
 const WAVE_PERIOD = 2000; // ms - time for one full wave cycle
+const WAVE_POINTS = 24; // Number of points for smooth wave curve
+const WAVE_FREQUENCY = 3; // Creates 1.5 waves across width (Math.PI * WAVE_FREQUENCY)
 const SHIMMER_PERIOD = 3000; // ms - time for shimmer to sweep across
+const SHIMMER_START_OFFSET = -150; // Starting position as percentage
+const SHIMMER_RANGE = 3; // Multiplier to sweep from -150% to 150%
 
 /**
  * Darkens a hex color by a given percentage
@@ -57,8 +61,16 @@ function darkenColor(hex: string, percent: number): string {
 }
 
 /**
- * Generates an SVG path for the wave-topped fill area
- * Creates a smooth sine wave at the top edge of the progress fill
+ * Generates an SVG path for the wave-topped fill area.
+ * Creates a smooth sine wave at the top edge of the progress fill.
+ *
+ * @param percentage - Progress value (0-100)
+ * @param waveOffset - Phase offset for wave animation (in radians)
+ * @param size - Node size in pixels (coordinate system: origin at top-left)
+ *
+ * @returns SVG path string, or:
+ *   - Empty string for 0% (nothing to render)
+ *   - Full rectangle for 100% (no wave needed, solid fill)
  */
 function generateWavePath(
   percentage: number,
@@ -67,7 +79,7 @@ function generateWavePath(
 ): string {
   if (percentage <= 0) return "";
   if (percentage >= 100) {
-    // Full circle - no wave needed, just a rectangle covering the circle
+    // Full fill - no wave needed, just a rectangle covering the entire area
     return `M 0 0 L ${size} 0 L ${size} ${size} L 0 ${size} Z`;
   }
 
@@ -76,19 +88,19 @@ function generateWavePath(
 
   // Create wave points across the width using smooth sine curve
   const points: string[] = [];
-  const numPoints = 24; // Number of points for smooth curve
 
-  for (let i = 0; i <= numPoints; i++) {
-    const x = (i / numPoints) * size;
-    // Sine wave with phase offset based on time - creates 1.5 waves across width
+  for (let i = 0; i <= WAVE_POINTS; i++) {
+    const x = (i / WAVE_POINTS) * size;
+    // Sine wave with phase offset based on time
     const waveY =
-      Math.sin((i / numPoints) * Math.PI * 3 + waveOffset) * WAVE_AMPLITUDE;
+      Math.sin((i / WAVE_POINTS) * Math.PI * WAVE_FREQUENCY + waveOffset) *
+      WAVE_AMPLITUDE;
     const y = baseY + waveY;
     points.push(`${x.toFixed(2)} ${y.toFixed(2)}`);
   }
 
   // Build the path: start bottom-left, go up left edge, draw wave across top, down right edge, close
-  return `M 0 ${size} L 0 ${points[0]?.split(" ")[1]} L ${points.join(" L ")} L ${size} ${size} Z`;
+  return `M 0 ${size} L 0 ${points[0]?.split(" ")[1] ?? size} L ${points.join(" L ")} L ${size} ${size} Z`;
 }
 
 /**
@@ -111,12 +123,12 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
 
   // Refs for visibility detection
   const nodeRef = useRef<HTMLDivElement>(null);
-  const clipPathId = useId();
+  const rawClipPathId = useId();
+  const clipPathId = `wave-${rawClipPathId.replace(/:/g, "")}`;
 
   // Detect if node is in viewport (with margin for smooth transition)
   const isInView = useInView(nodeRef, {
     margin: "100px",
-    initial: true,
   });
 
   // Time-based animation driver
@@ -135,10 +147,9 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
 
   // Shimmer animation - sweeps across every SHIMMER_PERIOD ms
   const shimmerX = useTransform(time, (t) => {
-    if (!isInView || percentage === 0) return -150;
+    if (!isInView || percentage === 0) return SHIMMER_START_OFFSET;
     const cycle = ((t % SHIMMER_PERIOD) / SHIMMER_PERIOD) * 100;
-    // Move from -150% to 150% for full sweep across circular area
-    return -150 + cycle * 3;
+    return SHIMMER_START_OFFSET + cycle * SHIMMER_RANGE;
   });
 
   const hiddenHandleClass =
@@ -173,7 +184,7 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
               : "roadblocks"
         }
         data-node-id={id}
-        aria-label={label}
+        aria-label={`${label}${percentage > 0 ? ` - ${percentage}% complete` : ""}`}
         className="group nodrag relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-full border-none bg-transparent shadow-none outline-none hover:ring-0 focus-visible:ring-0"
       >
         <NodeAppendix
