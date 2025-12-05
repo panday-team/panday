@@ -29,7 +29,7 @@ import {
   type ChecklistNodeType,
   type TerminalNodeType,
   type CategoryNodeType,
-} from "@/components/nodes"
+} from "@/components/nodes";
 import {
   NodeInfoPanel,
   type Category,
@@ -153,14 +153,9 @@ function RoadmapFlowInner({
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const animationsRef = useRef<Map<string, () => void>>(new Map());
   const isDraggingRef = useRef<string | null>(null);
-  const [nodeStatuses, setNodeStatuses] = useState<Record<string, NodeStatus>>({});
-  
-  // Personal notes sidebar state
-  const [isPersonalNotesOpen, setIsPersonalNotesOpen] = useState(false);
-  const [personalNotes, setPersonalNotes] = useState("");
-  const [personalGoals, setPersonalGoals] = useState<string[]>([]);
-  const [personalSkills, setPersonalSkills] = useState<string[]>([]);
-  
+  const [nodeStatuses, setNodeStatuses] = useState<Record<string, NodeStatus>>(
+    {},
+  );
   const { fitView, setCenter, getViewport, screenToFlowPosition, setViewport } =
     useReactFlow();
   const responsive = useResponsive();
@@ -189,22 +184,6 @@ function RoadmapFlowInner({
       // Ignore errors
     }
   }, [roadmap.metadata.id]);
-
-  // Load personal notes from localStorage after mount
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const stored = localStorage.getItem("personal-notes");
-      if (stored) {
-        const data = JSON.parse(stored);
-        setPersonalNotes(data.notes || "");
-        setPersonalGoals(data.goals || []);
-        setPersonalSkills(data.skills || []);
-      }
-    } catch {
-      // Ignore errors
-    }
-  }, []);
 
   // Persist expanded state to sessionStorage
   useEffect(() => {
@@ -605,9 +584,6 @@ function RoadmapFlowInner({
     nodeRelationships,
     customNodes,
     selectedNodeId,
-    personalNotes,
-    personalGoals,
-    personalSkills,
   ]);
 
   const initialEdges = useMemo<FlowEdge[]>(() => {
@@ -1686,20 +1662,6 @@ function RoadmapFlowInner({
     [onRefreshCustomNodes],
   );
 
-  const handlePersonalNotesSave = useCallback((data: {
-    notes: string;
-    goals: string[];
-    skills: string[];
-  }) => {
-    setPersonalNotes(data.notes);
-    setPersonalGoals(data.goals);
-    setPersonalSkills(data.skills);
-    setIsPersonalNotesOpen(false);
-    
-    // Here you could save to localStorage, API, etc.
-    localStorage.setItem("personal-notes", JSON.stringify(data));
-  }, []);
-
   // Handle initial node selection from URL deep link (e.g., /roadmap?node=foundation-program)
   // Track if we've already handled this initial node to avoid re-running on nodes array changes
   const initialNodeHandledRef = useRef(false);
@@ -1925,15 +1887,6 @@ function RoadmapFlowInner({
         forceClose={showTutorial}
         onCustomNodeCreated={onRefreshCustomNodes}
         isNodePanelOpen={!!selectedNodeId && !!selectedContent}
-      />
-
-      <PersonalNotesSidebar
-        isOpen={isPersonalNotesOpen}
-        onToggle={() => setIsPersonalNotesOpen(!isPersonalNotesOpen)}
-        personalNotes={personalNotes}
-        personalGoals={personalGoals}
-        personalSkills={personalSkills}
-        onSave={handlePersonalNotesSave}
       />
 
       <RoadmapTutorial

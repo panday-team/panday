@@ -384,3 +384,92 @@
   border: 2px solid transparent;
   background-clip: padding-box;
 }
+
+/* Note Component Styles */
+.note-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.note-container .items {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.note-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--card-foreground);
+  margin: 0;
+}
+
+.save-text {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.note-area {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--input);
+  color: var(--card-foreground);
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.note-area:focus {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.note-area::placeholder {
+  color: var(--muted-foreground);
+}
+
+.note-area:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-text {
+  font-size: 12px;
+  color: var(--destructive);
+  margin: 0;
+}
+
+.note-button {
+  align-self: flex-start;
+  padding: 8px 16px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.note-button:hover:not(:disabled) {
+  background: var(--primary);
+}
+
+.note-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+

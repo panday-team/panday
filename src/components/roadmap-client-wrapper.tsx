@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { RoadmapFlow } from "@/components/roadmap-flow";
+import { Note } from "@/components/ui/note-taker";
 import { logger } from "@/lib/logger";
 import type { Roadmap } from "@/data/types/roadmap";
 import type { UserProfile } from "@/lib/profile-types";
@@ -83,15 +84,33 @@ export function RoadmapClientWrapper({
   );
 
   return (
-    <RoadmapFlow
-      roadmap={roadmap}
-      userProfile={userProfile}
-      customNodes={customNodes}
-      onRefreshCustomNodes={refreshCustomNodes}
-      newlyCreatedNodeId={newlyCreatedNodeId}
-      onNodePanned={() => setNewlyCreatedNodeId(undefined)}
-      initialSelectedNodeId={initialNodeId}
-      onInitialNodeHandled={() => setInitialNodeId(undefined)}
-    />
+    <div className="flex h-screen">
+      <div className="flex-1">
+        <RoadmapFlow
+          roadmap={roadmap}
+          userProfile={userProfile}
+          customNodes={customNodes}
+          onRefreshCustomNodes={refreshCustomNodes}
+          newlyCreatedNodeId={newlyCreatedNodeId}
+          onNodePanned={() => setNewlyCreatedNodeId(undefined)}
+          initialSelectedNodeId={initialNodeId}
+          onInitialNodeHandled={() => setInitialNodeId(undefined)}
+        />
+      </div>
+      <div className="w-80 border-l border-border bg-card">
+        <div className="p-4 h-full">
+          <Note
+            id="roadmap-notes"
+            onSave={async (content) => {
+              // TODO: Implement note saving to backend
+              console.log('Saving note:', content);
+              // Simulate API call
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
+
