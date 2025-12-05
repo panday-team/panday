@@ -163,3 +163,67 @@ export function getAllNodeStatuses(
 ): Record<string, NodeStatus> {
   return getLocalNodeStatuses(roadmapId);
 }
+
+/**
+ * Batch update multiple node statuses at once
+ * More efficient than calling setNodeStatus multiple times
+ */
+export async function batchSetNodeStatus(
+  roadmapId: string,
+  nodeIds: string[],
+  status: NodeStatus,
+): Promise<void> {
+  if (nodeIds.length === 0) return;
+
+  // Update localStorage immediately for instant UI feedback
+  for (const nodeId of nodeIds) {
+    updateLocalNodeStatus(roadmapId, nodeId, status);
+  }
+
+  // Persist to database in the background
+  try {
+    const response = await fetch("/api/node-progress", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        roadmapId,
+        nodeIds,
+        status,
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        logger.info("User not authenticated, using localStorage only");
+        return;
+      }
+      logger.warn("Failed to batch update node status in database", {
+        roadmapId,
+        nodeCount: nodeIds.length,
+        status,
+        statusCode: response.status,
+        statusText: response.statusText,
+      });
+      return;
+    }
+
+    logger.info("Batch node status updated in database", {
+      roadmapId,
+      nodeCount: nodeIds.length,
+      status,
+    });
+  } catch (error) {
+    logger.warn(
+      "Failed to batch update node status in database (network error)",
+      {
+        roadmapId,
+        nodeCount: nodeIds.length,
+        status,
+        error: error instanceof Error ? error.message : String(error),
+      },
+    );
+    // Status is still saved in localStorage, so UI remains consistent
+  }
+}

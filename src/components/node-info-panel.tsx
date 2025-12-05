@@ -86,6 +86,8 @@ export interface NodeInfoPanelProps extends ComponentPropsWithoutRef<"aside"> {
     nodeId: string,
     data: CustomNodeEditData,
   ) => Promise<void>;
+  /** Called when "Mark All Complete" is clicked for hub nodes */
+  onMarkAllComplete?: (nodeId: string) => Promise<void>;
   onCheckboxClick?: () => void;
   onDropdownOpen?: () => void;
   /** Called when close button is clicked */
@@ -115,6 +117,7 @@ export function NodeInfoPanel({
   onChecklistStatusChange,
   onDeleteCustomNode,
   onEditCustomNode,
+  onMarkAllComplete,
   onCheckboxClick,
   onDropdownOpen,
   onClose,
@@ -127,6 +130,7 @@ export function NodeInfoPanel({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isMarkingAllComplete, setIsMarkingAllComplete] = useState(false);
   const deleteConfirmRef = useRef<HTMLDivElement>(null);
 
   // Edit state - initialize with current values
@@ -267,6 +271,17 @@ export function NodeInfoPanel({
   const handleDeleteCancel = () => {
     setShowDeleteConfirm(false);
   };
+
+  const handleMarkAllComplete = useCallback(async () => {
+    if (!nodeId || !onMarkAllComplete) return;
+
+    setIsMarkingAllComplete(true);
+    try {
+      await onMarkAllComplete(nodeId);
+    } finally {
+      setIsMarkingAllComplete(false);
+    }
+  }, [nodeId, onMarkAllComplete]);
 
   // Close confirmation on click outside
   useEffect(() => {
@@ -508,6 +523,32 @@ export function NodeInfoPanel({
               total={progress.total}
               percentage={progress.percentage}
             />
+          ) : null}
+
+          {/* Mark All Complete button for hub nodes */}
+          {nodeType === "hub" &&
+          nodeId &&
+          onMarkAllComplete &&
+          progress &&
+          progress.total > 0 &&
+          progress.percentage < 100 ? (
+            <button
+              onClick={() => void handleMarkAllComplete()}
+              disabled={isMarkingAllComplete}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#61FF05] px-4 py-3 text-sm font-semibold text-black shadow-sm transition-all hover:bg-[#6FFF1A] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isMarkingAllComplete ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Marking all complete...
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4" />
+                  Mark All Complete
+                </>
+              )}
+            </button>
           ) : null}
 
           {eligibility?.length ? (

@@ -59,6 +59,7 @@ import {
   type NodeStatus,
   fetchNodeStatuses,
   setNodeStatus,
+  batchSetNodeStatus,
 } from "@/lib/node-status";
 import { calculateCustomNodePositions } from "@/lib/custom-node-positioning";
 import { resolveCollisions, detectCollisions } from "@/lib/collision-physics";
@@ -71,7 +72,10 @@ import {
   LEVEL_METADATA,
 } from "@/lib/profile-types";
 import { calculateViewportForNode } from "@/lib/viewport-utils";
-import { calculateNodeProgress } from "@/lib/progress-utils";
+import {
+  calculateNodeProgress,
+  getDescendantChecklists,
+} from "@/lib/progress-utils";
 import { useResponsive } from "@/lib/use-responsive";
 import { useLevelUpDetection } from "@/lib/hooks/use-level-up-detection";
 import AnimatedDirectionEdge from "@/components/edges/animated-direction-edge";
@@ -1230,6 +1234,74 @@ function RoadmapFlowInner({
     [roadmap.metadata.id, setNodes],
   );
 
+  // Handler to mark all descendant checklist nodes as complete
+  const handleMarkAllComplete = useCallback(
+    async (nodeId: string) => {
+      // Get all descendant checklist nodes for this hub
+      const descendantChecklists = getDescendantChecklists(
+        nodeId,
+        roadmap.graph.nodes,
+        roadmap.content,
+      );
+
+      // Collect IDs to mark as complete
+      const idsToComplete: string[] = [];
+
+      // Add incomplete checklist node IDs
+      for (const node of descendantChecklists) {
+        if (nodeStatuses[node.id] !== "completed") {
+          idsToComplete.push(node.id);
+        }
+      }
+
+      // Add incomplete virtual resource IDs from the hub's content
+      const hubContent = roadmap.content.get(nodeId);
+      if (hubContent?.resources) {
+        for (let i = 0; i < hubContent.resources.length; i++) {
+          const resourceId = `resource-${nodeId}-${i}`;
+          if (nodeStatuses[resourceId] !== "completed") {
+            idsToComplete.push(resourceId);
+          }
+        }
+      }
+
+      if (idsToComplete.length === 0) return;
+
+      // Update localStorage and database via batch API
+      await batchSetNodeStatus(roadmap.metadata.id, idsToComplete, "completed");
+
+      // Update local state
+      setNodeStatuses((prev) => {
+        const updated = { ...prev };
+        for (const id of idsToComplete) {
+          updated[id] = "completed";
+        }
+        return updated;
+      });
+
+      // Update node data for visual refresh (only for actual graph nodes, not virtual resources)
+      setNodes((currentNodes) =>
+        currentNodes.map((node) => {
+          if (
+            idsToComplete.includes(node.id) &&
+            "status" in node.data &&
+            node.data.status !== "completed"
+          ) {
+            return { ...node, data: { ...node.data, status: "completed" } };
+          }
+          return node;
+        }),
+      );
+    },
+    [
+      roadmap.metadata.id,
+      roadmap.graph.nodes,
+      roadmap.content,
+      nodeStatuses,
+      setNodes,
+    ],
+  );
+
   const handleTutorialComplete = useCallback(async () => {
     setShowTutorial(false);
 
@@ -2094,6 +2166,7 @@ function RoadmapFlowInner({
               onChecklistStatusChange={handleStatusChange}
               onDeleteCustomNode={handleDeleteCustomNode}
               onEditCustomNode={handleEditCustomNode}
+              onMarkAllComplete={handleMarkAllComplete}
               onCheckboxClick={() =>
                 handleTutorialInteraction("checkbox-click")
               }

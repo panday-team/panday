@@ -13,6 +13,9 @@ import type {
   ResidencyStatus,
 } from "@/lib/profile-types";
 
+// Force dynamic rendering to ensure fresh data after reset
+export const dynamic = "force-dynamic";
+
 export default async function RoadmapPage() {
   const { userId } = await auth();
   const roadmap = await roadmapCache.get("electrician-bc");
