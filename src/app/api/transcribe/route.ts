@@ -155,45 +155,10 @@ export async function POST(req: NextRequest) {
       transcriptLength: transcript.length,
     });
 
-    // Check if translation is needed (not English)
-    let translation: string | undefined;
-    let finalText = transcript;
-
-    if (language !== "en") {
-      logger.info("Translating transcript to English", {
-        userId,
-        fromLanguage: language,
-      });
-
-      try {
-        // Use Whisper's built-in translation endpoint (more efficient than chat completions)
-        // This uses the same Whisper model but returns English translation directly
-        const translationResponse = await openai.audio.translations.create(
-          {
-            file: file,
-            model: VOICE_CONFIG.WHISPER_MODEL,
-          },
-          {
-            signal: controller.signal,
-          },
-        );
-
-        translation = translationResponse.text;
-        finalText = translation;
-
-        logger.info("Translation completed", {
-          userId,
-          translationLength: translation.length,
-        });
-      } catch (error) {
-        logger.warn("Translation failed, using original transcript", {
-          userId,
-          language,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        // Fall back to original transcript if translation fails
-      }
-    }
+    // TODO: Re-enable translation for non-English audio when performance is acceptable
+    // Currently skipping translation to reduce latency (was adding ~2-3s for second API call)
+    const translation: string | undefined = undefined;
+    const finalText = transcript;
 
     clearTimeout(timeoutId);
 
