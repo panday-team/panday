@@ -1,4 +1,4 @@
-import { memo, useRef, useId } from "react";
+import { memo, useRef, useId, useEffect } from "react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { BaseNode } from "@/components/base-node";
 import { NodeAppendix } from "@/components/node-appendix";
@@ -8,6 +8,7 @@ import {
   useInView,
   useTime,
   useTransform,
+  useSpring,
 } from "motion/react";
 import Image from "next/image";
 import {
@@ -118,8 +119,19 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
     isDimmed = false,
   } = data;
 
-  const percentage = data.progress ?? 0;
+  const targetPercentage = data.progress ?? 0;
   const borderColor = darkenColor(color, 30);
+
+  // Animated percentage value for smooth fill transitions
+  const animatedPercentage = useSpring(targetPercentage, {
+    stiffness: 50,
+    damping: 20,
+  });
+
+  // Update spring target when percentage changes
+  useEffect(() => {
+    animatedPercentage.set(targetPercentage);
+  }, [targetPercentage, animatedPercentage]);
 
   // Refs for visibility detection
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -134,20 +146,27 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
   // Time-based animation driver
   const time = useTime();
 
-  // Wave animation - oscillates the wave phase when in view
-  const wavePhase = useTransform(time, (t) => {
-    if (!isInView || percentage === 0 || percentage >= 100) return 0;
-    return (t / WAVE_PERIOD) * Math.PI * 2;
-  });
+  // Wave phase based on time
+  const baseWavePhase = useTransform(
+    time,
+    (t) => (t / WAVE_PERIOD) * Math.PI * 2,
+  );
 
-  // Generate wave path reactively
-  const wavePath = useTransform(wavePhase, (phase) =>
-    generateWavePath(percentage, phase, NODE_SIZE),
+  // Generate wave path reactively using animated percentage
+  const wavePath = useTransform(
+    [baseWavePhase, animatedPercentage] as const,
+    ([phase, pct]) => {
+      const p = pct as number;
+      if (!isInView || p === 0 || p >= 100) {
+        return generateWavePath(p, 0, NODE_SIZE);
+      }
+      return generateWavePath(p, phase as number, NODE_SIZE);
+    },
   );
 
   // Shimmer animation - sweeps across every SHIMMER_PERIOD ms
   const shimmerX = useTransform(time, (t) => {
-    if (!isInView || percentage === 0) return SHIMMER_START_OFFSET;
+    if (!isInView || targetPercentage === 0) return SHIMMER_START_OFFSET;
     const cycle = ((t % SHIMMER_PERIOD) / SHIMMER_PERIOD) * 100;
     return SHIMMER_START_OFFSET + cycle * SHIMMER_RANGE;
   });
@@ -184,7 +203,7 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
               : "roadblocks"
         }
         data-node-id={id}
-        aria-label={`${label}${percentage > 0 ? ` - ${percentage}% complete` : ""}`}
+        aria-label={`${label}${targetPercentage > 0 ? ` - ${targetPercentage}% complete` : ""}`}
         className="group nodrag relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-full border-none bg-transparent shadow-none outline-none hover:ring-0 focus-visible:ring-0"
       >
         <NodeAppendix
@@ -244,7 +263,7 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
           }}
           initial={false}
           animate={{
-            opacity: percentage > 0 ? 1 : 0,
+            opacity: targetPercentage > 0 ? 1 : 0,
           }}
           transition={{
             duration: 0.6,
@@ -253,7 +272,7 @@ function CategoryNodeComponent({ id, data }: NodeProps<CategoryNodeType>) {
         />
 
         {/* Shimmer overlay - sweeps across the fill */}
-        {percentage > 0 && (
+        {targetPercentage > 0 && (
           <motion.span
             aria-hidden
             className="pointer-events-none absolute z-[11] h-24 w-24 overflow-hidden rounded-full"
