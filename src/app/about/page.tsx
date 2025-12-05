@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { LandingHeader } from "@/components/landing/landing-header";
 import { LandingFooter } from "@/components/landing/landing-footer";
@@ -5,29 +9,261 @@ import {
   Code,
   Palette,
   ArrowRight,
-  Users,
-  AlertTriangle,
-  TrendingUp,
-  Compass,
   Mail,
+  Linkedin,
+  Github,
   Instagram,
-  Zap,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
-const teamMembers = {
-  developers: [
-    { name: "Peter", role: "Full Stack Developer" },
-    { name: "Nikita", role: "Full Stack Developer" },
-    { name: "Josh", role: "Full Stack Developer" },
-    { name: "Ozem", role: "Full Stack Developer" },
-    { name: "Manny", role: "Full Stack Developer" },
-  ],
-  designers: [
-    { name: "Bruno", role: "UI/UX Designer" },
-    { name: "Darrel", role: "UI/UX Designer" },
-    { name: "Reagan", role: "UI/UX Designer" },
-  ],
-};
+interface TeamMember {
+  name: string;
+  role: string;
+  image: string;
+  linkedin?: string;
+  email?: string;
+  github?: string;
+}
+
+const developers: TeamMember[] = [
+  {
+    name: "Nikita",
+    role: "Full Stack Developer",
+    image: "/Nikita.png",
+    linkedin: "https://www.linkedin.com/in/nikitalobanov",
+    email: "nlobanov@my.bcit.ca",
+    github: "https://github.com/nikitalobanov12",
+  },
+  {
+    name: "Ozem",
+    role: "Full Stack Developer",
+    image: "/ozem.png",
+    linkedin: "https://www.linkedin.com/in/naldaguilar/",
+    email: "naguilar2@my.bcit.ca",
+    github: "https://github.com/aguilarxnldoz",
+  },
+  {
+    name: "Josh",
+    role: "Full Stack Developer",
+    image: "/josh.png",
+    linkedin: "https://www.linkedin.com/in/joshua-fajardo/",
+    email: "jfajardo7@my.bcit.ca",
+    github: "https://github.com/Dove167",
+  },
+  {
+    name: "Peter",
+    role: "Full Stack Developer",
+    image: "/peter.png",
+    linkedin: "https://www.linkedin.com/in/peter-guanghuichen/",
+    email: "gchen110@my.bcit.ca",
+    github: "https://github.com/cghuisunshine",
+  },
+  {
+    name: "Manraj",
+    role: "Full Stack Developer",
+    image: "/manraj.png",
+    email: "mbains67@my.bcit.ca",
+    github: "https://github.com/Manraj-Bains",
+  },
+];
+
+const designers: TeamMember[] = [
+  {
+    name: "Bruno",
+    role: "UI/UX Designer",
+    image: "/Bruno.png",
+    linkedin: "https://www.linkedin.com/in/brunoamorimdossantos/",
+    email: "bamorimdossantos@my.bcit.ca",
+  },
+  {
+    name: "Darrel",
+    role: "UI/UX Designer",
+    image: "/darrel.png",
+    email: "dsoriano5@my.bcit.ca",
+  },
+  {
+    name: "Reagan",
+    role: "UI/UX Designer",
+    image: "/reagan.png",
+    linkedin: "https://www.linkedin.com/in/reaganlung/",
+    email: "llung1@my.bcit.ca",
+  },
+];
+
+function TeamMemberCard({
+  member,
+  accentColor,
+}: {
+  member: TeamMember;
+  accentColor: string;
+}) {
+  return (
+    <div className="mx-auto w-[540px] max-w-full rounded-2xl border border-white/10 bg-[#0B101D] p-6 md:p-10">
+      <div className="flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-between">
+        {/* Image - Left Side */}
+        <div
+          className="relative h-40 w-40 flex-shrink-0 overflow-hidden rounded-full md:h-48 md:w-48"
+          style={{ backgroundColor: accentColor }}
+        >
+          <Image
+            src={member.image}
+            alt={member.name}
+            fill
+            className="object-cover"
+          />
+        </div>
+
+        {/* Content - Right Side */}
+        <div className="text-center md:text-left">
+          {/* Name & Role */}
+          <div className="mb-6">
+            <h3 className="font-inria-sans mb-2 text-3xl font-bold text-white md:text-4xl">
+              {member.name}
+            </h3>
+            <p className="font-inria-sans text-lg text-white/60 md:text-xl">
+              {member.role}
+            </p>
+          </div>
+
+          {/* Contact Links */}
+          <div className="flex items-center justify-center gap-4 md:justify-start">
+            {member.linkedin && (
+              <a
+                href={member.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20"
+                aria-label={`${member.name}'s LinkedIn`}
+              >
+                <Linkedin className="h-5 w-5" />
+              </a>
+            )}
+            {member.email && (
+              <a
+                href={`mailto:${member.email}`}
+                className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20"
+                aria-label={`Email ${member.name}`}
+              >
+                <Mail className="h-5 w-5" />
+              </a>
+            )}
+            {member.github && (
+              <a
+                href={member.github}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20"
+                aria-label={`${member.name}'s GitHub`}
+              >
+                <Github className="h-5 w-5" />
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TeamCarousel({
+  members,
+  title,
+  icon: Icon,
+  accentColor,
+}: {
+  members: TeamMember[];
+  title: string;
+  icon: typeof Code;
+  accentColor: string;
+}) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const changeSlide = (newIndex: number) => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentIndex(newIndex);
+      setTimeout(() => setIsTransitioning(false), 50);
+    }, 150);
+  };
+
+  const goToPrevious = () => {
+    const newIndex = currentIndex === 0 ? members.length - 1 : currentIndex - 1;
+    changeSlide(newIndex);
+  };
+
+  const goToNext = () => {
+    const newIndex = currentIndex === members.length - 1 ? 0 : currentIndex + 1;
+    changeSlide(newIndex);
+  };
+
+  return (
+    <div className="mb-16 last:mb-0">
+      {/* Section Header */}
+      <div className="mb-8 flex items-center justify-center gap-3">
+        <div
+          className="flex h-12 w-12 items-center justify-center rounded-lg"
+          style={{ backgroundColor: accentColor }}
+        >
+          <Icon className="h-6 w-6 text-white" />
+        </div>
+        <h3 className="font-inria-sans text-2xl font-bold text-white md:text-3xl">
+          {title}
+        </h3>
+      </div>
+
+      {/* Carousel */}
+      <div className="relative mx-auto max-w-4xl">
+        {/* Navigation Arrows */}
+        <button
+          onClick={goToPrevious}
+          className="absolute top-1/2 left-0 z-10 flex h-12 w-12 -translate-x-2 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 md:-translate-x-16"
+          aria-label="Previous team member"
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+
+        <button
+          onClick={goToNext}
+          className="absolute top-1/2 right-0 z-10 flex h-12 w-12 translate-x-2 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 md:translate-x-16"
+          aria-label="Next team member"
+        >
+          <ChevronRight className="h-6 w-6" />
+        </button>
+
+        {/* Card with transition */}
+        <div
+          className={`transition-all duration-300 ease-in-out ${
+            isTransitioning ? "scale-95 opacity-0" : "scale-100 opacity-100"
+          }`}
+        >
+          <TeamMemberCard
+            member={members[currentIndex]!}
+            accentColor={accentColor}
+          />
+        </div>
+      </div>
+
+      {/* Dots Indicator */}
+      <div className="mt-6 flex items-center justify-center gap-2">
+        {members.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => changeSlide(index)}
+            className="h-3 w-3 rounded-full transition"
+            style={{
+              backgroundColor:
+                index === currentIndex ? accentColor : "rgba(255,255,255,0.2)",
+            }}
+            aria-label={`Go to team member ${index + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function AboutPage() {
   return (
@@ -39,223 +275,53 @@ export default function AboutPage() {
         <div className="container mx-auto px-4 md:px-8">
           <div className="mx-auto max-w-4xl text-center">
             <h1 className="font-inria-sans mb-6 text-4xl font-bold text-white md:text-5xl lg:text-6xl">
-              About <span className="text-[#FF8F27]">Panday</span>
+              Meet the <span className="text-[#FF8F27]">Team</span>
             </h1>
             <p className="font-inria-sans mx-auto max-w-3xl text-lg leading-relaxed text-white/80 md:text-xl">
-              By 2030, BC will need over{" "}
-              <span className="font-bold text-[#FF8F27]">85,000</span> new
-              skilled trades workers. Over half of registered apprentices never
-              finish their Red Seal certification. Not because they&apos;re not
-              capable, but because the journey is confusing, scattered, and
-              overwhelming.
+              We&apos;re a team of developers and designers passionate about
+              making skilled trades careers more accessible. Together,
+              we&apos;re building tools to help workers navigate their path to
+              Red Seal certification.
             </p>
           </div>
         </div>
       </section>
 
-      {/* The Problem Section */}
+      {/* Team Carousels Section */}
       <section className="border-b-4 border-white bg-[#1D2740] py-16 md:border-b-6 md:py-20">
         <div className="container mx-auto px-4 md:px-8">
-          <div className="mx-auto max-w-5xl">
-            <h2 className="font-inria-sans mb-4 text-center text-3xl font-bold text-white md:text-4xl">
-              The Problem
-            </h2>
-            <p className="font-inria-sans mx-auto mb-12 max-w-2xl text-center text-white/70">
-              The path isn&apos;t hard because of the work. It&apos;s hard
-              because the system was never built with people in mind.
-            </p>
-
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="rounded-xl bg-[#0B101D] p-6">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-[#FF6B35]">
-                  <AlertTriangle className="h-7 w-7 text-white" />
-                </div>
-                <h3 className="font-inria-sans mb-2 text-xl font-bold text-white">
-                  72% Labour Shortage
-                </h3>
-                <p className="font-inria-sans text-sm leading-relaxed text-white/70">
-                  Construction firms report severe labour shortages, yet
-                  qualified people remain stuck on waitlists or lost in the
-                  system.
-                </p>
-              </div>
-
-              <div className="rounded-xl bg-[#0B101D] p-6">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-[#FF6B35]">
-                  <Users className="h-7 w-7 text-white" />
-                </div>
-                <h3 className="font-inria-sans mb-2 text-xl font-bold text-white">
-                  70% Drop-off Rate
-                </h3>
-                <p className="font-inria-sans text-sm leading-relaxed text-white/70">
-                  For women in the trades, barriers are even steeper. 70% of
-                  female apprentices don&apos;t make it to certification.
-                </p>
-              </div>
-
-              <div className="rounded-xl bg-[#0B101D] p-6">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-[#FF6B35]">
-                  <Compass className="h-7 w-7 text-white" />
-                </div>
-                <h3 className="font-inria-sans mb-2 text-xl font-bold text-white">
-                  Scattered Information
-                </h3>
-                <p className="font-inria-sans text-sm leading-relaxed text-white/70">
-                  People aren&apos;t struggling because they lack drive.
-                  They&apos;re surrounded by information that never gives them
-                  clarity or confidence.
-                </p>
-              </div>
-            </div>
-          </div>
+          <TeamCarousel
+            members={developers}
+            title="Development"
+            icon={Code}
+            accentColor="#35C1B9"
+          />
+          <TeamCarousel
+            members={designers}
+            title="Design"
+            icon={Palette}
+            accentColor="#FF8F27"
+          />
         </div>
       </section>
 
-      {/* The Solution Section */}
+      {/* Mission CTA Section */}
       <section className="border-b-4 border-white bg-[#0B101D] py-16 md:border-b-6 md:py-20">
-        <div className="container mx-auto px-4 md:px-8">
-          <div className="mx-auto max-w-4xl">
-            <h2 className="font-inria-sans mb-4 text-center text-3xl font-bold text-white md:text-4xl">
-              Our Solution
-            </h2>
-            <p className="font-inria-sans mx-auto mb-12 max-w-2xl text-center text-white/70">
-              Panday transforms confusion into clarity, giving users a
-              structured path with AI-powered support every step of the way.
-            </p>
-
-            <div className="rounded-xl bg-[#1D2740] p-8">
-              <div className="grid gap-8 md:grid-cols-3">
-                <div className="text-center">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#FF8F27]">
-                    <Compass className="h-8 w-8 text-white" />
-                  </div>
-                  <h3 className="font-inria-sans mb-2 font-bold text-white">
-                    Clear Paths
-                  </h3>
-                  <p className="font-inria-sans text-sm text-white/70">
-                    Workers get visual roadmaps to high-paying careers with
-                    their Red Seal certification.
-                  </p>
-                </div>
-
-                <div className="text-center">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#35C1B9]">
-                    <Users className="h-8 w-8 text-white" />
-                  </div>
-                  <h3 className="font-inria-sans mb-2 font-bold text-white">
-                    Qualified Candidates
-                  </h3>
-                  <p className="font-inria-sans text-sm text-white/70">
-                    Employers get access to motivated, well-prepared workers
-                    ready for the trades.
-                  </p>
-                </div>
-
-                <div className="text-center">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#00A67E]">
-                    <TrendingUp className="h-8 w-8 text-white" />
-                  </div>
-                  <h3 className="font-inria-sans mb-2 font-bold text-white">
-                    Closing the Gap
-                  </h3>
-                  <p className="font-inria-sans text-sm text-white/70">
-                    BC gets closer to filling that 85,000 worker gap by 2030.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Vision Section */}
-      <section className="border-b-4 border-white bg-[#1D2740] py-16 md:border-b-6 md:py-20">
-        <div className="container mx-auto px-4 md:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#FF8F27]">
-              <Zap className="h-8 w-8 text-white" />
-            </div>
-            <h2 className="font-inria-sans mb-6 text-3xl font-bold text-white md:text-4xl">
-              This is Just the Beginning
-            </h2>
-            <p className="font-inria-sans mb-6 text-lg leading-relaxed text-white/80">
-              We&apos;re starting with electricians, but soon we&apos;re
-              expanding to plumbers, HVAC technicians, welders, carpenters, and
-              more.
-            </p>
-            <p className="font-inria-sans text-lg leading-relaxed text-white/80">
-              Our vision is bigger than a single trade. We&apos;re building a
-              full ecosystem that carries people from training, to job
-              placement, to real career advancement.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Team Section */}
-      <section className="border-b-4 border-white bg-[#0B101D] py-16 md:border-b-6 md:py-20">
-        <div className="container mx-auto px-4 md:px-8">
-          <div className="mx-auto max-w-4xl">
-            <h2 className="font-inria-sans mb-12 text-center text-3xl font-bold text-white md:text-4xl">
-              Meet the Team
-            </h2>
-
-            <div className="grid gap-8 md:grid-cols-2">
-              {/* Developers */}
-              <div className="rounded-xl bg-[#1D2740] p-6">
-                <div className="mb-6 flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#35C1B9]">
-                    <Code className="h-6 w-6 text-white" />
-                  </div>
-                  <h3 className="font-inria-sans text-xl font-bold text-white">
-                    Development
-                  </h3>
-                </div>
-                <div className="space-y-3">
-                  {teamMembers.developers.map((member) => (
-                    <div
-                      key={member.name}
-                      className="flex items-center justify-between border-b border-white/10 pb-3 last:border-0 last:pb-0"
-                    >
-                      <span className="font-inria-sans font-medium text-white">
-                        {member.name}
-                      </span>
-                      <span className="font-inria-sans text-sm text-white/50">
-                        {member.role}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Designers */}
-              <div className="rounded-xl bg-[#1D2740] p-6">
-                <div className="mb-6 flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#FF8F27]">
-                    <Palette className="h-6 w-6 text-white" />
-                  </div>
-                  <h3 className="font-inria-sans text-xl font-bold text-white">
-                    Design
-                  </h3>
-                </div>
-                <div className="space-y-3">
-                  {teamMembers.designers.map((member) => (
-                    <div
-                      key={member.name}
-                      className="flex items-center justify-between border-b border-white/10 pb-3 last:border-0 last:pb-0"
-                    >
-                      <span className="font-inria-sans font-medium text-white">
-                        {member.name}
-                      </span>
-                      <span className="font-inria-sans text-sm text-white/50">
-                        {member.role}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="container mx-auto px-4 text-center md:px-8">
+          <h2 className="font-inria-sans mb-4 text-3xl font-bold text-white md:text-4xl">
+            Our Mission
+          </h2>
+          <p className="font-inria-sans mx-auto mb-8 max-w-xl text-white/70">
+            Learn about the problem we&apos;re solving and our vision for the
+            future of skilled trades in BC.
+          </p>
+          <Link
+            href="/mission"
+            className="font-inria-sans inline-flex items-center gap-2 rounded-lg bg-[#FF8F27] px-6 py-3 font-medium text-white transition hover:bg-[#FF8F27]/90"
+          >
+            Read Our Mission
+            <ArrowRight className="h-5 w-5" />
+          </Link>
         </div>
       </section>
 

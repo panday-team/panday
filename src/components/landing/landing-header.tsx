@@ -60,6 +60,13 @@ export function LandingHeader() {
           </Link>
 
           <Link
+            href="/mission"
+            className="font-inria-sans text-base text-white transition hover:text-orange-500"
+          >
+            Mission
+          </Link>
+
+          <Link
             href="/blog"
             className="font-inria-sans text-base text-white transition hover:text-orange-500"
           >
@@ -157,6 +164,14 @@ export function LandingHeader() {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               About Us
+            </Link>
+
+            <Link
+              href="/mission"
+              className="font-inria-sans py-2 text-lg text-white transition hover:text-orange-500"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Mission
             </Link>
 
             <Link
