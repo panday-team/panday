@@ -38,7 +38,7 @@ const developers: TeamMember[] = [
   {
     name: "Ozem",
     role: "Full Stack Developer",
-    image: "/ozem.png",
+    image: "/Ozem.png",
     linkedin: "https://www.linkedin.com/in/naldaguilar/",
     email: "naguilar2@my.bcit.ca",
     github: "https://github.com/aguilarxnldoz",
@@ -46,7 +46,7 @@ const developers: TeamMember[] = [
   {
     name: "Josh",
     role: "Full Stack Developer",
-    image: "/josh.png",
+    image: "/Josh.png",
     linkedin: "https://www.linkedin.com/in/joshua-fajardo/",
     email: "jfajardo7@my.bcit.ca",
     github: "https://github.com/Dove167",
@@ -54,7 +54,7 @@ const developers: TeamMember[] = [
   {
     name: "Peter",
     role: "Full Stack Developer",
-    image: "/peter.png",
+    image: "/Peter.png",
     linkedin: "https://www.linkedin.com/in/peter-guanghuichen/",
     email: "gchen110@my.bcit.ca",
     github: "https://github.com/cghuisunshine",
@@ -62,7 +62,7 @@ const developers: TeamMember[] = [
   {
     name: "Manraj",
     role: "Full Stack Developer",
-    image: "/manraj.png",
+    image: "/Manny.png",
     email: "mbains67@my.bcit.ca",
     github: "https://github.com/Manraj-Bains",
   },
@@ -79,13 +79,14 @@ const designers: TeamMember[] = [
   {
     name: "Darrel",
     role: "UI/UX Designer",
-    image: "/darrel.png",
+    image: "/Darrel.png",
     email: "dsoriano5@my.bcit.ca",
+    linkedin: "https://linkedin.com/in/darrelsoriano",
   },
   {
     name: "Reagan",
     role: "UI/UX Designer",
-    image: "/reagan.png",
+    image: "/Reagan.png",
     linkedin: "https://www.linkedin.com/in/reaganlung/",
     email: "llung1@my.bcit.ca",
   },
@@ -110,7 +111,10 @@ function TeamMemberCard({
             src={member.image}
             alt={member.name}
             fill
-            className="object-cover"
+            className="scale-[1.25] object-cover"
+            style={{
+              objectPosition: "calc(50% - 4px) calc(50% + 6px)",
+            }}
           />
         </div>
 
