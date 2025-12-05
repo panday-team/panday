@@ -37,7 +37,7 @@ interface ResetDemoResponse {
  * POST /api/profile/reset-demo - Reset user's demo progress
  *
  * Clears all user progress data while keeping onboarding preferences intact:
- * - Sets tutorialCompletedAt to null (triggers tutorial on next roadmap visit)
+ * - Sets tutorialCompletedAt to null (for analytics; caller should redirect to /roadmap?showTutorial=true)
  * - Deletes all NodeProgress records
  * - Deletes all CustomNode records
  * - Deletes all ChatThread records (messages cascade automatically)

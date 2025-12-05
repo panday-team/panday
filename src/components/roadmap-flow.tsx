@@ -136,6 +136,10 @@ interface RoadmapFlowProps {
   onInitialNodeHandled?: () => void;
   /** Callback to update user profile state (e.g., after level advancement) */
   onProfileUpdate?: (updates: Partial<UserProfile>) => void;
+  /** Whether to show tutorial on mount (from URL param, e.g., after onboarding) */
+  showTutorialOnMount?: boolean;
+  /** Callback when tutorial is dismissed (completed or skipped) to clean up URL */
+  onTutorialDismissed?: () => void;
 }
 
 function stringToPosition(pos?: string): Position | undefined {
@@ -159,6 +163,8 @@ function RoadmapFlowInner({
   initialSelectedNodeId,
   onInitialNodeHandled,
   onProfileUpdate,
+  showTutorialOnMount,
+  onTutorialDismissed,
 }: RoadmapFlowProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const animationsRef = useRef<Map<string, () => void>>(new Map());
@@ -321,14 +327,17 @@ function RoadmapFlowInner({
     }
     return { hubNodeIds, nodesByParent };
   }, [roadmap]);
-  // Show tutorial if user hasn't completed it
+
+  // Show tutorial on mount if coming from onboarding (URL has ?showTutorial=true)
   useEffect(() => {
-    if (userProfile && !userProfile.tutorialCompletedAt) {
+    if (showTutorialOnMount) {
       setShowTutorial(true);
       // Close node info panel and deselect nodes when tutorial starts
       setSelectedNodeId(null);
     }
-  }, [userProfile]);
+    // Only run on mount - don't re-trigger on prop changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-pan to newly created custom node
   useEffect(() => {
@@ -1305,7 +1314,10 @@ function RoadmapFlowInner({
   const handleTutorialComplete = useCallback(async () => {
     setShowTutorial(false);
 
-    // Mark tutorial as completed in database
+    // Remove showTutorial param from URL
+    onTutorialDismissed?.();
+
+    // Mark tutorial as completed in database (for analytics)
     if (userProfile) {
       try {
         const response = await fetch("/api/profile/tutorial", {
@@ -1324,18 +1336,21 @@ function RoadmapFlowInner({
         });
       }
     }
-  }, [userProfile]);
+  }, [userProfile, onTutorialDismissed]);
 
   const handleTutorialSkip = useCallback(async () => {
     setShowTutorial(false);
     setShowTutorialSkipAlert(true);
+
+    // Remove showTutorial param from URL
+    onTutorialDismissed?.();
 
     // Hide alert after 5 seconds
     setTimeout(() => {
       setShowTutorialSkipAlert(false);
     }, 5000);
 
-    // Mark tutorial as completed in database (same as completing it)
+    // Mark tutorial as completed in database (for analytics)
     if (userProfile) {
       try {
         const response = await fetch("/api/profile/tutorial", {
@@ -1358,7 +1373,7 @@ function RoadmapFlowInner({
         );
       }
     }
-  }, [userProfile]);
+  }, [userProfile, onTutorialDismissed]);
 
   const handleTutorialOpen = useCallback(() => {
     setShowTutorial(true);

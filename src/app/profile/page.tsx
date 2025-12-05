@@ -260,7 +260,7 @@ export default function ProfilePage() {
       if (result.onboardingReset) {
         router.push("/onboarding");
       } else {
-        router.push("/roadmap");
+        router.push("/roadmap?showTutorial=true");
       }
     } catch (error) {
       profileLogger.error("Failed to reset demo progress", error as Error);

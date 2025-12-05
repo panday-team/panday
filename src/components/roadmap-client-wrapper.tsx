@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { RoadmapFlow } from "@/components/roadmap-flow";
 import { logger } from "@/lib/logger";
 import type { Roadmap } from "@/data/types/roadmap";
@@ -43,6 +43,8 @@ export function RoadmapClientWrapper({
   userId,
 }: RoadmapClientWrapperProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [customNodes, setCustomNodes] = useState(initialCustomNodes);
   const [newlyCreatedNodeId, setNewlyCreatedNodeId] = useState<
     string | undefined
@@ -54,6 +56,19 @@ export function RoadmapClientWrapper({
   // Read initial node ID from URL query params for deep linking
   // URL format: /roadmap?node=foundation-program
   const [initialNodeId, setInitialNodeId] = useState<string | undefined>();
+
+  // Read showTutorial param from URL (set when coming from onboarding or reset-demo)
+  const showTutorialOnMount = searchParams.get("showTutorial") === "true";
+
+  // Callback to remove showTutorial param from URL after tutorial is dismissed
+  const handleTutorialDismissed = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("showTutorial");
+    const newUrl = params.toString()
+      ? `${pathname}?${params.toString()}`
+      : pathname;
+    router.replace(newUrl);
+  }, [searchParams, pathname, router]);
 
   useEffect(() => {
     const nodeParam = searchParams.get("node");
@@ -157,6 +172,8 @@ export function RoadmapClientWrapper({
       initialSelectedNodeId={initialNodeId}
       onInitialNodeHandled={() => setInitialNodeId(undefined)}
       onProfileUpdate={handleProfileUpdate}
+      showTutorialOnMount={showTutorialOnMount}
+      onTutorialDismissed={handleTutorialDismissed}
     />
   );
 }
