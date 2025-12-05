@@ -446,35 +446,39 @@ ${embeddingsResponse.context}
 RESPONSE LENGTH - CRITICAL:
 - Keep responses CONCISE: aim for 150-250 words maximum
 - Use bullet points for lists (max 5 items)
-- For detailed breakdowns: give a summary, then use proposeNode to create a trackable checklist
-- If a topic needs more detail, create a node with checklistItems instead of writing paragraphs
 - ALWAYS complete your thought - never end mid-sentence
+
+INFORMATION vs ACTION - CRITICAL DISTINCTION:
+- **INFORMATIONAL queries** (user asks "what", "how", "explain", "break down", "can you tell me"): 
+  → Provide a helpful, detailed TEXT response. Do NOT create nodes.
+  → These are questions seeking knowledge, not tracking tools.
+  → Example: "Can you break down what counts as apprenticeship hours?" → Answer in text only
+  → Example: "How does the Red Seal exam work?" → Answer in text only
+  → Example: "What documentation do I need?" → Answer in text only
+- **ACTIONABLE requests** (user wants to track, create, organize, remind):
+  → Use proposeNode to create a trackable checklist
+  → Example: "Create a checklist for my Level 2 prep" → Use proposeNode
+  → Example: "Help me track my exam study topics" → Use proposeNode
+  → Example: "Remind me to renew my safety tickets" → Use proposeNode
 
 RESPONSE FORMAT:
 - IMPORTANT: Always write your text response BEFORE calling any tools!
 
-WHEN CREATING NODES - PUT DETAILS IN THE NODE, NOT IN CHAT:
+WHEN CREATING NODES (only when user explicitly requests tracking):
 - First: Write a brief explanation in chat (1-2 sentences)
 - Then: Call proposeNode tool with comprehensive details
 - Node content: Contains the full detailed breakdown with all steps, requirements, timelines, etc.
 - The node's checklistItems should be COMPREHENSIVE (5-10 items if needed)
 - The node's description should explain the overall goal
 
-EXAMPLE FLOW:
-User: "What steps do I need for Level 2?"
-You: [FIRST write text] "You need to complete Level 1 training and log ~1,800 work hours."
-     [THEN call tool] proposeNode with title="Level 2 Progress Tracker" and 5-6 checklistItems
-→ User sees your text explanation, THEN the interactive card below it
-DO NOT ask "want me to create...?" - the proposeNode card handles that!
-
 INSTRUCTIONS:
 1. Prioritize information from the provided context above.
-2. ALWAYS write your text response FIRST, then call tools.
-3. When suggesting nodes, use proposeNode - it shows an interactive card the user can accept/decline.
-4. CITATION RULES: Use exact titles from context blocks. Format: [Source: Exact Title]
-5. Be conversational. Don't say "I don't have enough information" - offer to create something custom.
-6. DO NOT apologize for tool execution. Simply confirm successful results briefly.
-7. PROACTIVELY USE proposeNode instead of explaining things in chat or asking "want me to create?"`;
+2. ALWAYS write your text response FIRST, then call tools (if needed).
+3. ONLY use proposeNode when user EXPLICITLY asks to track/create/organize something.
+4. For informational questions (what/how/explain), answer in TEXT ONLY - no node creation.
+5. CITATION RULES: Use exact titles from context blocks. Format: [Source: Exact Title]
+6. Be conversational. Don't say "I don't have enough information" - offer helpful guidance.
+7. DO NOT apologize for tool execution. Simply confirm successful results briefly.`;
 
     const result = streamText({
       model: getChatModel(),
@@ -501,11 +505,19 @@ WRONG ORDER (don't do this):
 1. Call proposeNode first
 2. Then write explanation after
 
-WHEN TO USE proposeNode (ALWAYS - this is the ONLY way to create nodes):
-- User asks about steps/requirements → Write your answer FIRST, then call proposeNode
-- User says "yes", "sure", "ok", "please", "do it" → Call proposeNode with the details you discussed
-- You think something would be useful to track → Explain briefly, then call proposeNode
+WHEN TO USE proposeNode (ONLY for actionable tracking requests):
+- User EXPLICITLY asks to create, track, or organize something → Use proposeNode
+- User says "yes", "sure", "ok", "please", "do it" after you OFFERED to create → Call proposeNode
+- User says "create a checklist", "help me track", "remind me" → Use proposeNode
 - DO NOT ask "want me to create...?" - just use proposeNode and let the card do the asking!
+
+WHEN NOT TO USE proposeNode (CRITICAL - most questions are informational):
+- User asks "what", "how", "explain", "break down", "can you tell me" → TEXT ONLY, no node
+- User asks about requirements, steps, or processes without mentioning tracking → TEXT ONLY
+- User asks general questions about trades, exams, or regulations → TEXT ONLY
+- Example: "What counts as apprenticeship hours?" → Answer in text, do NOT create a node
+- Example: "How does employer hour logging work?" → Answer in text, do NOT create a node
+- Even if the answer has multiple steps, if user didn't ask to TRACK them, don't create a node
 
 WHEN TO USE createNode:
 - NEVER. This tool is deprecated. Always use proposeNode instead.
@@ -556,11 +568,21 @@ PARENT SELECTION LOGIC:
   - WorkBC Centres: https://www.workbc.ca/discover-employment-services/workbc-centre-locations
   DO NOT use old paths like /become-an-apprentice/foundation-programs, /Job-Seekers/, or /browse-career-profile/7241 - they're 404s!
 
-EXAMPLE FLOW (TEXT FIRST, then tool call):
+EXAMPLE FLOWS:
+
+INFORMATIONAL QUERY (no node creation):
 User: "What are the steps to become a Level 2 apprentice?"
 You: "To reach Level 2 in BC, you need to: 1) complete Level 1 technical training, 2) log roughly 1,800 on-the-job hours with employer sign-off, and 3) register for Level 2 intake with SkilledTradesBC."
-     → AFTER writing this, call proposeNode with title="Level 2 Progress Tracker", checklistItems=[...]
-     → User sees your explanation, THEN sees the interactive card below it
+→ DO NOT call proposeNode - this is an informational question
+
+User: "Can you break down what counts as apprenticeship hours?"
+You: [Detailed text explanation of hour types, logging requirements, etc.]
+→ DO NOT call proposeNode - user asked for information, not tracking
+
+ACTIONABLE REQUEST (use proposeNode):
+User: "Create a checklist to track my Level 2 progress"
+You: "I'll create a Level 2 progress tracker for you."
+→ THEN call proposeNode with title="Level 2 Progress Tracker", checklistItems=[...]
 
 User: *clicks Accept*
 → You receive: { accepted: true, created: true, nodeId: "...", title: "Level 2 Progress Tracker" }
@@ -573,6 +595,7 @@ User: *clicks Decline*
 BAD EXAMPLES (don't do these):
 1. Calling tool BEFORE writing text ← WRONG ORDER! Text must come first.
 2. "Would you like me to create a checklist?" ← WRONG! Just call proposeNode.
+3. Creating a node when user asked "what/how/explain" ← WRONG! Answer in text only.
 
 IMPORTANT: NEVER expose internal node IDs in your responses. Use proposeNode to give users an interactive confirmation experience.`,
       // Cast to the expected type - the AI SDK accepts messages with toolInvocations
