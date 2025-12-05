@@ -59,6 +59,13 @@ export function LandingHeader() {
             About Us
           </Link>
 
+          <Link
+            href="/blog"
+            className="font-inria-sans text-base text-white transition hover:text-orange-500"
+          >
+            Blog
+          </Link>
+
           <SignedOut>
             <SignInButton mode="modal">
               <button className="font-inria-sans text-base font-bold text-white transition hover:text-orange-500">
@@ -150,6 +157,14 @@ export function LandingHeader() {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               About Us
+            </Link>
+
+            <Link
+              href="/blog"
+              className="font-inria-sans py-2 text-lg text-white transition hover:text-orange-500"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Blog
             </Link>
 
             <SignedOut>
