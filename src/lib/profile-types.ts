@@ -464,3 +464,17 @@ export function shouldTriggerLevelUp(
   );
   return completedNodeId === currentLevelNodeId;
 }
+
+/**
+ * Check if the user needs to choose a specialization before advancing to the next level
+ * This is required when advancing from Level 3 to Level 4 with an "undecided" specialization
+ */
+export function requiresSpecializationChoice(
+  currentLevel: ApprenticeshipLevel,
+  specialization?: ElectricianSpecialization,
+): boolean {
+  return (
+    currentLevel === APPRENTICESHIP_LEVELS.LEVEL_3 &&
+    specialization === ELECTRICIAN_SPECIALIZATION.UNDECIDED
+  );
+}
