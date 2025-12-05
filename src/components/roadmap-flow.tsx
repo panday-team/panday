@@ -1308,9 +1308,16 @@ function RoadmapFlowInner({
     // Mark tutorial as completed in database
     if (userProfile) {
       try {
-        await fetch("/api/profile/tutorial", {
+        const response = await fetch("/api/profile/tutorial", {
           method: "POST",
         });
+        if (!response.ok) {
+          logger.error(
+            "Failed to mark tutorial as completed: API returned non-ok status",
+            new Error(`HTTP ${response.status}`),
+            { component: "roadmap-flow", status: response.status },
+          );
+        }
       } catch (error) {
         logger.error("Failed to mark tutorial as completed", error as Error, {
           component: "roadmap-flow",
@@ -1331,9 +1338,16 @@ function RoadmapFlowInner({
     // Mark tutorial as completed in database (same as completing it)
     if (userProfile) {
       try {
-        await fetch("/api/profile/tutorial", {
+        const response = await fetch("/api/profile/tutorial", {
           method: "POST",
         });
+        if (!response.ok) {
+          logger.error(
+            "Failed to mark tutorial as completed on skip: API returned non-ok status",
+            new Error(`HTTP ${response.status}`),
+            { component: "roadmap-flow", status: response.status },
+          );
+        }
       } catch (error) {
         logger.error(
           "Failed to mark tutorial as completed on skip",

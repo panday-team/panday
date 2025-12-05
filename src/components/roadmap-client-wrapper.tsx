@@ -82,6 +82,9 @@ export function RoadmapClientWrapper({
                 currentLevel: data.currentLevel as ApprenticeshipLevel,
                 pendingLevelUp:
                   (data.pendingLevelUp as ApprenticeshipLevel) ?? null,
+                tutorialCompletedAt: data.tutorialCompletedAt
+                  ? new Date(data.tutorialCompletedAt)
+                  : null,
               };
             });
           })
