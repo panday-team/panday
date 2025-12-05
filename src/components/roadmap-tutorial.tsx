@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { X } from "lucide-react";
 import { TutorialSpotlight } from "@/components/tutorial-spotlight";
 import { useResponsive } from "@/lib/use-responsive";
 
@@ -517,15 +516,6 @@ export function RoadmapTutorial({
                   responsive.isMobile ? "p-6" : "p-8"
                 } max-h-full overflow-y-auto`}
               >
-                {/* Skip button in top right corner */}
-                <button
-                  onClick={handleSkip}
-                  className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md bg-red-500 text-white transition-colors hover:bg-red-600"
-                  aria-label="Skip tutorial"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-
                 {/* Content */}
                 <div className="mb-8 text-center">
                   <h3 className="mb-4 text-base font-bold text-black">
