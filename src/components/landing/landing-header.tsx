@@ -59,6 +59,20 @@ export function LandingHeader() {
             About Us
           </Link>
 
+          <Link
+            href="/mission"
+            className="font-inria-sans text-base text-white transition hover:text-orange-500"
+          >
+            Mission
+          </Link>
+
+          <Link
+            href="/blog"
+            className="font-inria-sans text-base text-white transition hover:text-orange-500"
+          >
+            Blog
+          </Link>
+
           <SignedOut>
             <SignInButton mode="modal">
               <button className="font-inria-sans text-base font-bold text-white transition hover:text-orange-500">
@@ -96,7 +110,7 @@ export function LandingHeader() {
         <div className="flex items-center gap-3 lg:hidden">
           <SignedOut>
             <SignUpButton mode="modal">
-              <Button className="font-inria-sans rounded-lg bg-[#FF8F27] px-4 py-2 text-base text-white hover:bg-[#FF8F27]/90">
+              <Button className="font-inria-sans rounded-full bg-[#FF8F27] px-4 py-2 text-base text-white hover:bg-[#FF8F27]/90">
                 Sign Up
               </Button>
             </SignUpButton>
@@ -138,7 +152,7 @@ export function LandingHeader() {
 
             <SignedIn>
               <Link href="/roadmap" onClick={() => setIsMobileMenuOpen(false)}>
-                <Button className="font-inria-sans w-full rounded-lg bg-[#FF8F27] px-5 py-2 text-base text-white hover:bg-[#FF8F27]/90">
+                <Button className="font-inria-sans w-full rounded-full bg-[#FF8F27] px-5 py-2 text-base text-white hover:bg-[#FF8F27]/90">
                   My Roadmap
                 </Button>
               </Link>
@@ -150,6 +164,22 @@ export function LandingHeader() {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               About Us
+            </Link>
+
+            <Link
+              href="/mission"
+              className="font-inria-sans py-2 text-lg text-white transition hover:text-orange-500"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Mission
+            </Link>
+
+            <Link
+              href="/blog"
+              className="font-inria-sans py-2 text-lg text-white transition hover:text-orange-500"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Blog
             </Link>
 
             <SignedOut>

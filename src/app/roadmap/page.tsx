@@ -13,6 +13,9 @@ import type {
   ResidencyStatus,
 } from "@/lib/profile-types";
 
+// Force dynamic rendering to ensure fresh data after reset
+export const dynamic = "force-dynamic";
+
 export default async function RoadmapPage() {
   const { userId } = await auth();
   const roadmap = await roadmapCache.get("electrician-bc");
@@ -31,6 +34,11 @@ export default async function RoadmapPage() {
       redirect("/onboarding");
     }
 
+    // Cast to extended type to handle pendingLevelUp field (added in migration)
+    const extendedProfile = dbProfile as typeof dbProfile & {
+      pendingLevelUp?: string | null;
+    };
+
     userProfile = {
       id: dbProfile.id,
       clerkUserId: dbProfile.clerkUserId,
@@ -41,6 +49,8 @@ export default async function RoadmapPage() {
       residencyStatus: dbProfile.residencyStatus as ResidencyStatus,
       onboardingCompletedAt: dbProfile.onboardingCompletedAt,
       tutorialCompletedAt: dbProfile.tutorialCompletedAt,
+      pendingLevelUp:
+        (extendedProfile.pendingLevelUp as ApprenticeshipLevel) ?? null,
       createdAt: dbProfile.createdAt,
       updatedAt: dbProfile.updatedAt,
     };

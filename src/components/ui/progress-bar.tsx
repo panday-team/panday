@@ -9,24 +9,25 @@ export interface ProgressBarProps {
 }
 
 /**
- * Get progress bar color based on percentage thresholds
+ * Get progress bar gradient based on percentage thresholds
  * - 0-33%: Red
  * - 33-66%: Yellow
  * - 67-100%: Green
  */
-function getProgressColor(percentage: number): string {
+function getProgressGradient(percentage: number): string {
   if (percentage < 33) {
-    return "bg-gradient-to-r from-red-500 to-red-600";
+    return "linear-gradient(to right, #ef4444, #dc2626)";
   } else if (percentage < 67) {
-    return "bg-gradient-to-r from-yellow-500 to-yellow-600";
+    return "linear-gradient(to right, #eab308, #ca8a04)";
   } else {
-    return "bg-gradient-to-r from-green-500 to-green-600";
+    return "linear-gradient(to right, #22c55e, #16a34a)";
   }
 }
 
 /**
  * Progress bar component for tracking node completion
  * Shows visual progress bar with completion stats
+ * Animates with a "filling up" effect when progress changes
  */
 function ProgressBarComponent({
   completed,
@@ -34,8 +35,6 @@ function ProgressBarComponent({
   percentage,
   className = "",
 }: ProgressBarProps) {
-  const colorClass = getProgressColor(percentage);
-
   return (
     <div className={`space-y-1.5 ${className}`}>
       {/* Progress text */}
@@ -47,15 +46,20 @@ function ProgressBarComponent({
       </div>
 
       {/* Progress bar track */}
-      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-        {/* Progress bar fill */}
+      <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
+        {/* Progress bar fill - animates by "filling up" from left */}
         <motion.div
-          className={`h-full rounded-full ${colorClass}`}
-          initial={{ width: 0 }}
-          animate={{ width: `${percentage}%` }}
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: getProgressGradient(percentage),
+          }}
+          initial={false}
+          animate={{
+            width: `${percentage}%`,
+          }}
           transition={{
-            duration: 0.6,
-            ease: "easeOut",
+            duration: 0.8,
+            ease: "linear",
           }}
         />
       </div>

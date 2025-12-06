@@ -15,6 +15,18 @@ import {
 } from "@/lib/profile-types";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TradeSelector } from "@/components/onboarding/trade-selector";
 import { LevelSelector } from "@/components/onboarding/level-selector";
@@ -32,6 +44,7 @@ import {
   GraduationCap,
   MapPin,
   Calendar,
+  RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
 import { SignOutButton } from "@clerk/nextjs";
@@ -74,6 +87,11 @@ export default function ProfilePage() {
   const [editResidency, setEditResidency] = useState<ResidencyStatus | null>(
     null,
   );
+
+  // Reset demo state
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [includeOnboarding, setIncludeOnboarding] = useState(false);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -195,6 +213,62 @@ export default function ProfilePage() {
       alert(`Failed to update your profile: ${errorMessage}`);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const resetDemoProgress = async () => {
+    setIsResetting(true);
+
+    try {
+      profileLogger.info("Resetting demo progress", { includeOnboarding });
+
+      const response = await fetch("/api/profile/reset-demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ includeOnboarding }),
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        throw new Error(
+          errorData.error ?? `Failed to reset progress (${response.status})`,
+        );
+      }
+
+      const result = (await response.json()) as {
+        success: boolean;
+        deleted: {
+          nodeProgress: number;
+          customNodes: number;
+          chatThreads: number;
+          chatSessions: number;
+        };
+        onboardingReset: boolean;
+      };
+
+      profileLogger.info("Demo progress reset completed", {
+        deleted: result.deleted,
+        onboardingReset: result.onboardingReset,
+      });
+
+      setResetDialogOpen(false);
+      setIncludeOnboarding(false);
+
+      // Redirect based on whether onboarding was reset
+      if (result.onboardingReset) {
+        router.push("/onboarding");
+      } else {
+        router.push("/roadmap?showTutorial=true");
+      }
+    } catch (error) {
+      profileLogger.error("Failed to reset demo progress", error as Error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to reset progress";
+      alert(`Failed to reset progress: ${errorMessage}`);
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -392,7 +466,91 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="border-border mt-6 border-t pt-6">
+            <div className="border-border mt-6 space-y-3 border-t pt-6">
+              <AlertDialog
+                open={resetDialogOpen}
+                onOpenChange={(open) => {
+                  setResetDialogOpen(open);
+                  if (!open) {
+                    setIncludeOnboarding(false);
+                  }
+                }}
+              >
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full border-amber-200 text-amber-600 hover:bg-amber-50 hover:text-amber-700 dark:border-amber-900 dark:text-amber-400 dark:hover:bg-amber-950/20 dark:hover:text-amber-300"
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Reset Account
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Reset Account</AlertDialogTitle>
+                    <AlertDialogDescription asChild>
+                      <div className="space-y-3">
+                        <p>
+                          This will clear all your progress and start fresh:
+                        </p>
+                        <ul className="list-disc space-y-1 pl-5 text-sm">
+                          <li>Tutorial will show again</li>
+                          <li>All node completion status will be reset</li>
+                          <li>All chat history will be deleted</li>
+                          <li>All custom nodes will be removed</li>
+                        </ul>
+                        {!includeOnboarding && (
+                          <p className="text-muted-foreground">
+                            Your onboarding preferences (trade, level,
+                            specialization) will be kept.
+                          </p>
+                        )}
+                        <div className="flex items-center space-x-2 pt-2">
+                          <Checkbox
+                            id="include-onboarding"
+                            checked={includeOnboarding}
+                            onCheckedChange={(checked) =>
+                              setIncludeOnboarding(checked === true)
+                            }
+                          />
+                          <label
+                            htmlFor="include-onboarding"
+                            className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Also reset onboarding quiz
+                          </label>
+                        </div>
+                        {includeOnboarding && (
+                          <p className="text-sm text-amber-600 dark:text-amber-400">
+                            Your trade, level, specialization, and residency
+                            selections will also be cleared.
+                          </p>
+                        )}
+                      </div>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isResetting}>
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={resetDemoProgress}
+                      disabled={isResetting}
+                      className="bg-amber-500 text-white hover:bg-amber-600"
+                    >
+                      {isResetting ? (
+                        <>
+                          <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
+                          Resetting...
+                        </>
+                      ) : (
+                        "Reset Progress"
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
               <SignOutButton>
                 <Button
                   variant="outline"

@@ -130,7 +130,7 @@ Successfully pass all Level 1-4 certification exams demonstrating comprehensive 
 
 ## Resources
 
-- [Exam Study Support](https://skilledtradesbc.ca/get-certified/about-exams/exam-study-support)
+- [Exam Study Support](https://skilledtradesbc.ca/get-certified-about-exams/exam-study-support)
 - [Certification Exam Resources](https://skilledtradesbc.ca/get-certified/about-exams)
 
 ---
@@ -189,7 +189,7 @@ Complete practice exams to assess readiness and identify knowledge gaps.
 ## Resources
 
 - [Red Seal Practice Exams](https://red-seal.ca/eng/resources/g.2tr.2.1dy.shtml)
-- [SkilledTradesBC Exam Prep](https://skilledtradesbc.ca/get-certified/about-exams/exam-study-support)
+- [SkilledTradesBC Exam Prep](https://skilledtradesbc.ca/get-certified-about-exams/exam-study-support)
 
 ---
 
@@ -209,7 +209,7 @@ Master the Canadian Electrical Code in preparation for the Red Seal exam.
 ## Resources
 
 - [Canadian Electrical Code](https://csa.ca)
-- [Code Study Resources](https://skilledtradesbc.ca/get-certified/about-exams/exam-study-support)
+- [Code Study Resources](https://skilledtradesbc.ca/get-certified-about-exams/exam-study-support)
 
 ---
 
@@ -293,7 +293,7 @@ The Red Seal exam is comprehensive and high-stakes, creating significant pressur
 ## Resources
 
 - [Red Seal Exam Preparation Guide](https://red-seal.ca/eng/resources/g.2tr.2.1dy.shtml)
-- [SkilledTradesBC Exam Study Support](https://skilledtradesbc.ca/get-certified/about-exams/exam-study-support)
+- [SkilledTradesBC Exam Study Support](https://skilledtradesbc.ca/get-certified-about-exams/exam-study-support)
 - [Mental Health Support for Apprentices](https://skilledtradesbc.ca)
 
 ---

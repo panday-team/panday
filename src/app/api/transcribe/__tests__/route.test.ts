@@ -380,14 +380,13 @@ describe("POST /api/transcribe", () => {
   });
 
   describe("Translation Flow (Non-English audio)", () => {
+    // NOTE: Translation is currently disabled for performance reasons (see route.ts TODO comment)
+    // These tests verify the current behavior where non-English audio is transcribed but not translated
+
     it("MUST detect non-English language", async () => {
       mockTranscriptionsCreate.mockResolvedValueOnce({
         text: "Bonjour le monde",
         language: "fr",
-      });
-
-      mockTranslationsCreate.mockResolvedValueOnce({
-        text: "Hello world",
       });
 
       const request = createAudioRequest();
@@ -397,38 +396,23 @@ describe("POST /api/transcribe", () => {
       expect(data.language).toBe("fr");
     });
 
-    it("MUST call Whisper translations API for non-English audio", async () => {
+    it("MUST NOT call Whisper translations API (translation disabled for performance)", async () => {
       mockTranscriptionsCreate.mockResolvedValueOnce({
         text: "Hola mundo",
         language: "es",
-      });
-
-      mockTranslationsCreate.mockResolvedValueOnce({
-        text: "Hello world",
       });
 
       const request = createAudioRequest();
       await POST(request);
 
-      expect(mockTranslationsCreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          file: expect.any(File),
-          model: VOICE_CONFIG.WHISPER_MODEL,
-        }),
-        expect.objectContaining({
-          signal: expect.any(AbortSignal),
-        }),
-      );
+      // Translation is currently disabled to reduce latency
+      expect(mockTranslationsCreate).not.toHaveBeenCalled();
     });
 
-    it("MUST return both transcript and translation for non-English", async () => {
+    it("MUST return transcript without translation for non-English (translation disabled)", async () => {
       mockTranscriptionsCreate.mockResolvedValueOnce({
         text: "Hola mundo",
         language: "es",
-      });
-
-      mockTranslationsCreate.mockResolvedValueOnce({
-        text: "Hello world",
       });
 
       const request = createAudioRequest();
@@ -436,56 +420,24 @@ describe("POST /api/transcribe", () => {
       const data = await response.json();
 
       expect(data.transcript).toBe("Hola mundo");
-      expect(data.translation).toBe("Hello world");
-      expect(data.finalText).toBe("Hello world");
+      expect(data.translation).toBeUndefined(); // Translation is disabled
+      expect(data.finalText).toBe("Hola mundo"); // Uses transcript as finalText
       expect(data.language).toBe("es");
     });
 
-    it("MUST fallback to transcript if translation fails", async () => {
-      const { logger } = await import("@/lib/logger");
-
-      mockTranscriptionsCreate.mockResolvedValueOnce({
-        text: "Hola mundo",
-        language: "es",
-      });
-
-      mockTranslationsCreate.mockRejectedValueOnce(
-        new Error("Translation service unavailable"),
-      );
-
-      const request = createAudioRequest();
-      const response = await POST(request);
-      const data = await response.json();
-
-      expect(response.status).toBe(200);
-      expect(data.transcript).toBe("Hola mundo");
-      expect(data.finalText).toBe("Hola mundo"); // Falls back to original
-      expect(data.translation).toBeUndefined();
-
-      expect(logger.warn).toHaveBeenCalledWith(
-        "Translation failed, using original transcript",
-        expect.objectContaining({
-          userId: "test-user-id",
-          language: "es",
-        }),
-      );
-    });
-
-    it("MUST NOT throw error when translation fails", async () => {
+    it("MUST handle non-English audio gracefully without translation", async () => {
       mockTranscriptionsCreate.mockResolvedValueOnce({
         text: "Bonjour",
         language: "fr",
       });
 
-      mockTranslationsCreate.mockRejectedValueOnce(new Error("API error"));
-
       const request = createAudioRequest();
       const response = await POST(request);
 
-      expect(response.status).toBe(200); // Should still succeed
+      expect(response.status).toBe(200);
     });
 
-    it("MUST log successful translation", async () => {
+    it("MUST log transcription for non-English audio", async () => {
       const { logger } = await import("@/lib/logger");
 
       mockTranscriptionsCreate.mockResolvedValueOnce({
@@ -493,18 +445,15 @@ describe("POST /api/transcribe", () => {
         language: "it",
       });
 
-      mockTranslationsCreate.mockResolvedValueOnce({
-        text: "Hello world",
-      });
-
       const request = createAudioRequest();
       await POST(request);
 
       expect(logger.info).toHaveBeenCalledWith(
-        "Translation completed",
+        "Transcription completed",
         expect.objectContaining({
           userId: "test-user-id",
-          translationLength: 11,
+          language: "it",
+          transcriptLength: 10,
         }),
       );
     });

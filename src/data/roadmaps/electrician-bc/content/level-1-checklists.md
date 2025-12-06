@@ -235,7 +235,7 @@ Understand the Level 1 certification exam structure, format, and topic weighting
 ## Resources
 
 - [Level 1 Exam Breakdown](https://skilledtradesbc.ca/get-certified/about-exams)
-- [Exam Study Support](https://skilledtradesbc.ca/get-certified/about-exams/exam-study-support)
+- [Exam Study Support](https://skilledtradesbc.ca/get-certified-about-exams/exam-study-support)
 
 ---
 
@@ -424,7 +424,7 @@ Access the online portal to log work hours, track progress, and manage your appr
 
 ## Resources
 
-- [SkilledTradesBC Exam Study Support](https://skilledtradesbc.ca/get-certified/about-exams/exam-study-support)
+- [SkilledTradesBC Exam Study Support](https://skilledtradesbc.ca/get-certified-about-exams/exam-study-support)
 - [Level 1 Exam Breakdown](https://skilledtradesbc.ca/get-certified/about-exams)
 - [Canadian Electrical Code](https://www.csagroup.org) - Purchase from CSA Group
 - [ElectricalExams.com](https://electricalexams.com) - Online practice exams
@@ -858,7 +858,7 @@ Access the online portal to log work hours, track progress, and manage your appr
 
 - [Khan Academy](https://www.khanacademy.org) - Free math and physics review
 - [All About Circuits](https://www.allaboutcircuits.com) - Electrical theory tutorials
-- [SkilledTradesBC Study Support](https://skilledtradesbc.ca/get-certified/about-exams/exam-study-support)
+- [SkilledTradesBC Study Support](https://skilledtradesbc.ca/get-certified-about-exams/exam-study-support)
 - Training institution learning support centers
 - Instructor office hours and tutoring services
 - YouTube: "The Engineering Mindset", "ElectroBOOM", "Khan Academy"

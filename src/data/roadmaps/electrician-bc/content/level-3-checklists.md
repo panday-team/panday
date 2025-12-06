@@ -146,7 +146,7 @@ Successfully pass the Level 2 certification exam demonstrating intermediate elec
 
 ## Resources
 
-- [Exam Study Support](https://skilledtradesbc.ca/get-certified/about-exams/exam-study-support)
+- [Exam Study Support](https://skilledtradesbc.ca/get-certified-about-exams/exam-study-support)
 - [Level 2 Exam Breakdown](https://skilledtradesbc.ca/sites/default/files/2023-01/electrician-common-core-level-2-exam-breakdown-dec-2022.pdf)
 
 ---
@@ -263,7 +263,7 @@ Access Level 3 exam preparation materials and resources.
 ## Resources
 
 - [Level 3 Exam Resources](https://skilledtradesbc.ca/get-certified/about-exams)
-- [Exam Study Support](https://skilledtradesbc.ca/get-certified/about-exams/exam-study-support)
+- [Exam Study Support](https://skilledtradesbc.ca/get-certified-about-exams/exam-study-support)
 
 ---
 
@@ -344,7 +344,7 @@ Level 3 introduces complex three-phase systems, transformers, and industrial app
 ## Resources
 
 - [Level 3 Exam Breakdown](https://skilledtradesbc.ca/sites/default/files/2023-01/electrician-common-core-level-3-exam-breakdown-july-2023.pdf)
-- [Exam Study Support](https://skilledtradesbc.ca/get-certified/about-exams/exam-study-support)
+- [Exam Study Support](https://skilledtradesbc.ca/get-certified-about-exams/exam-study-support)
 - [Khan Academy Electrical Engineering](https://www.khanacademy.org/science/electrical-engineering)
 
 ---

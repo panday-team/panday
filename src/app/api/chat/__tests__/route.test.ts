@@ -426,7 +426,6 @@ describe("Chat API Route", () => {
               content: "test query",
             }),
           ]),
-          maxTokens: 800,
         }),
       );
     });

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { RoadmapFlow } from "@/components/roadmap-flow";
 import { Note } from "@/components/ui/note-taker";
 import { logger } from "@/lib/logger";
 import type { Roadmap } from "@/data/types/roadmap";
-import type { UserProfile } from "@/lib/profile-types";
+import type { UserProfile, ApprenticeshipLevel } from "@/lib/profile-types";
 
 interface RoadmapClientWrapperProps {
   roadmap: Roadmap;
@@ -22,21 +22,54 @@ interface RoadmapClientWrapperProps {
   userId: string | null;
 }
 
+// API response type for profile endpoint
+interface ProfileApiResponse {
+  id: number;
+  clerkUserId: string;
+  trade: string;
+  currentLevel: string;
+  specialization: string | null;
+  residencyStatus: string;
+  pendingLevelUp: string | null;
+  onboardingCompletedAt: string | null;
+  tutorialCompletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export function RoadmapClientWrapper({
   roadmap,
-  userProfile,
+  userProfile: initialUserProfile,
   initialCustomNodes,
   userId,
 }: RoadmapClientWrapperProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [customNodes, setCustomNodes] = useState(initialCustomNodes);
   const [newlyCreatedNodeId, setNewlyCreatedNodeId] = useState<
     string | undefined
   >();
 
+  // Local state for userProfile to allow updates without full page refresh
+  const [userProfile, setUserProfile] = useState(initialUserProfile);
+
   // Read initial node ID from URL query params for deep linking
   // URL format: /roadmap?node=foundation-program
   const [initialNodeId, setInitialNodeId] = useState<string | undefined>();
+
+  // Read showTutorial param from URL (set when coming from onboarding or reset-demo)
+  const showTutorialOnMount = searchParams.get("showTutorial") === "true";
+
+  // Callback to remove showTutorial param from URL after tutorial is dismissed
+  const handleTutorialDismissed = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("showTutorial");
+    const newUrl = params.toString()
+      ? `${pathname}?${params.toString()}`
+      : pathname;
+    router.replace(newUrl);
+  }, [searchParams, pathname, router]);
 
   useEffect(() => {
     const nodeParam = searchParams.get("node");
@@ -44,6 +77,47 @@ export function RoadmapClientWrapper({
       setInitialNodeId(nodeParam);
     }
   }, [searchParams]);
+
+  // Refetch profile when page becomes visible (user navigates back from settings)
+  useEffect(() => {
+    if (!userId) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // Refetch profile to get latest data
+        fetch("/api/profile")
+          .then((res) => {
+            if (res.ok) return res.json() as Promise<ProfileApiResponse>;
+            throw new Error("Failed to fetch profile");
+          })
+          .then((data) => {
+            setUserProfile((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                currentLevel: data.currentLevel as ApprenticeshipLevel,
+                pendingLevelUp:
+                  (data.pendingLevelUp as ApprenticeshipLevel) ?? null,
+                tutorialCompletedAt: data.tutorialCompletedAt
+                  ? new Date(data.tutorialCompletedAt)
+                  : null,
+              };
+            });
+          })
+          .catch((error) => {
+            logger.error(
+              "Failed to refresh profile on visibility change",
+              error as Error,
+            );
+          });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [userId]);
 
   const refreshCustomNodes = useCallback(
     async (nodeId?: string) => {
@@ -83,34 +157,25 @@ export function RoadmapClientWrapper({
     [userId, roadmap.metadata.id],
   );
 
+  // Callback to update user profile after level advancement
+  const handleProfileUpdate = useCallback((updates: Partial<UserProfile>) => {
+    setUserProfile((prev) => (prev ? { ...prev, ...updates } : prev));
+  }, []);
+
   return (
-    <div className="flex h-screen">
-      <div className="flex-1">
-        <RoadmapFlow
-          roadmap={roadmap}
-          userProfile={userProfile}
-          customNodes={customNodes}
-          onRefreshCustomNodes={refreshCustomNodes}
-          newlyCreatedNodeId={newlyCreatedNodeId}
-          onNodePanned={() => setNewlyCreatedNodeId(undefined)}
-          initialSelectedNodeId={initialNodeId}
-          onInitialNodeHandled={() => setInitialNodeId(undefined)}
-        />
-      </div>
-      <div className="w-80 border-l border-border bg-card">
-        <div className="p-4 h-full">
-          <Note
-            id="roadmap-notes"
-            onSave={async (content) => {
-              // TODO: Implement note saving to backend
-              console.log('Saving note:', content);
-              // Simulate API call
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }}
-          />
-        </div>
-      </div>
-    </div>
+    <RoadmapFlow
+      roadmap={roadmap}
+      userProfile={userProfile}
+      customNodes={customNodes}
+      onRefreshCustomNodes={refreshCustomNodes}
+      newlyCreatedNodeId={newlyCreatedNodeId}
+      onNodePanned={() => setNewlyCreatedNodeId(undefined)}
+      initialSelectedNodeId={initialNodeId}
+      onInitialNodeHandled={() => setInitialNodeId(undefined)}
+      onProfileUpdate={handleProfileUpdate}
+      showTutorialOnMount={showTutorialOnMount}
+      onTutorialDismissed={handleTutorialDismissed}
+    />
   );
 }
 

@@ -25,7 +25,7 @@ export function LandingCTA() {
               </p>
 
               <SignUpButton mode="modal">
-                <Button className="font-inria-sans rounded-full bg-[#FF8F27] px-8 py-5 text-base font-bold text-white shadow-lg hover:bg-[#FF8F27]/90 md:text-lg">
+                <Button className="font-inria-sans rounded-lg bg-[#FF8F27] px-8 py-5 text-base font-bold text-white shadow-lg hover:bg-[#FF8F27]/90 md:text-lg">
                   Sign Up Now
                 </Button>
               </SignUpButton>
@@ -43,7 +43,7 @@ export function LandingCTA() {
               </p>
 
               <Link href="/roadmap">
-                <Button className="font-inria-sans rounded-full bg-[#FF8F27] px-8 py-5 text-base font-bold text-white shadow-lg hover:bg-[#FF8F27]/90 md:text-lg">
+                <Button className="font-inria-sans rounded-lg bg-[#FF8F27] px-8 py-5 text-base font-bold text-white shadow-lg hover:bg-[#FF8F27]/90 md:text-lg">
                   View Your Roadmap
                 </Button>
               </Link>

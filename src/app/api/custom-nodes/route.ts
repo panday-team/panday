@@ -5,6 +5,7 @@ import {
   CreateCustomNodeSchema,
 } from "@/lib/custom-nodes";
 import { withErrorHandling, parseJsonBody, created } from "@/lib/api-handler";
+import { resolveParentId } from "@/lib/parent-id-resolver";
 
 export const dynamic = "force-dynamic";
 
@@ -34,9 +35,20 @@ export const POST = withErrorHandling<Request>(
   async (request, { userId, logger }) => {
     const input = await parseJsonBody(request, CreateCustomNodeSchema);
 
+    // Resolve parent ID to canonical form (handles AI-generated names like "ACE-IT")
+    const resolvedParentId = await resolveParentId(input.parentId, {
+      roadmapId: input.roadmapId,
+    });
+
+    logger.info("Parent ID resolution", {
+      original: input.parentId,
+      resolved: resolvedParentId,
+    });
+
     // Ensure type has a default value
     const nodeInput = {
       ...input,
+      parentId: resolvedParentId,
       type: input.type ?? "checklist",
     };
 

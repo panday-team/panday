@@ -22,7 +22,7 @@ export function LandingHero() {
             </p>
 
             <Link href="/roadmap">
-              <Button className="font-inria-sans w-fit rounded-full bg-[#FF8F27] px-8 py-5 text-base text-white shadow-lg hover:bg-[#FF8F27]/90 md:text-lg">
+              <Button className="font-inria-sans w-fit rounded-lg bg-[#FF8F27] px-8 py-5 text-base text-white shadow-lg hover:bg-[#FF8F27]/90 md:text-lg">
                 Start Your Roadmap
               </Button>
             </Link>

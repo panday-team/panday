@@ -87,6 +87,7 @@ model UserProfile {
   residencyStatus       String
   onboardingCompletedAt DateTime?
   tutorialCompletedAt   DateTime?
+  pendingLevelUp        String?        // Stores the completed level ID when user clicks "Stay Here" (e.g., "level-1")
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
   nodeProgress          NodeProgress[]

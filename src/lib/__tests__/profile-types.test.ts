@@ -7,6 +7,8 @@ import {
   getIrrelevantNodes,
   getCurrentLevelNodeId,
   isEligibleForApprenticeship,
+  getNextLevelProgression,
+  shouldTriggerLevelUp,
 } from "../profile-types";
 
 describe("profile-types utilities", () => {
@@ -211,6 +213,147 @@ describe("profile-types utilities", () => {
     it("should return false for OTHER status", () => {
       const result = isEligibleForApprenticeship(RESIDENCY_STATUS.OTHER);
       expect(result).toBe(false);
+    });
+  });
+
+  describe("getNextLevelProgression", () => {
+    it("should return Level 1 for entry paths (ACE_IT)", () => {
+      const result = getNextLevelProgression(APPRENTICESHIP_LEVELS.ACE_IT);
+      expect(result.nextLevel).toBe(APPRENTICESHIP_LEVELS.LEVEL_1);
+      expect(result.nextNodeId).toBe("level-1");
+      expect(result.isFinalLevel).toBe(false);
+    });
+
+    it("should return Level 1 for entry paths (FOUNDATION)", () => {
+      const result = getNextLevelProgression(APPRENTICESHIP_LEVELS.FOUNDATION);
+      expect(result.nextLevel).toBe(APPRENTICESHIP_LEVELS.LEVEL_1);
+      expect(result.nextNodeId).toBe("level-1");
+      expect(result.isFinalLevel).toBe(false);
+    });
+
+    it("should return Level 1 for entry paths (DIRECT_ENTRY)", () => {
+      const result = getNextLevelProgression(
+        APPRENTICESHIP_LEVELS.DIRECT_ENTRY,
+      );
+      expect(result.nextLevel).toBe(APPRENTICESHIP_LEVELS.LEVEL_1);
+      expect(result.nextNodeId).toBe("level-1");
+      expect(result.isFinalLevel).toBe(false);
+    });
+
+    it("should return null for NOT_STARTED level", () => {
+      const result = getNextLevelProgression(APPRENTICESHIP_LEVELS.NOT_STARTED);
+      expect(result.nextLevel).toBeNull();
+      expect(result.nextNodeId).toBeNull();
+      expect(result.isFinalLevel).toBe(false);
+    });
+
+    it("should return Level 2 for Level 1", () => {
+      const result = getNextLevelProgression(APPRENTICESHIP_LEVELS.LEVEL_1);
+      expect(result.nextLevel).toBe(APPRENTICESHIP_LEVELS.LEVEL_2);
+      expect(result.nextNodeId).toBe("level-2");
+      expect(result.isFinalLevel).toBe(false);
+    });
+
+    it("should return Level 3 for Level 2", () => {
+      const result = getNextLevelProgression(APPRENTICESHIP_LEVELS.LEVEL_2);
+      expect(result.nextLevel).toBe(APPRENTICESHIP_LEVELS.LEVEL_3);
+      expect(result.nextNodeId).toBe("level-3");
+      expect(result.isFinalLevel).toBe(false);
+    });
+
+    it("should return Level 4 for Level 3", () => {
+      const result = getNextLevelProgression(APPRENTICESHIP_LEVELS.LEVEL_3);
+      expect(result.nextLevel).toBe(APPRENTICESHIP_LEVELS.LEVEL_4);
+      expect(result.isFinalLevel).toBe(false);
+    });
+
+    it("should return Level 4 construction node for Level 3 with construction specialization", () => {
+      const result = getNextLevelProgression(
+        APPRENTICESHIP_LEVELS.LEVEL_3,
+        ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
+      );
+      expect(result.nextNodeId).toBe("level-4-construction");
+    });
+
+    it("should return Level 4 industrial node for Level 3 with industrial specialization", () => {
+      const result = getNextLevelProgression(
+        APPRENTICESHIP_LEVELS.LEVEL_3,
+        ELECTRICIAN_SPECIALIZATION.INDUSTRIAL,
+      );
+      expect(result.nextNodeId).toBe("level-4-industrial");
+    });
+
+    it("should return Red Seal for Level 4", () => {
+      const result = getNextLevelProgression(APPRENTICESHIP_LEVELS.LEVEL_4);
+      expect(result.nextLevel).toBe(APPRENTICESHIP_LEVELS.RED_SEAL);
+      expect(result.isFinalLevel).toBe(true);
+    });
+
+    it("should return Red Seal construction node for Level 4 with construction specialization", () => {
+      const result = getNextLevelProgression(
+        APPRENTICESHIP_LEVELS.LEVEL_4,
+        ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
+      );
+      expect(result.nextNodeId).toBe("red-seal-construction");
+    });
+
+    it("should return Red Seal industrial node for Level 4 with industrial specialization", () => {
+      const result = getNextLevelProgression(
+        APPRENTICESHIP_LEVELS.LEVEL_4,
+        ELECTRICIAN_SPECIALIZATION.INDUSTRIAL,
+      );
+      expect(result.nextNodeId).toBe("red-seal-industrial");
+    });
+
+    it("should return null next level for Red Seal (final level)", () => {
+      const result = getNextLevelProgression(APPRENTICESHIP_LEVELS.RED_SEAL);
+      expect(result.nextLevel).toBeNull();
+      expect(result.nextNodeId).toBeNull();
+      expect(result.isFinalLevel).toBe(true);
+    });
+  });
+
+  describe("shouldTriggerLevelUp", () => {
+    it("should return true when completed node matches current level node", () => {
+      const result = shouldTriggerLevelUp(
+        "level-1",
+        APPRENTICESHIP_LEVELS.LEVEL_1,
+      );
+      expect(result).toBe(true);
+    });
+
+    it("should return false when completed node does not match current level node", () => {
+      const result = shouldTriggerLevelUp(
+        "level-2",
+        APPRENTICESHIP_LEVELS.LEVEL_1,
+      );
+      expect(result).toBe(false);
+    });
+
+    it("should handle specialization for Level 4", () => {
+      const result = shouldTriggerLevelUp(
+        "level-4-industrial",
+        APPRENTICESHIP_LEVELS.LEVEL_4,
+        ELECTRICIAN_SPECIALIZATION.INDUSTRIAL,
+      );
+      expect(result).toBe(true);
+    });
+
+    it("should return false for wrong specialization node", () => {
+      const result = shouldTriggerLevelUp(
+        "level-4-construction",
+        APPRENTICESHIP_LEVELS.LEVEL_4,
+        ELECTRICIAN_SPECIALIZATION.INDUSTRIAL,
+      );
+      expect(result).toBe(false);
+    });
+
+    it("should handle foundation program correctly", () => {
+      const result = shouldTriggerLevelUp(
+        "foundation-program",
+        APPRENTICESHIP_LEVELS.FOUNDATION,
+      );
+      expect(result).toBe(true);
     });
   });
 });

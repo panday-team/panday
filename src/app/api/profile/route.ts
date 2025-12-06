@@ -40,7 +40,53 @@ const createProfileSchema = z.object({
   ]),
 });
 
-const updateProfileSchema = createProfileSchema.partial();
+const updateProfileSchema = z.object({
+  trade: z
+    .enum([TRADES.ELECTRICIAN, TRADES.EXPLORING, TRADES.OTHER])
+    .optional(),
+  currentLevel: z
+    .enum([
+      APPRENTICESHIP_LEVELS.NOT_STARTED,
+      APPRENTICESHIP_LEVELS.ACE_IT,
+      APPRENTICESHIP_LEVELS.DIRECT_ENTRY,
+      APPRENTICESHIP_LEVELS.FOUNDATION,
+      APPRENTICESHIP_LEVELS.LEVEL_1,
+      APPRENTICESHIP_LEVELS.LEVEL_2,
+      APPRENTICESHIP_LEVELS.LEVEL_3,
+      APPRENTICESHIP_LEVELS.LEVEL_4,
+      APPRENTICESHIP_LEVELS.RED_SEAL,
+    ])
+    .optional(),
+  specialization: z
+    .enum([
+      ELECTRICIAN_SPECIALIZATION.CONSTRUCTION,
+      ELECTRICIAN_SPECIALIZATION.INDUSTRIAL,
+      ELECTRICIAN_SPECIALIZATION.UNDECIDED,
+    ])
+    .optional(),
+  residencyStatus: z
+    .enum([
+      RESIDENCY_STATUS.CITIZEN,
+      RESIDENCY_STATUS.PERMANENT_RESIDENT,
+      RESIDENCY_STATUS.OTHER,
+    ])
+    .optional(),
+  // pendingLevelUp can be set to a level string or null to clear it
+  pendingLevelUp: z
+    .enum([
+      APPRENTICESHIP_LEVELS.NOT_STARTED,
+      APPRENTICESHIP_LEVELS.ACE_IT,
+      APPRENTICESHIP_LEVELS.DIRECT_ENTRY,
+      APPRENTICESHIP_LEVELS.FOUNDATION,
+      APPRENTICESHIP_LEVELS.LEVEL_1,
+      APPRENTICESHIP_LEVELS.LEVEL_2,
+      APPRENTICESHIP_LEVELS.LEVEL_3,
+      APPRENTICESHIP_LEVELS.LEVEL_4,
+      APPRENTICESHIP_LEVELS.RED_SEAL,
+    ])
+    .nullable()
+    .optional(),
+});
 
 /**
  * GET /api/profile - Fetch current user's profile
@@ -113,10 +159,23 @@ export const PATCH = withErrorHandling(
       return notFound("Profile not found");
     }
 
+    // If advancing level, automatically clear pendingLevelUp
+    const updateData: typeof validatedData & {
+      pendingLevelUp?: string | null;
+    } = {
+      ...validatedData,
+    };
+    if (
+      validatedData.currentLevel &&
+      validatedData.currentLevel !== existingProfile.currentLevel
+    ) {
+      updateData.pendingLevelUp = null;
+    }
+
     // Update profile
     const profile = await prisma.userProfile.update({
       where: { clerkUserId: userId! },
-      data: validatedData,
+      data: updateData,
     });
 
     logger.info("Profile updated", { userId, profileId: profile.id });

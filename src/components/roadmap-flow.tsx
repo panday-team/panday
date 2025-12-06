@@ -16,7 +16,7 @@ import {
   useEdgesState,
   useReactFlow,
 } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
+import "@xyflow/react/dist/style.css"
 
 import {
   HubNode,
@@ -45,7 +45,7 @@ import { ZoomSlider } from "@/components/zoom-slider";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, Home, BookOpenText } from "lucide-react";
+import { Settings, Home, BookOpenText, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { SignInButton } from "@clerk/nextjs";
 import type { Roadmap } from "@/data/types/roadmap";
@@ -59,6 +59,7 @@ import {
   type NodeStatus,
   fetchNodeStatuses,
   setNodeStatus,
+  batchSetNodeStatus,
 } from "@/lib/node-status";
 import { calculateCustomNodePositions } from "@/lib/custom-node-positioning";
 import { resolveCollisions, detectCollisions } from "@/lib/collision-physics";
@@ -67,12 +68,18 @@ import {
   getCompletedLevels,
   getIrrelevantNodes,
   getCurrentLevelNodeId,
+  getNextLevelProgression,
   LEVEL_METADATA,
 } from "@/lib/profile-types";
 import { calculateViewportForNode } from "@/lib/viewport-utils";
-import { calculateNodeProgress } from "@/lib/progress-utils";
+import {
+  calculateNodeProgress,
+  getDescendantChecklists,
+} from "@/lib/progress-utils";
 import { useResponsive } from "@/lib/use-responsive";
+import { useLevelUpDetection } from "@/lib/hooks/use-level-up-detection";
 import AnimatedDirectionEdge from "@/components/edges/animated-direction-edge";
+import { LevelUpCelebration } from "@/components/level-up-celebration";
 
 type FlowNode =
   | HubNodeType
@@ -127,6 +134,8 @@ interface RoadmapFlowProps {
   initialSelectedNodeId?: string;
   /** Callback when initial node navigation is complete */
   onInitialNodeHandled?: () => void;
+  /** Callback to update user profile state (e.g., after level advancement) */
+  onProfileUpdate?: (updates: Partial<UserProfile>) => void;
 }
 
 function stringToPosition(pos?: string): Position | undefined {
@@ -149,6 +158,7 @@ function RoadmapFlowInner({
   onNodePanned,
   initialSelectedNodeId,
   onInitialNodeHandled,
+  onProfileUpdate,
 }: RoadmapFlowProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const animationsRef = useRef<Map<string, () => void>>(new Map());
@@ -200,10 +210,97 @@ function RoadmapFlowInner({
   const [currentTutorialStep, setCurrentTutorialStep] =
     useState<TutorialStep | null>(null);
 
+  // Level-up celebration state
+  const [showLevelUpCelebration, setShowLevelUpCelebration] = useState(false);
+  const [isAdvancingLevel, setIsAdvancingLevel] = useState(false);
+
+  // Level-up detection hook
+  const levelUpDetection = useLevelUpDetection({
+    userCurrentLevel: userProfile?.currentLevel ?? null,
+    specialization: userProfile?.specialization ?? null,
+    nodeStatuses,
+    graphNodes: roadmap.graph.nodes,
+    contentMap: roadmap.content,
+    enabled: !!userProfile,
+    pendingLevelUp: userProfile?.pendingLevelUp ?? null,
+  });
+
+  // Compute progress data for pending level up (when banner is shown)
+  const pendingLevelProgress = useMemo(() => {
+    if (!userProfile?.pendingLevelUp) return null;
+
+    const nodeId = getCurrentLevelNodeId(
+      userProfile.pendingLevelUp,
+      userProfile.specialization,
+    );
+    if (!nodeId) return null;
+
+    const nodeContent = roadmap.content.get(nodeId);
+    if (!nodeContent) return null;
+
+    const progress = calculateNodeProgress(
+      nodeId,
+      nodeContent.frontmatter.type,
+      nodeStatuses,
+      roadmap.graph.nodes,
+      roadmap.content,
+    );
+
+    return {
+      nodeId,
+      nodeTitle: nodeContent.frontmatter.title,
+      progress,
+    };
+  }, [userProfile, nodeStatuses, roadmap]);
+
+  // Show celebration modal when level is complete
+  useEffect(() => {
+    if (levelUpDetection.isLevelComplete && !showLevelUpCelebration) {
+      setShowLevelUpCelebration(true);
+    }
+  }, [levelUpDetection.isLevelComplete, showLevelUpCelebration]);
+
   // Load statuses from database on mount, with localStorage fallback
   useEffect(() => {
     void fetchNodeStatuses(roadmap.metadata.id).then(setNodeStatuses);
   }, [roadmap.metadata.id]);
+
+  // Check if current level is already complete but pendingLevelUp is not set
+  // This handles the case where user changes their level in settings to a level
+  // that's already 100% complete - we should show the "Ready to progress" banner
+  useEffect(() => {
+    if (!userProfile || !onProfileUpdate) return;
+
+    // Only run when nodeStatuses has loaded
+    const hasNodeStatuses = Object.keys(nodeStatuses).length > 0;
+    if (!hasNodeStatuses) return;
+
+    // If pendingLevelUp is already set, no need to check
+    if (userProfile.pendingLevelUp) return;
+
+    // Get current level's node and check progress
+    const currentLevelNodeId = getCurrentLevelNodeId(
+      userProfile.currentLevel,
+      userProfile.specialization,
+    );
+    if (!currentLevelNodeId) return;
+
+    const nodeContent = roadmap.content.get(currentLevelNodeId);
+    if (!nodeContent) return;
+
+    const progress = calculateNodeProgress(
+      currentLevelNodeId,
+      nodeContent.frontmatter.type,
+      nodeStatuses,
+      roadmap.graph.nodes,
+      roadmap.content,
+    );
+
+    // If level is 100% complete and no pendingLevelUp, set it to show the banner
+    if (progress?.percentage === 100) {
+      onProfileUpdate({ pendingLevelUp: userProfile.currentLevel });
+    }
+  }, [userProfile, nodeStatuses, roadmap, onProfileUpdate]);
 
   // Pre-compute node relationships once for reuse across multiple memos
   const nodeRelationships = useMemo(() => {
@@ -260,7 +357,10 @@ function RoadmapFlowInner({
   // Calculate initial viewport based on user's current level
   const initialViewport = useMemo(() => {
     const currentNodeId = userProfile
-      ? getCurrentLevelNodeId(userProfile.currentLevel)
+      ? getCurrentLevelNodeId(
+          userProfile.currentLevel,
+          userProfile.specialization,
+        )
       : null;
 
     return calculateViewportForNode(currentNodeId, roadmap.graph.nodes);
@@ -625,6 +725,11 @@ function RoadmapFlowInner({
             );
             if (isSourceParentDimmed) return false;
           }
+        }
+
+        // Hide edges TO irrelevant target nodes (e.g., level-3 → level-4-industrial for construction users)
+        if (targetNode && irrelevantNodeIds.includes(targetNode.id)) {
+          return false;
         }
 
         // Hide edges to checklist nodes whose category is not selected
@@ -1129,15 +1234,90 @@ function RoadmapFlowInner({
     [roadmap.metadata.id, setNodes],
   );
 
+  // Handler to mark all descendant checklist nodes as complete
+  const handleMarkAllComplete = useCallback(
+    async (nodeId: string) => {
+      // Get all descendant checklist nodes for this hub
+      const descendantChecklists = getDescendantChecklists(
+        nodeId,
+        roadmap.graph.nodes,
+        roadmap.content,
+      );
+
+      // Collect IDs to mark as complete
+      const idsToComplete: string[] = [];
+
+      // Add incomplete checklist node IDs
+      for (const node of descendantChecklists) {
+        if (nodeStatuses[node.id] !== "completed") {
+          idsToComplete.push(node.id);
+        }
+      }
+
+      // Add incomplete virtual resource IDs from the hub's content
+      const hubContent = roadmap.content.get(nodeId);
+      if (hubContent?.resources) {
+        for (let i = 0; i < hubContent.resources.length; i++) {
+          const resourceId = `resource-${nodeId}-${i}`;
+          if (nodeStatuses[resourceId] !== "completed") {
+            idsToComplete.push(resourceId);
+          }
+        }
+      }
+
+      if (idsToComplete.length === 0) return;
+
+      // Update localStorage and database via batch API
+      await batchSetNodeStatus(roadmap.metadata.id, idsToComplete, "completed");
+
+      // Update local state
+      setNodeStatuses((prev) => {
+        const updated = { ...prev };
+        for (const id of idsToComplete) {
+          updated[id] = "completed";
+        }
+        return updated;
+      });
+
+      // Update node data for visual refresh (only for actual graph nodes, not virtual resources)
+      setNodes((currentNodes) =>
+        currentNodes.map((node) => {
+          if (
+            idsToComplete.includes(node.id) &&
+            "status" in node.data &&
+            node.data.status !== "completed"
+          ) {
+            return { ...node, data: { ...node.data, status: "completed" } };
+          }
+          return node;
+        }),
+      );
+    },
+    [
+      roadmap.metadata.id,
+      roadmap.graph.nodes,
+      roadmap.content,
+      nodeStatuses,
+      setNodes,
+    ],
+  );
+
   const handleTutorialComplete = useCallback(async () => {
     setShowTutorial(false);
 
     // Mark tutorial as completed in database
     if (userProfile) {
       try {
-        await fetch("/api/profile/tutorial", {
+        const response = await fetch("/api/profile/tutorial", {
           method: "POST",
         });
+        if (!response.ok) {
+          logger.error(
+            "Failed to mark tutorial as completed: API returned non-ok status",
+            new Error(`HTTP ${response.status}`),
+            { component: "roadmap-flow", status: response.status },
+          );
+        }
       } catch (error) {
         logger.error("Failed to mark tutorial as completed", error as Error, {
           component: "roadmap-flow",
@@ -1146,7 +1326,7 @@ function RoadmapFlowInner({
     }
   }, [userProfile]);
 
-  const handleTutorialSkip = useCallback(() => {
+  const handleTutorialSkip = useCallback(async () => {
     setShowTutorial(false);
     setShowTutorialSkipAlert(true);
 
@@ -1154,7 +1334,31 @@ function RoadmapFlowInner({
     setTimeout(() => {
       setShowTutorialSkipAlert(false);
     }, 5000);
-  }, []);
+
+    // Mark tutorial as completed in database (same as completing it)
+    if (userProfile) {
+      try {
+        const response = await fetch("/api/profile/tutorial", {
+          method: "POST",
+        });
+        if (!response.ok) {
+          logger.error(
+            "Failed to mark tutorial as completed on skip: API returned non-ok status",
+            new Error(`HTTP ${response.status}`),
+            { component: "roadmap-flow", status: response.status },
+          );
+        }
+      } catch (error) {
+        logger.error(
+          "Failed to mark tutorial as completed on skip",
+          error as Error,
+          {
+            component: "roadmap-flow",
+          },
+        );
+      }
+    }
+  }, [userProfile]);
 
   const handleTutorialOpen = useCallback(() => {
     setShowTutorial(true);
@@ -1162,6 +1366,100 @@ function RoadmapFlowInner({
     // Close node info panel when tutorial is manually opened
     setSelectedNodeId(null);
   }, []);
+
+  // Handle advancing to the next level
+  const handleAdvanceLevel = useCallback(async () => {
+    if (!userProfile) {
+      return;
+    }
+
+    setIsAdvancingLevel(true);
+
+    try {
+      // Get the next level from progression
+      const progression = getNextLevelProgression(
+        userProfile.currentLevel,
+        userProfile.specialization,
+      );
+
+      if (!progression.nextLevel || !progression.nextNodeId) {
+        // No next level (Red Seal case) - just close the modal
+        setShowLevelUpCelebration(false);
+        levelUpDetection.clearLevelUp();
+        return;
+      }
+
+      // Update profile with new level via API
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentLevel: progression.nextLevel }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update profile");
+      }
+
+      // Update local profile state to reflect new level and clear pendingLevelUp
+      onProfileUpdate?.({
+        currentLevel: progression.nextLevel,
+        pendingLevelUp: null,
+      });
+
+      // Close the modal
+      setShowLevelUpCelebration(false);
+      levelUpDetection.clearLevelUp();
+
+      // Pan viewport to the next level node with smooth animation
+      setTimeout(() => {
+        void fitView({
+          nodes: [{ id: progression.nextNodeId! }],
+          duration: 1000,
+          padding: 0.3,
+          maxZoom: 1.0,
+        }).then(() => {
+          // Select the next level node to show its info panel
+          setSelectedNodeId(progression.nextNodeId);
+        });
+      }, 300);
+
+      logger.info("User advanced to next level", {
+        fromLevel: userProfile.currentLevel,
+        toLevel: progression.nextLevel,
+        nodeId: progression.nextNodeId,
+      });
+    } catch (error) {
+      logger.error("Failed to advance level", error as Error, {
+        currentLevel: userProfile.currentLevel,
+      });
+    } finally {
+      setIsAdvancingLevel(false);
+    }
+  }, [userProfile, levelUpDetection, fitView, onProfileUpdate]);
+
+  // Handle staying at current level (dismiss celebration and save pending state)
+  const handleStayAtLevel = useCallback(async () => {
+    setShowLevelUpCelebration(false);
+    levelUpDetection.clearLevelUp();
+
+    // Save pendingLevelUp to database so banner shows on refresh
+    if (userProfile) {
+      try {
+        await fetch("/api/profile", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pendingLevelUp: userProfile.currentLevel }),
+        });
+
+        // Update local state to show the "Ready to progress" banner immediately
+        onProfileUpdate?.({ pendingLevelUp: userProfile.currentLevel });
+      } catch (error) {
+        logger.error("Failed to save pending level up", error as Error, {
+          currentLevel: userProfile.currentLevel,
+        });
+      }
+    }
+  }, [levelUpDetection, userProfile, onProfileUpdate]);
 
   const handleTutorialStepChange = useCallback(
     (step: TutorialStep) => {
@@ -1194,7 +1492,10 @@ function RoadmapFlowInner({
           if (center === "user-level") {
             // Move to user's current level (same logic as initialViewport)
             const currentNodeId = userProfile
-              ? getCurrentLevelNodeId(userProfile.currentLevel)
+              ? getCurrentLevelNodeId(
+                  userProfile.currentLevel,
+                  userProfile.specialization,
+                )
               : null;
             const targetViewport = calculateViewportForNode(
               currentNodeId,
@@ -1726,48 +2027,68 @@ function RoadmapFlowInner({
         <div className="pointer-events-auto">
           {userProfile ? (
             <Card className="bg-background/95 supports-[backdrop-filter]:bg-background/80 p-4 backdrop-blur">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant="default"
-                      className="bg-teal-500/20 text-teal-700 ring-teal-500/30 dark:text-teal-300"
-                    >
-                      {LEVEL_METADATA[userProfile.currentLevel].shortLabel}
-                    </Badge>
-                    <span className="text-sm font-medium">Welcome back!</span>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="default"
+                        className="bg-teal-500/20 text-teal-700 ring-teal-500/30 dark:text-teal-300"
+                      >
+                        {LEVEL_METADATA[userProfile.currentLevel].shortLabel}
+                      </Badge>
+                      <span className="text-sm font-medium">Welcome back!</span>
+                    </div>
+                    <p className="text-muted-foreground text-xs">
+                      {LEVEL_METADATA[userProfile.currentLevel].label}
+                    </p>
                   </div>
-                  <p className="text-muted-foreground text-xs">
-                    {LEVEL_METADATA[userProfile.currentLevel].label}
-                  </p>
-                </div>
-                <div className="flex gap-1">
-                  <div className="relative">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={handleTutorialOpen}
-                    >
-                      <BookOpenText className="h-4 w-4" />
-                    </Button>
-                    {showTutorialSkipAlert && (
-                      <div className="animate-tutorial-slide-down absolute top-10 right-0 z-50 rounded-md bg-yellow-400 px-3 py-2 text-xs font-medium whitespace-nowrap text-black shadow-lg">
-                        Tutorial skipped! Click to restart.
-                      </div>
-                    )}
+                  <div className="flex gap-1">
+                    <div className="relative">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={handleTutorialOpen}
+                      >
+                        <BookOpenText className="h-4 w-4" />
+                      </Button>
+                      {showTutorialSkipAlert && (
+                        <div className="animate-tutorial-slide-down absolute top-10 right-0 z-50 rounded-md bg-yellow-400 px-3 py-2 text-xs font-medium whitespace-nowrap text-black shadow-lg">
+                          Tutorial skipped! Click to restart.
+                        </div>
+                      )}
+                    </div>
+                    <Link href="/">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Home className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Link href="/profile">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </Link>
                   </div>
-                  <Link href="/">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Home className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link href="/profile">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </Link>
                 </div>
+
+                {/* Ready to Progress Banner - shown when user clicked "Stay Here" on level up */}
+                {userProfile.pendingLevelUp &&
+                  userProfile.pendingLevelUp === userProfile.currentLevel && (
+                    <div className="border-t border-teal-500/20 pt-3">
+                      <Button
+                        size="sm"
+                        className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 text-white hover:from-teal-400 hover:to-emerald-400"
+                        onClick={() => {
+                          // Show the level up celebration modal
+                          setShowLevelUpCelebration(true);
+                        }}
+                      >
+                        <span className="mr-2">Ready to progress!</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
               </div>
             </Card>
           ) : (
@@ -1859,6 +2180,7 @@ function RoadmapFlowInner({
               onChecklistStatusChange={handleStatusChange}
               onDeleteCustomNode={handleDeleteCustomNode}
               onEditCustomNode={handleEditCustomNode}
+              onMarkAllComplete={handleMarkAllComplete}
               onCheckboxClick={() =>
                 handleTutorialInteraction("checkbox-click")
               }
@@ -1897,6 +2219,36 @@ function RoadmapFlowInner({
         onRequestViewportAdjustment={handleViewportAdjustment}
         onStepChange={handleTutorialStepChange}
       />
+
+      {/* Level-up celebration modal - shown either from detection or pending banner */}
+      {userProfile &&
+        (levelUpDetection.completedNodeId && levelUpDetection.progress ? (
+          <LevelUpCelebration
+            open={showLevelUpCelebration}
+            onOpenChange={setShowLevelUpCelebration}
+            currentLevel={userProfile.currentLevel}
+            specialization={userProfile.specialization}
+            completedNodeId={levelUpDetection.completedNodeId}
+            completedNodeTitle={levelUpDetection.completedNodeTitle ?? "Level"}
+            progress={levelUpDetection.progress}
+            onAdvanceLevel={handleAdvanceLevel}
+            onStayHere={handleStayAtLevel}
+            isAdvancing={isAdvancingLevel}
+          />
+        ) : pendingLevelProgress?.progress ? (
+          <LevelUpCelebration
+            open={showLevelUpCelebration}
+            onOpenChange={setShowLevelUpCelebration}
+            currentLevel={userProfile.currentLevel}
+            specialization={userProfile.specialization}
+            completedNodeId={pendingLevelProgress.nodeId}
+            completedNodeTitle={pendingLevelProgress.nodeTitle}
+            progress={pendingLevelProgress.progress}
+            onAdvanceLevel={handleAdvanceLevel}
+            onStayHere={handleStayAtLevel}
+            isAdvancing={isAdvancingLevel}
+          />
+        ) : null)}
     </div>
   );
 }

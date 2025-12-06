@@ -132,7 +132,7 @@ Successfully pass the Level 3 certification exam demonstrating advanced electric
 
 ## Resources
 
-- [Exam Study Support](https://skilledtradesbc.ca/get-certified/about-exams/exam-study-support)
+- [Exam Study Support](https://skilledtradesbc.ca/get-certified-about-exams/exam-study-support)
 - [Level 3 Exam Resources](https://skilledtradesbc.ca/get-certified/about-exams)
 
 ---

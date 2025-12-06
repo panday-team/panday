@@ -91,7 +91,7 @@ export default function OnboardingPage() {
       }
 
       onboardingLogger.info("Onboarding completed successfully");
-      router.push("/roadmap");
+      router.push("/roadmap?showTutorial=true");
     } catch (error) {
       onboardingLogger.error("Onboarding submission failed", error as Error);
       alert("Failed to save your profile. Please try again.");

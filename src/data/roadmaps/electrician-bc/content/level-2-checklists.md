@@ -138,7 +138,7 @@ Successfully pass the Level 1 certification exam to demonstrate mastery of found
 
 ## Resources
 
-- [Exam Study Support](https://skilledtradesbc.ca/get-certified/about-exams/exam-study-support)
+- [Exam Study Support](https://skilledtradesbc.ca/get-certified-about-exams/exam-study-support)
 - [Level 1 Exam Breakdown](https://skilledtradesbc.ca/get-certified/about-exams)
 
 ---
