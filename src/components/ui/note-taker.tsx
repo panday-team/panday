@@ -1,6 +1,9 @@
 "use client"
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface NoteProps {
     id: string;
@@ -39,56 +42,73 @@ export function Note({ id, onSave }: NoteProps) {
         <>
             {/* Toggle Button - visible when closed */}
             {!isOpen && (
-                <button
+                <Button
                     onClick={() => setIsOpen(true)}
-                    className="fixed right-4 top-1/2 transform -translate-y-1/2 z-50 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-l-lg shadow-lg transition-all duration-300"
+                    variant="default"
+                    size="icon"
+                    className="fixed right-4 top-1/2 transform -translate-y-1/2 z-50 rounded-l-lg"
                     title="Open Notes"
                 >
                     📝
-                </button>
+                </Button>
             )}
 
             {/* Note Taker Panel - visible when open */}
             {isOpen && (
-                <div className="fixed right-0 top-0 h-screen w-96 flex flex-col gap-4 p-6 bg-white shadow-lg border-l border-gray-200 overflow-y-auto z-40">
-                    <div className="flex justify-between items-center">
-                        <label htmlFor={id} className="font-bold text-lg text-gray-800">
-                            Notes
-                        </label>
-                        <div className="flex items-center gap-2">
-                            {lastSaved && (
-                                <span className="text-xs text-gray-500">
-                                    {lastSaved.toLocaleTimeString()}
-                                </span>
-                            )}
-                            <button
-                                onClick={() => setIsOpen(false)}
-                                className="text-gray-600 hover:text-gray-800 text-lg leading-none"
-                                title="Close Notes"
+                <div className="fixed right-0 top-0 h-screen w-96 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-l border-border shadow-xl z-40">
+                    <Card className="h-full rounded-none border-0 border-l shadow-none">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                            <CardTitle className="text-lg font-semibold">
+                                Notes
+                            </CardTitle>
+                            <div className="flex items-center gap-2">
+                                {lastSaved && (
+                                    <span className="text-xs text-muted-foreground">
+                                        {lastSaved.toLocaleTimeString()}
+                                    </span>
+                                )}
+                                <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    onClick={() => setIsOpen(false)}
+                                    title="Close Notes"
+                                >
+                                    ×
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        
+                        <CardContent className="flex flex-col gap-4 p-6 pt-0 flex-1">
+                            <div className="flex-1 flex flex-col gap-4">
+                                <textarea
+                                    id={id}
+                                    value={content}
+                                    onChange={(e) => setContent(e.target.value)}
+                                    placeholder="Write your notes here..."
+                                    className={cn(
+                                        "flex-1 min-h-[200px] resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                                        isSaving && "opacity-60"
+                                    )}
+                                    disabled={isSaving}
+                                />
+
+                                {error && (
+                                    <div className="text-sm text-destructive font-medium">
+                                        {error}
+                                    </div>
+                                )}
+                            </div>
+
+                            <Button
+                                onClick={handleSave}
+                                disabled={isSaving || !content.trim()}
+                                className="w-full"
+                                variant="default"
                             >
-                                ×
-                            </button>
-                        </div>
-                    </div>
-
-                    <textarea
-                        id={id}
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        placeholder="Write your notes here..."
-                        className="flex-1 p-3 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
-                        disabled={isSaving}
-                    />
-
-                    {error && <div className="text-red-600 text-sm font-medium">{error}</div>}
-
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving || !content.trim()}
-                        className="w-full py-2 px-4 bg-blue-600 text-white rounded font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                        {isSaving ? "Saving..." : "Save Note"}
-                    </button>
+                                {isSaving ? "Saving..." : "Save Note"}
+                            </Button>
+                        </CardContent>
+                    </Card>
                 </div>
             )}
         </>
