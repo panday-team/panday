@@ -163,19 +163,21 @@ export function RoadmapClientWrapper({
   }, []);
 
   return (
-    <RoadmapFlow
-      roadmap={roadmap}
-      userProfile={userProfile}
-      customNodes={customNodes}
-      onRefreshCustomNodes={refreshCustomNodes}
-      newlyCreatedNodeId={newlyCreatedNodeId}
-      onNodePanned={() => setNewlyCreatedNodeId(undefined)}
-      initialSelectedNodeId={initialNodeId}
-      onInitialNodeHandled={() => setInitialNodeId(undefined)}
-      onProfileUpdate={handleProfileUpdate}
-      showTutorialOnMount={showTutorialOnMount}
-      onTutorialDismissed={handleTutorialDismissed}
-    />
+    <>
+      <RoadmapFlow
+        roadmap={roadmap}
+        userProfile={userProfile}
+        customNodes={customNodes}
+        onRefreshCustomNodes={refreshCustomNodes}
+        newlyCreatedNodeId={newlyCreatedNodeId}
+        onNodePanned={() => setNewlyCreatedNodeId(undefined)}
+        initialSelectedNodeId={initialNodeId}
+        onInitialNodeHandled={() => setInitialNodeId(undefined)}
+        onProfileUpdate={handleProfileUpdate}
+        showTutorialOnMount={showTutorialOnMount}
+        onTutorialDismissed={handleTutorialDismissed}
+      />
+      <Note id="roadmap-notes" />
+    </>
   );
 }
-
