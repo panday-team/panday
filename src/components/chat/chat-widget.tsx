@@ -151,7 +151,7 @@ export function ChatWidget({
     messages,
     input,
     handleInputChange,
-    handleSubmit,
+    append,
     error,
     setMessages,
     setInput,
@@ -835,7 +835,12 @@ export function ChatWidget({
       return;
     }
 
-    if (!input.trim()) return;
+    const trimmedInput = input.trim();
+    if (!trimmedInput) return;
+
+    // Clear input immediately for instant feedback
+    const messageToSend = trimmedInput;
+    setInput("");
 
     // Optimistically show UI feedback immediately
     setSources([]);
@@ -845,7 +850,7 @@ export function ChatWidget({
 
     // Create thread in background if needed (don't block UI)
     if (!activeThreadId) {
-      // Start thread creation but don't await - handleSubmit will handle it
+      // Start thread creation but don't await - append will handle it
       void createThread().then((thread) => {
         if (thread) {
           activeThreadRef.current = thread.id;
@@ -863,8 +868,12 @@ export function ChatWidget({
       activeThreadRef.current = activeThreadId;
     }
 
-    // Submit immediately (useChat handles optimistic updates)
-    handleSubmit(event);
+    // Use append for immediate optimistic user message display
+    // This adds the user message to the messages array immediately before sending
+    void append({
+      role: "user",
+      content: messageToSend,
+    });
   };
 
   // Determine what to display in the textarea:
@@ -917,8 +926,7 @@ export function ChatWidget({
       const trimmed = question.trim();
       if (!trimmed) return;
 
-      // Set input and show UI feedback immediately
-      setInput(trimmed);
+      // Show UI feedback immediately
       setSources([]);
       setIsLoading(true);
       setStatusMessage("Processing request...");
@@ -946,17 +954,19 @@ export function ChatWidget({
         activeThreadRef.current = activeThreadId;
       }
 
-      // Submit immediately
-      handleSubmit();
+      // Use append for immediate optimistic user message display
+      void append({
+        role: "user",
+        content: trimmed,
+      });
     },
     [
       activeThreadId,
+      append,
       createThread,
       isSignedIn,
-      handleSubmit,
       selectedNodeId,
       setActiveThreadId,
-      setInput,
     ],
   );
 
