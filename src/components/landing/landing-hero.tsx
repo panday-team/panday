@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { SignUpButton } from "@clerk/nextjs";
 
 export function LandingHero() {
   return (
@@ -21,16 +22,27 @@ export function LandingHero() {
               beyond.
             </p>
 
-            <Link href="/roadmap">
-              <Button className="font-inria-sans w-fit rounded-lg bg-[#FF8F27] px-8 py-5 text-base text-white shadow-lg hover:bg-[#FF8F27]/90 md:text-lg">
-                Start Your Roadmap
-              </Button>
-            </Link>
+            <div className="flex flex-wrap items-center gap-3">
+              <SignUpButton mode="modal">
+                <Button className="font-inria-sans rounded-lg bg-[#FF8F27] px-8 py-5 text-base font-bold text-white shadow-lg hover:bg-[#FF8F27]/90 md:text-lg">
+                  Start Your Roadmap
+                </Button>
+              </SignUpButton>
+
+              <Link href="/roadmap">
+                <Button
+                  variant="outline"
+                  className="font-inria-sans rounded-lg border-2 border-white/60 bg-transparent px-8 py-5 text-base text-white hover:bg-white/10 md:text-lg"
+                >
+                  Browse as Guest
+                </Button>
+              </Link>
+            </div>
 
             <p className="font-inria-sans max-w-md text-sm text-white/80">
-              Get started as a guest with the career roadmap tool, or sign up
-              for free to gain complete access to all features. No payment
-              required.
+              Sign up for free to save progress, track completions, and get
+              personalized guidance — or browse the roadmap as a guest. No
+              payment required.
             </p>
           </div>
 
