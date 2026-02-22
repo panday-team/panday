@@ -14,26 +14,35 @@ export function LandingCTA() {
           <div className="max-w-2xl">
             <SignedOut>
               <h2 className="font-inria-sans mb-5 text-2xl font-bold text-white md:text-3xl lg:text-4xl">
-                Sign up now to save your roadmap
+                Ready to see the full experience?
               </h2>
 
               <p className="font-inria-sans mb-6 text-base leading-relaxed text-white md:text-lg">
-                By signing up and making an account for Panday, you will get
-                full access to the Panday career roadmap AI, such as saving data
-                to your account, completion levels, apprenticeship profile
-                creation and more!
+                Start in guest mode to explore immediately, then create an
+                account to save roadmap progress, custom nodes, and chat
+                history.
               </p>
 
-              <SignUpButton mode="modal">
-                <Button className="font-inria-sans rounded-lg bg-[#FF8F27] px-8 py-5 text-base font-bold text-white shadow-lg hover:bg-[#FF8F27]/90 md:text-lg">
-                  Sign Up Now
-                </Button>
-              </SignUpButton>
+              <div className="flex flex-wrap gap-3">
+                <SignUpButton mode="modal">
+                  <Button className="font-inria-sans rounded-lg bg-[#FF8F27] px-8 py-5 text-base font-bold text-white shadow-lg hover:bg-[#FF8F27]/90 md:text-lg">
+                    Sign Up Free
+                  </Button>
+                </SignUpButton>
+                <Link href="/demo">
+                  <Button
+                    variant="outline"
+                    className="font-inria-sans rounded-lg border-2 border-white/60 bg-transparent px-8 py-5 text-base text-white hover:bg-white/10 md:text-lg"
+                  >
+                    View Demo
+                  </Button>
+                </Link>
+              </div>
             </SignedOut>
 
             <SignedIn>
               <h2 className="font-inria-sans mb-5 text-2xl font-bold text-white md:text-3xl lg:text-4xl">
-                Ready to continue your journey?
+                Ready to continue your roadmap?
               </h2>
 
               <p className="font-inria-sans mb-6 text-base leading-relaxed text-white md:text-lg">

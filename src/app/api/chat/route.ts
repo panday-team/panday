@@ -1344,18 +1344,6 @@ IMPORTANT: NEVER expose internal node IDs in your responses. Use proposeNode to 
         );
       }
 
-      // Handle Redis/connection errors
-      if (
-        error.message.includes("ECONNREFUSED") ||
-        error.message.includes("Redis") ||
-        error.message.includes("Connection refused")
-      ) {
-        return Response.json(
-          { error: "Service temporarily unavailable. Please try again later." },
-          { status: 503 },
-        );
-      }
-
       // Handle rate limit errors
       if (error.message.includes("rate limit")) {
         return Response.json(

@@ -1,6 +1,5 @@
 import { env } from "@/env";
 import { logger } from "@/lib/logger";
-import redis from "@/server/database/redisClient";
 import { db, databaseConnectionConfig } from "@/server/db";
 
 type ServiceState = "ok" | "warn" | "error";
@@ -19,7 +18,7 @@ export type EnvironmentStatus = {
   nodeEnv: string;
   databaseHost?: string;
   databaseName?: string;
-  redisProvider: string;
+  rateLimitProvider: string;
 };
 
 export type SystemStatus = {
@@ -80,33 +79,6 @@ export const getSystemStatus = async (): Promise<SystemStatus> => {
     });
   }
 
-  const redisProvider = env.PRODUCTION ? "Upstash" : "Local Redis";
-
-  try {
-    const start = Date.now();
-    const response = await (redis as { ping: () => Promise<string> }).ping();
-    const latencyMs = formatLatency(Date.now() - start);
-
-    services.push({
-      name: "Redis",
-      state: "ok",
-      detail: `${redisProvider} responded with ${response}`,
-      latencyMs,
-      target: redisProvider,
-    });
-  } catch (error) {
-    logger.error("Redis health check failed", error, {
-      provider: redisProvider,
-    });
-    services.push({
-      name: "Redis",
-      state: "error",
-      detail: `${redisProvider} ping failed`,
-      target: redisProvider,
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
-
   const clerkConfigured = Boolean(
     env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && env.CLERK_SECRET_KEY,
   );
@@ -133,7 +105,7 @@ export const getSystemStatus = async (): Promise<SystemStatus> => {
       nodeEnv: env.NODE_ENV,
       databaseHost: databaseSummary.host,
       databaseName: databaseSummary.name,
-      redisProvider,
+      rateLimitProvider: "In-memory",
     },
     services,
   };

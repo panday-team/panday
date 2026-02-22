@@ -17,29 +17,5 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:8.2.1
-    container_name: my_redis
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-
-  redis-rest:
-    image: hiett/serverless-redis-http:latest
-    container_name: my_redis_rest
-    environment:
-      SRH_MODE: env
-      SRH_TOKEN: ${UPSTASH_REDIS_REST_TOKEN:-dev-token}
-      SRH_CONNECTION_STRING: redis://redis:6379
-      SRH_PORT: ${UPSTASH_REDIS_REST_PORT:-8079}
-    ports:
-      - "${UPSTASH_REDIS_REST_PORT:-8079}:${UPSTASH_REDIS_REST_PORT:-8079}"
-    depends_on:
-      - redis
-    restart: unless-stopped
-
 volumes:
   postgres_data:
-  redis_data:

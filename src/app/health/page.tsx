@@ -77,8 +77,8 @@ export default async function StatusPage() {
                 )}
               />
               <EnvironmentItem
-                label="Cache"
-                value={environment.redisProvider}
+                label="Rate limiting"
+                value={environment.rateLimitProvider}
               />
             </dl>
           </div>

@@ -13,19 +13,28 @@ export function LandingHero() {
           {/* Left Content */}
           <div className="flex flex-col gap-4 md:gap-6">
             <h1 className="font-inria-sans text-3xl leading-tight font-bold text-white md:text-4xl lg:text-5xl">
-              Your AI-Powered Guide to a Career in BC Skilled Trades
+              One place to plan your skilled trades path in BC
             </h1>
 
             <p className="font-inria-sans text-lg leading-relaxed text-white md:text-xl">
-              Visually map your journey, discover resources, and get
-              personalized guidance to achieve your Red Seal certification and
-              beyond.
+              Panday turns confusing career requirements into a clear, visual
+              roadmap. Explore the flow, get AI guidance with sources, and track
+              your progress from entry to Red Seal.
             </p>
 
             <div className="flex flex-wrap items-center gap-3">
+              <Link href="/demo">
+                <Button
+                  variant="outline"
+                  className="font-inria-sans rounded-lg border-2 border-white/60 bg-transparent px-8 py-5 text-base text-white hover:bg-white/10 md:text-lg"
+                >
+                  View Demo
+                </Button>
+              </Link>
+
               <SignUpButton mode="modal">
                 <Button className="font-inria-sans rounded-lg bg-[#FF8F27] px-8 py-5 text-base font-bold text-white shadow-lg hover:bg-[#FF8F27]/90 md:text-lg">
-                  Start Your Roadmap
+                  Start Free
                 </Button>
               </SignUpButton>
 
@@ -34,15 +43,14 @@ export function LandingHero() {
                   variant="outline"
                   className="font-inria-sans rounded-lg border-2 border-white/60 bg-transparent px-8 py-5 text-base text-white hover:bg-white/10 md:text-lg"
                 >
-                  Browse as Guest
+                  Try Live Roadmap
                 </Button>
               </Link>
             </div>
 
             <p className="font-inria-sans max-w-md text-sm text-white/80">
-              Sign up for free to save progress, track completions, and get
-              personalized guidance — or browse the roadmap as a guest. No
-              payment required.
+              No payment required. Use guest mode instantly, or sign up to save
+              progress and personalized data.
             </p>
           </div>
 

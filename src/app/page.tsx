@@ -4,6 +4,7 @@ import { LandingTargetAudience } from "@/components/landing/landing-target-audie
 import { LandingFeatures } from "@/components/landing/landing-features";
 import { LandingHowItWorks } from "@/components/landing/landing-how-it-works";
 import { LandingAISection } from "@/components/landing/landing-ai-section";
+import { LandingDemoFlow } from "@/components/landing/landing-demo-flow";
 import { LandingCTA } from "@/components/landing/landing-cta";
 import { LandingFooter } from "@/components/landing/landing-footer";
 
@@ -15,6 +16,7 @@ export default function LandingPage() {
       <LandingTargetAudience />
       <LandingFeatures />
       <LandingHowItWorks />
+      <LandingDemoFlow />
       <LandingAISection />
       <LandingCTA />
       <LandingFooter />

@@ -1,21 +1,93 @@
-import { Ratelimit } from "@upstash/ratelimit";
-import type { Redis as UpstashRedis } from "@upstash/redis";
-import redis from "@/server/database/redisClient";
-import { env } from "@/env";
 import { APP_CONFIG } from "@/config/app-config";
+
+type RateLimitResult = {
+  success: boolean;
+  limit: number;
+  reset: number;
+  remaining: number;
+  pending?: Promise<unknown>;
+};
+
+type InMemoryRateLimiter = {
+  limit: (identifier: string) => Promise<RateLimitResult>;
+};
+
+type CreateRateLimiterOptions = {
+  requests: number;
+  windowMs: number;
+  prefix: string;
+};
+
+type RateLimitBucket = {
+  count: number;
+  resetAt: number;
+};
+
+const SWEEP_INTERVAL = 100;
+
+export const createInMemoryRateLimiter = ({
+  requests,
+  windowMs,
+  prefix,
+}: CreateRateLimiterOptions): InMemoryRateLimiter => {
+  const buckets = new Map<string, RateLimitBucket>();
+  let callCountSinceSweep = 0;
+
+  const sweepExpiredBuckets = (now: number) => {
+    for (const [key, bucket] of buckets.entries()) {
+      if (bucket.resetAt <= now) {
+        buckets.delete(key);
+      }
+    }
+  };
+
+  return {
+    limit: async (identifier: string) => {
+      const now = Date.now();
+      const bucketKey = `${prefix}:${identifier}`;
+
+      callCountSinceSweep += 1;
+      if (callCountSinceSweep >= SWEEP_INTERVAL) {
+        sweepExpiredBuckets(now);
+        callCountSinceSweep = 0;
+      }
+
+      const existingBucket = buckets.get(bucketKey);
+      const bucket =
+        !existingBucket || existingBucket.resetAt <= now
+          ? { count: 0, resetAt: now + windowMs }
+          : existingBucket;
+
+      if (bucket.count >= requests) {
+        return {
+          success: false,
+          limit: requests,
+          reset: bucket.resetAt,
+          remaining: 0,
+        };
+      }
+
+      bucket.count += 1;
+      buckets.set(bucketKey, bucket);
+
+      return {
+        success: true,
+        limit: requests,
+        reset: bucket.resetAt,
+        remaining: Math.max(requests - bucket.count, 0),
+      };
+    },
+  };
+};
 
 /**
  * Rate limiter for chat API endpoint
  * Configurable via CHAT_RATE_LIMIT_RPM environment variable (default: 30 requests/minute)
  */
-export const chatRateLimit = new Ratelimit({
-  redis: redis as unknown as UpstashRedis,
-  limiter: Ratelimit.slidingWindow(
-    APP_CONFIG.chat.rateLimit.requestsPerMinute,
-    APP_CONFIG.chat.rateLimit.window,
-  ),
-  analytics: env.PRODUCTION,
-  prefix: "@upstash/ratelimit/chat",
+export const chatRateLimit = createInMemoryRateLimiter({
+  requests: APP_CONFIG.chat.rateLimit.requestsPerMinute,
+  windowMs: 60_000,
+  prefix: "chat",
 });
 
 /**
@@ -26,12 +98,8 @@ export const chatRateLimit = new Ratelimit({
  * - Each request may trigger translation (additional API call)
  * - Prevents accidental quota exhaustion from repeated recordings
  */
-export const voiceRateLimit = new Ratelimit({
-  redis: redis as unknown as UpstashRedis,
-  limiter: Ratelimit.slidingWindow(
-    APP_CONFIG.voice.rateLimit.requestsPerMinute,
-    APP_CONFIG.voice.rateLimit.window,
-  ),
-  analytics: env.PRODUCTION,
-  prefix: "@upstash/ratelimit/voice",
+export const voiceRateLimit = createInMemoryRateLimiter({
+  requests: APP_CONFIG.voice.rateLimit.requestsPerMinute,
+  windowMs: 60_000,
+  prefix: "voice",
 });

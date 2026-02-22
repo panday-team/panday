@@ -10,15 +10,13 @@ export function LandingAISection() {
           {/* Left Content */}
           <div className="flex flex-col gap-4 md:gap-6">
             <h2 className="font-inria-sans text-2xl font-bold text-white md:text-3xl lg:text-4xl">
-              Using AI to Expand Learning
+              AI help that stays grounded
             </h2>
 
             <p className="font-inria-sans text-base leading-relaxed text-white md:text-lg">
-              Panday AI is built to understand and adapt to new and changing
-              questions relating to the trades journey. We at Panday want to
-              create a clear and informative experience for anyone looking into
-              joining trades, and are continuously developing the site to reach
-              that goal.
+              The chat assistant answers questions in plain language and points
+              to source material when it responds. That means users can move
+              faster while still seeing where the guidance comes from.
             </p>
           </div>
 

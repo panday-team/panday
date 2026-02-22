@@ -10,7 +10,7 @@
 
 - `src/app/page.tsx` renders the interactive roadmap wrapped in an ErrorBoundary
 - System status checks moved to `src/app/health/page.tsx` for deployment diagnostics
-- Connection checks live in `src/server/status/systemStatus.ts` and monitor: Database, Redis, Clerk, and Embeddings API
+- Connection checks live in `src/server/status/systemStatus.ts` and monitor: Database, Clerk, and Embeddings API
 - Clerk controls are centralized in `src/components/AuthControls.tsx` to keep auth UI client-side
 - Root layout wraps the tree in `ClerkProvider` (`src/app/layout.tsx`) so `SignedIn`/`SignedOut` helpers work
 - Health dashboard presentation uses shadcn cards/badges for consistent theming
@@ -88,7 +88,7 @@
 - `bun install` to install dependencies tracked in `bun.lock`
 - `docker compose up -d postgres` to launch the local database container before running Prisma commands or local dev
 - Copy required env vars into `.env`; validation happens in `src/env.js`
-- `./scripts/dev-services.sh start|stop|status` wraps `docker compose` to manage local Postgres/Redis without recreating containers
+- `./scripts/dev-services.sh start|stop|status` wraps `docker compose` to manage local Postgres without recreating containers
 - `.env.example` documents required variables; replace placeholder strings with environment-specific values in your local `.env`
 
 ## Build & Verification Commands
@@ -116,7 +116,7 @@
 - **Structure**: Mirror source structure with `__tests__/` folders (e.g., `src/lib/__tests__/utils.test.ts`)
 - **Coverage**: Core modules tested include roadmap-loader, embeddings-client, system status, utils, chat API, and type definitions
 - **Patterns**:
-  - Use `vi.mock()` for module-level mocking (e.g., Prisma client, Redis, fetch)
+  - Use `vi.mock()` for module-level mocking (e.g., Prisma client, fetch)
   - Use `vi.fn()` for function-level mocking (e.g., AI SDK `streamText`)
   - Test happy paths, error scenarios, edge cases, and parameter variations
   - Mock external dependencies to isolate units under test
@@ -137,7 +137,7 @@
   - Used by `EmbeddingDocument` model for storing 1536-dimensional embeddings
   - HNSW index on embedding column enables fast approximate nearest neighbor search
 - Local Postgres defaults come from `POSTGRES_PORT` (default host port 5432) and Prisma auto-builds the DSN; override with `LOCAL_DATABASE_URL` only if you need custom creds
-- `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, and Upstash secrets are only required when `PRODUCTION=true`
+- `DATABASE_URL` and `DATABASE_URL_UNPOOLED` are only required when `PRODUCTION=true`
 - Restart dev server after schema or environment changes
 - Do not commit generated Prisma client or local database artifacts
 
@@ -157,7 +157,7 @@
   - Provides personalized context without user explicitly selecting the node
   - Does NOT artificially inflate source relevance - the level content only appears in displayed sources if the embeddings system naturally finds it relevant to the user's query
 - **Security**:
-  - Rate limiting: 10 requests/minute per IP via `@upstash/ratelimit` (Redis-backed sliding window)
+  - Rate limiting: 10 requests/minute per IP via in-memory sliding window limiter (`src/lib/rate-limit.ts`)
   - Input validation: Zod schema enforces max 50 messages, 10k chars per message
   - Timeout: 30s AbortController timeout on embeddings API calls
   - User-scoped queries prevent cross-user data access
@@ -303,13 +303,13 @@
     - Use appropriate log levels (debug for verbose, info for normal operations, warn for recoverable issues, error for failures)
   - **Testing**: See `src/lib/__tests__/logger.test.ts` for comprehensive examples
 
-- **Where Used**: Chat API (`route.ts`), System Status (`systemStatus.ts`), Redis client (`redisClient.ts`), Error Boundary (`error-boundary.tsx`)
+- **Where Used**: Chat API (`route.ts`), System Status (`systemStatus.ts`), Error Boundary (`error-boundary.tsx`)
 
 ## Performance & Reliability
 
 - **Caching**: Roadmap data cached in-memory with 5-minute TTL via `roadmapCache` (`src/lib/roadmap-cache.ts`)
 - **Error Boundaries**: `ErrorBoundary` component wraps `RoadmapFlow` to catch React errors gracefully (`src/components/error-boundary.tsx`)
-- **Health Checks**: System status monitors Database, Redis, Clerk, and Embeddings API with latency tracking (`src/server/status/systemStatus.ts`)
+- **Health Checks**: System status monitors Database, Clerk, and Embeddings API with latency tracking (`src/server/status/systemStatus.ts`)
 - **Timeouts**: All external API calls (embeddings) use AbortController with 30s timeout
 
 ## Security & Secrets

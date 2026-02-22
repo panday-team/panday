@@ -138,20 +138,20 @@ npm run git:sync -- origin/release   # sync against a different branch
 
 ### Handy commands
 
-| Action | Command | Why it helps |
-| --- | --- | --- |
-| Quick branch sync | `npm run git:sync` | Safest way to pull in the latest `origin/main`; handles stashing and rebasing for you |
-| Quick status check | `npm run git:behind` | Tells you how many commits you are behind `origin/main`; `-- origin/release` compares elsewhere |
-| Update local `main` | `git fetch origin && git pull --ff-only origin main` | Run at the start of the day so `main` matches GitHub |
-| Create a feature branch | `git checkout -b feature/<brief-topic>` | Keeps work isolated from `main` |
-| Manual rebase (fallback) | `git fetch origin && git rebase origin/main` | Use if the helper script cannot finish because of conflicts |
-| Manual push after rebase | `git push --force-with-lease` | Updates the remote copy of your branch without clobbering teammates |
+| Action                   | Command                                              | Why it helps                                                                                    |
+| ------------------------ | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Quick branch sync        | `npm run git:sync`                                   | Safest way to pull in the latest `origin/main`; handles stashing and rebasing for you           |
+| Quick status check       | `npm run git:behind`                                 | Tells you how many commits you are behind `origin/main`; `-- origin/release` compares elsewhere |
+| Update local `main`      | `git fetch origin && git pull --ff-only origin main` | Run at the start of the day so `main` matches GitHub                                            |
+| Create a feature branch  | `git checkout -b feature/<brief-topic>`              | Keeps work isolated from `main`                                                                 |
+| Manual rebase (fallback) | `git fetch origin && git rebase origin/main`         | Use if the helper script cannot finish because of conflicts                                     |
+| Manual push after rebase | `git push --force-with-lease`                        | Updates the remote copy of your branch without clobbering teammates                             |
 
 `npm run git:behind` calls `scripts/git-behind.sh` and prints the number of commits your branch is behind the default `origin/main`. Pass a different comparison target if needed: `npm run git:behind -- origin/release`.
 
-## Dev services: Postgres and Redis
+## Dev services: Postgres
 
-Postgres (our database) and Redis (our cache/queue) run inside Docker containers. The helper script below saves you from memorising long Docker commands.
+Postgres (our database) runs inside Docker. The helper script below saves you from memorising long Docker commands.
 
 1. **Start the databases manually (optional)**
 
@@ -159,7 +159,7 @@ Postgres (our database) and Redis (our cache/queue) run inside Docker containers
    npm run services:start   # or `bun run services:start`
    ```
 
-   This script calls `./scripts/dev-services.sh start` for you and spins up Postgres and Redis in the background. Data sticks around between restarts because Docker stores it in named volumes.
+   This script calls `./scripts/dev-services.sh start` for you and spins up Postgres in the background. Data sticks around between restarts because Docker stores it in named volumes.
 
    > Tip: `npm run dev` (or `bun run dev`) now runs this same start command automatically before launching the Next.js dev server, so you can usually skip this manual step.
 
@@ -169,7 +169,7 @@ Postgres (our database) and Redis (our cache/queue) run inside Docker containers
    npm run services:status   # or `bun run services:status`
    ```
 
-   You should see `postgres`, `redis`, and `redis-rest`. The last container runs the upstream [serverless-redis-http](https://github.com/hiett/serverless-redis-http) proxy so local requests mirror Upstash’s REST API. Missing entries usually mean Docker needs more time; re-run the command after a few seconds.
+   You should see `postgres`. Missing entries usually mean Docker needs more time; re-run the command after a few seconds.
 
 3. **Stop the databases when you are done**
 

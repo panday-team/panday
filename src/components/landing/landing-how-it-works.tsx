@@ -27,28 +27,32 @@ export function LandingHowItWorks() {
               <div className="flex items-start gap-4">
                 <span className="text-xl font-bold text-[#FF8F27]">1.</span>
                 <p className="font-inria-sans text-base leading-relaxed text-white md:text-lg">
-                  Take a short quiz to help us understand your needs.
+                  Choose your current level and entry path to personalize the
+                  roadmap instantly.
                 </p>
               </div>
 
               <div className="flex items-start gap-4">
                 <span className="text-xl font-bold text-[#FF8F27]">2.</span>
                 <p className="font-inria-sans text-base leading-relaxed text-white md:text-lg">
-                  Tell us your goals and questions.
+                  Open a roadmap node to see eligibility, resources, and next
+                  actions.
                 </p>
               </div>
 
               <div className="flex items-start gap-4">
                 <span className="text-xl font-bold text-[#FF8F27]">3.</span>
                 <p className="font-inria-sans text-base leading-relaxed text-white md:text-lg">
-                  Explore your personalized roadmap.
+                  Ask the AI assistant questions and review source-backed
+                  answers.
                 </p>
               </div>
 
               <div className="flex items-start gap-4">
                 <span className="text-xl font-bold text-[#FF8F27]">4.</span>
                 <p className="font-inria-sans text-base leading-relaxed text-white md:text-lg">
-                  Unlock resources & track progress.
+                  Track checklist completion, save chat history, and continue
+                  where you left off.
                 </p>
               </div>
             </div>

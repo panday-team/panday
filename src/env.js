@@ -16,22 +16,15 @@ export const env = createEnv({
       .default("development"),
     CLERK_SECRET_KEY: z.string(),
     PRODUCTION: z.coerce.boolean().default(false),
-    REDIS_URL: z.string().url().default("redis://127.0.0.1:6379"),
-    UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
-    UPSTASH_REDIS_REST_URL: z.string().url().optional(),
-    UPSTASH_REDIS_REST_PORT: z.coerce
-      .number()
-      .int()
-      .min(1)
-      .max(65535)
-      .default(8079),
     AI_PROVIDER: z.enum(["anthropic", "openai", "google"]).default("anthropic"),
     AI_MODEL: z.string().default("claude-3-5-sonnet-20241022"),
     ANTHROPIC_API_KEY: z.string().optional(),
     OPENAI_API_KEY: z.string(),
     GOOGLE_API_KEY: z.string().optional(),
     EMBEDDINGS_BACKEND: z.enum(["json", "postgres"]).default("json"),
-    CRON_SECRET: z.string().min(32, "CRON_SECRET must be at least 32 characters"),
+    CRON_SECRET: z
+      .string()
+      .min(32, "CRON_SECRET must be at least 32 characters"),
   },
 
   /**
@@ -56,10 +49,6 @@ export const env = createEnv({
     CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
     NODE_ENV: process.env.NODE_ENV,
     PRODUCTION: process.env.PRODUCTION,
-    REDIS_URL: process.env.REDIS_URL,
-    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
-    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
-    UPSTASH_REDIS_REST_PORT: process.env.UPSTASH_REDIS_REST_PORT,
     AI_PROVIDER: process.env.AI_PROVIDER,
     AI_MODEL: process.env.AI_MODEL,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
@@ -84,15 +73,6 @@ export const env = createEnv({
 
 if (env.PRODUCTION && !env.DATABASE_URL) {
   throw new Error("DATABASE_URL must be set when PRODUCTION is true");
-}
-
-if (
-  env.PRODUCTION &&
-  (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN)
-) {
-  throw new Error(
-    "UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be set when PRODUCTION is true",
-  );
 }
 
 if (env.PRODUCTION && !env.DATABASE_URL_UNPOOLED) {

@@ -1,264 +1,159 @@
 # Panday
 
-**Interactive career roadmap platform for skilled trades in British Columbia**
+Panday is an interactive roadmap app that helps people understand a skilled-trades career path in British Columbia.
 
-Panday helps aspiring tradespeople navigate their career path through interactive, visual roadmaps with AI-powered guidance.
+Users can explore a visual progression map, open milestone details, ask AI questions with source-backed answers, and track progress over time.
 
-## Features
+## What This App Does
 
-- **Interactive Visual Roadmaps**: React Flow-based interactive diagrams showing career progression paths with zoom controls (slider + scroll + pinch)
-- **AI Career Guidance**: RAG-powered chat using OpenAI embeddings + LLM (Gemini/Claude/GPT) with conversation history
-- **Chat History & Persistence**: Save and revisit past conversations with auto-title generation, inline rename, and soft delete
-- **Automated FAQ Generation**: ML pipeline extracts Q&As from chat sessions, clusters by similarity, and consolidates into curated FAQs
-- **System Status Dashboard**: Real-time health monitoring for all services (Database, Redis, Clerk, OpenAI)
-- **Auto-Layout System**: Physics-based graph generation using D3-force simulation
-- **Content-Driven Architecture**: Markdown + YAML frontmatter for easy content updates
-- **Production Ready**: Rate limiting, input validation, caching, error boundaries, and comprehensive testing
+- Turns a complex apprenticeship journey into a clear, step-by-step visual roadmap
+- Helps users understand what to do now, what comes next, and why each step matters
+- Supports ongoing learning with a context-aware AI assistant
+- Keeps user momentum with checklist tracking and saved chat history
 
-## Tech Stack
+## Live Product Flow (Simple View)
 
-- **Framework**: Next.js 15 (App Router) + React 19
-- **Database**: PostgreSQL (Neon in production, local Docker in dev)
-- **Caching**: Redis (Upstash in production, local Docker in dev)
-- **Auth**: Clerk
-- **AI**: Google Gemini / Anthropic Claude / OpenAI via Vercel AI SDK
-- **Embeddings**: LlamaIndex + OpenAI text-embedding-3-small
-- **Visualization**: React Flow + React Flow UI components + Framer Motion
-- **Styling**: Tailwind CSS + shadcn/ui
-- **Validation**: Zod
-- **Rate Limiting**: Upstash Ratelimit
-- **Testing**: Vitest (67+ tests)
-- **Runtime**: Bun
+1. User chooses current level and entry path
+2. User explores roadmap nodes and checklist items
+3. User asks questions in AI chat and sees source-backed guidance
+4. User tracks completion and progresses toward the next milestone
 
-## Quick Start
+## Demo
+
+- Guided walkthrough: `/demo`
+- Live app experience: `/roadmap`
+
+## Technical Overview
+
+### Stack
+
+- **Framework:** Next.js 15 (App Router) + React 19
+- **Runtime:** Bun
+- **Language:** TypeScript
+- **Database:** PostgreSQL + Prisma
+- **Auth:** Clerk
+- **AI:** Vercel AI SDK (`anthropic`, `openai`, `google` providers)
+- **Embeddings / RAG:** OpenAI embeddings + hybrid JSON/Postgres retrieval
+- **Visualization:** React Flow (`@xyflow/react`) + React Flow UI components
+- **UI:** Tailwind CSS + shadcn/ui
+- **Validation:** Zod
+- **Testing:** Vitest
+
+### Architecture Highlights
+
+- **Content-driven roadmap system:** roadmap metadata, graph layout, and markdown content are separated
+- **Dynamic graph rendering:** roadmap graph + node content loaded server-side and rendered in React Flow
+- **RAG chat pipeline:** query -> embeddings retrieval -> source context injection -> streamed AI response
+- **Thread persistence:** user-facing chat threads with CRUD + message storage
+- **FAQ pipeline:** extracts Q&A from sessions, clusters similar questions, generates consolidated FAQs
+- **Health diagnostics:** runtime status page for key service/config checks
+
+### Reliability and Security
+
+- Zod validation at API boundaries
+- In-memory sliding-window rate limiting for chat and voice endpoints
+- Request timeouts for external API calls
+- User-scoped data access for profile/chat resources
+- Structured JSON logging for observability
+
+## Project Structure
+
+```txt
+src/
+  app/
+    page.tsx                    # Landing page
+    demo/page.tsx               # Guided product demo
+    roadmap/page.tsx            # Main app canvas
+    api/                        # Route handlers (chat, profile, threads, faq, cron)
+  components/
+    landing/                    # Landing page sections
+    chat/                       # Chat UI + thread sidebar
+    nodes/                      # Custom React Flow node components
+  data/
+    roadmaps/                   # Content + graph data
+    embeddings/                 # Embeddings indexes / documents
+  lib/
+    roadmap-loader.ts           # Roadmap loading/parsing
+    embeddings-hybrid.ts        # Embeddings backend router
+    rate-limit.ts               # In-memory limiter
+    chat-threads.ts             # Thread/message utilities
+  server/
+    status/systemStatus.ts      # Runtime diagnostics
+prisma/
+  schema.prisma
+```
+
+## Local Setup
 
 ### Prerequisites
 
 - Bun v1.2+
-- Docker & Docker Compose
+- Docker
 
-### Setup
+### 1) Install
 
-1. **Clone and install dependencies**
-
-   ```bash
-   git clone <repo>
-   cd panday
-   bun install
-   ```
-
-2. **Copy environment variables**
-
-   ```bash
-   cp .env.example .env
-   ```
-
-   Edit `.env` and fill in required values (see `.env.example` for details)
-
-3. **Start local services**
-
-   ```bash
-   bun run services:start
-   # or manually: docker compose up -d postgres redis
-   ```
-
-4. **Run database migrations**
-
-   ```bash
-   bun run db:migrate
-   ```
-
-5. **Start dev server**
-   ```bash
-   bun run dev
-   ```
-
-Visit `http://localhost:3000` to see the system status dashboard and interactive roadmap.
-
-## Available Scripts
-
-### Development
-
-- `bun run dev` - Start development server with HMR
-- `bun run build` - Create production build
-- `bun run preview` - Preview production build locally
-
-### Database
-
-- `bun run db:generate` - Regenerate Prisma client
-- `bun run db:migrate` - Apply database migrations
-- `bun run db:studio` - Open Prisma Studio
-
-### Services
-
-- `bun run services:start` - Start Docker services (Postgres + Redis)
-- `bun run services:stop` - Stop Docker services
-- `bun run services:status` - Check service status
-
-### Roadmap & Embeddings
-
-- `bun run roadmap:build` - Regenerate graph.json from markdown content
-- `bun run embeddings:setup` - Setup Python venv for embeddings generation (one-time)
-- `bun run embeddings:generate <roadmap-id>` - Generate OpenAI embeddings for RAG system
-
-### Quality
-
-- `bun run check` - Run ESLint + TypeScript checks
-- `bun run format:check` - Check code formatting
-- `bun run format:write` - Format code with Prettier
-
-### Testing
-
-- `bun run test` - Run tests in watch mode (Vitest)
-- `bun run test:run` - Run all tests once (Vitest)
-- `bun run test:ui` - Interactive test UI (Vitest)
-
-**Note**: Use `bun run test`, NOT `bun test` (different test runner)
-
-## Project Structure
-
-```
-panday/
-├── src/
-│   ├── app/                    # Next.js App Router pages
-│   │   ├── api/chat/          # RAG chat endpoint
-│   │   ├── health/            # Health check page
-│   │   └── page.tsx           # Main roadmap + status dashboard
-│   ├── components/            # React components
-│   │   ├── nodes/             # Custom React Flow node types
-│   │   ├── ui/                # shadcn/ui primitives
-│   │   ├── error-boundary.tsx
-│   │   ├── roadmap-flow.tsx   # Main React Flow component
-│   │   └── ...
-│   ├── data/
-│   │   ├── roadmaps/          # Roadmap content (markdown + JSON)
-│   │   │   └── electrician-bc/
-│   │   │       ├── content/   # Node content (markdown with YAML frontmatter)
-│   │   │       ├── graph.json # Auto-generated React Flow graph
-│   │   │       └── metadata.json
-│   │   └── embeddings/        # OpenAI embeddings + source documents
-│   │       └── electrician-bc/
-│   │           ├── *.md       # Detailed reference content
-│   │           └── index/     # LlamaIndex persisted index
-│   ├── lib/                   # Shared utilities
-│   │   ├── embeddings-service.ts
-│   │   ├── rate-limit.ts
-│   │   ├── roadmap-cache.ts
-│   │   ├── roadmap-loader.ts
-│   │   └── utils.ts
-│   ├── server/                # Server-only code
-│   │   ├── database/
-│   │   ├── status/
-│   │   └── db.ts
-│   └── styles/
-├── prisma/
-│   └── schema.prisma
-└── scripts/
-    ├── embeddings/            # Embedding generation tools
-    │   ├── generate.py        # Python script to generate embeddings
-    │   ├── generate.sh        # Helper script
-    │   └── README.md
-    └── build-graph.ts         # Auto-layout roadmap builder
+```bash
+bun install
 ```
 
-## Adding Content
+### 2) Configure env vars
 
-See `docs/ROADMAP_SYSTEM.md` for detailed instructions on:
-
-- Creating new roadmaps
-- Adding nodes to existing roadmaps
-- Using the auto-layout system
-- Content structure and frontmatter format
-
-**Quick workflow**:
-
-1. Create/edit markdown files in `src/data/roadmaps/{roadmap-id}/content/`
-2. Run `bun run roadmap:build` to regenerate `graph.json`
-3. No manual graph editing needed!
-
-## Architecture
-
-### Data Flow (RAG Chat)
-
-```
-User Query → /api/chat
-  ↓
-  ├─→ OpenAI Embeddings (in-process LlamaIndex) → Relevant context
-  │
-  └─→ LLM (Gemini/Claude/GPT) + system prompt + context → Streamed response
+```bash
+cp .env.example .env
 ```
 
-### Caching Strategy
+Fill required values in `.env`.
 
-- **Roadmap Data**: In-memory cache with 5-minute TTL
-- **Embeddings Indexes**: In-memory cache (loaded on first query per roadmap)
-- **Rate Limiting**: Redis-backed sliding window (10 req/min)
+### 3) Start local database
 
-### Security
+```bash
+bun run services:start
+```
 
-- ✅ Rate limiting on chat endpoint
-- ✅ Zod input validation (max 50 messages, 10k chars each)
-- ✅ Environment-based API key validation
-- ⚠️ No authentication on chat API (MVP - acceptable for now)
+### 4) Run migrations
+
+```bash
+bun run db:migrate
+```
+
+### 5) Start app
+
+```bash
+bun run dev
+```
+
+## Scripts
+
+- `bun run dev` - start development server
+- `bun run build` - production build + type checks
+- `bun run preview` - run production build locally
+- `bun run check` - ESLint + TypeScript
+- `bun run test` - Vitest watch mode
+- `bun run test:run` - Vitest single run
+- `bun run db:migrate` - apply migrations
+- `bun run roadmap:build` - regenerate roadmap graph from markdown frontmatter
 
 ## Testing
 
-67+ tests covering:
+- Test runner: Vitest
+- Run full suite: `bun run test:run`
+- Example focused run:
 
-- Roadmap loader (data parsing, frontmatter, checklists)
-- Embeddings service (query, index loading)
-- System status (Postgres, Redis, OpenAI health checks)
-- Chat API (RAG flow, validation)
-- Utils and type definitions
+```bash
+bun run test:run -- src/app/api/chat/__tests__/route.test.ts
+```
 
-Run tests with `bun run test` (watch mode) or `bun run test:run` (single run).
+## Employer-Focused Notes
 
-## Environment Variables
+If you are reviewing this repository for hiring:
 
-See `.env.example` for complete list. Key variables:
+- The product intentionally combines UX clarity, AI-assisted guidance, and robust backend structure
+- The codebase shows full-stack ownership across frontend interaction design, backend APIs, data modeling, and testing
+- The architecture is designed for practical iteration: content-driven roadmap updates, modular APIs, and maintainable test coverage
 
-- `PRODUCTION` - Switch between local/prod services
-- `DATABASE_URL` / `DATABASE_URL_UNPOOLED` - Neon Postgres (prod)
-- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` - Redis (prod)
-- `CLERK_SECRET_KEY` / `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Auth
-- `OPENAI_API_KEY` - OpenAI embeddings (required)
-- `AI_PROVIDER` / `AI_MODEL` - AI chat provider config (anthropic/openai/google)
-- `ANTHROPIC_API_KEY` / `GOOGLE_API_KEY` - LLM API keys
+## Additional Docs
 
-## Deployment
-
-The app is designed for deployment to:
-
-- **Next.js App**: Vercel, Railway, or any Node.js host (single deployment, no separate services needed)
-- **Database**: Neon (Postgres)
-- **Redis**: Upstash
-
-Set `PRODUCTION=true` to switch from local services to production providers.
-
-### Embedding Generation
-
-Embeddings are generated locally and committed to git:
-
-1. Add reference documents to `src/data/embeddings/{roadmap-id}/` (markdown or PDF)
-2. Run `bun run embeddings:generate {roadmap-id}`
-3. Commit generated `index/` directory to git
-4. Deploy - embeddings load from disk on first query
-
-## Contributing
-
-1. Follow existing code style (enforced by Prettier + ESLint)
-2. Write tests for new features
-3. Run `bun run check` before committing
-4. Use conventional commit messages
-5. Update AGENTS.md when making architectural changes
-
-## Documentation
-
-- `AGENTS.md` - AI assistant guide (architecture, patterns, conventions)
-- `docs/ROADMAP_SYSTEM.md` - Complete roadmap system documentation
-- `docs/ROADMAP_AUTO_LAYOUT.md` - Auto-layout physics parameters
-- `docs/SETUP.md` - Git workflow and Docker helpers
-
-## License
-
-MIT
+- `AGENTS.md` - detailed architecture and engineering notes
+- `docs/ROADMAP_SYSTEM.md` - roadmap content system design
+- `docs/ROADMAP_AUTO_LAYOUT.md` - auto-layout graph generation details
+- `docs/SETUP.md` - local workflow and branch/dev-service guidance
