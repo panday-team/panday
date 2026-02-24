@@ -143,14 +143,6 @@ bun run dev
 bun run test:run -- src/app/api/chat/__tests__/route.test.ts
 ```
 
-## Employer-Focused Notes
-
-If you are reviewing this repository for hiring:
-
-- The product intentionally combines UX clarity, AI-assisted guidance, and robust backend structure
-- The codebase shows full-stack ownership across frontend interaction design, backend APIs, data modeling, and testing
-- The architecture is designed for practical iteration: content-driven roadmap updates, modular APIs, and maintainable test coverage
-
 ## Additional Docs
 
 - `AGENTS.md` - detailed architecture and engineering notes
